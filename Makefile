@@ -22,6 +22,12 @@ QUARTUS_SH=RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTU
 all: sim_adc
 # all: compile_verilog compile_rtl sim_tb_6502
 
+help:
+	@echo "To initialize the make system:"
+	@echo "   make clean"
+	@echo "To make a modelsim simulation, do"
+	@echo "   make sim_adc"
+
 clean:
 	rm -rf $(MODELSIM_WORK) $(QUARTUS_OUTPUT) $(MAKE_TARGETS) $(QUARTUS_DB) $(QUARTUS_IDB)
 	mkdir $(MAKE_TARGETS)
