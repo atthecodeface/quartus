@@ -8,6 +8,8 @@ QUARTUS_OUTPUT=$(ROOT)/quartus_output
 MODELSIM_WORK_NAME=modelsim_lib
 MODELSIM_WORK=$(ROOT)/$(MODELSIM_WORK_NAME)
 MAKE_TARGETS=$(ROOT)/make
+QUARTUS_DB=$(ROOT)/quartus/db
+QUARTUS_IDB=$(ROOT)/quartus/incremental_db
 
 ALTERA=/altera
 MODELSIM=$(ALTERA)/modelsim_ase/linuxaloem
@@ -21,7 +23,7 @@ all: sim_adc
 # all: compile_verilog compile_rtl sim_tb_6502
 
 clean:
-	rm -rf $(MODELSIM_WORK) $(QUARTUS_OUTPUT) $(MAKE_TARGETS)
+	rm -rf $(MODELSIM_WORK) $(QUARTUS_OUTPUT) $(MAKE_TARGETS) $(QUARTUS_DB) $(QUARTUS_IDB)
 	mkdir $(MAKE_TARGETS)
 	$(VLIB) $(MODELSIM_WORK_NAME)
 

@@ -10,5 +10,5 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name IGNORE_VERILOG_INITIAL_CONSTRUCTS ON
 set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
 
-set_global_assignment -name QIP_FILE altclkctrl/synthesis/altclkctrl.qip
-set_global_assignment -name QSYS_FILE altclkctrl/altclkctrl.qsys
+set_global_assignment -name QIP_FILE  modules/altclkctrl.qip
+set_global_assignment -name QSYS_FILE modules/altclkctrl.qsys
