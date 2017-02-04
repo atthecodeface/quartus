@@ -1,6 +1,14 @@
-set_global_assignment -name FAMILY "Cyclone V"
-set_global_assignment -name DEVICE AUTO
-set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 set_global_assignment -name SOURCE_TCL_SCRIPT_FILE bbc_project_synth.tcl
+set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
+set_global_assignment -name TIMEQUEST_DO_REPORT_TIMING ON
 
 set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name IGNORE_VERILOG_INITIAL_CONSTRUCTS ON
+set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
+
+set_global_assignment -name QIP_FILE altclkctrl/synthesis/altclkctrl.qip
+set_global_assignment -name QSYS_FILE altclkctrl/altclkctrl.qsys

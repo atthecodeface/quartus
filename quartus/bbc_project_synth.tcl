@@ -376,6 +376,8 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 
 #a Project files
+#add_file altclkctrl/synthesis/altclkctrl.qip SYNTHESIS
+#set_global_assignment -name QIP_FILE altclkctrl/synthesis/altclkctrl.qip
 set_global_assignment -name VERILOG_FILE $RTL_DIR/bbc_project.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/clock_gate_module.v

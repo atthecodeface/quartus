@@ -4,10 +4,13 @@ module      se_sram_srw_65536x8(
    input [15:0] address;
    input [7:0]  write_data;
    output [7:0] data_out;
-   reg [7:0] data_out;
    reg [7:0] ram[65535:0];
+   //assign data_out = ram[read_address];
+   //reg [15:0]    read_address;
+   reg [7:0] data_out;
    initial
      begin
+        //read_address <= 0;
         data_out <= 0;
      end
    always @(posedge sram_clock)
@@ -19,6 +22,7 @@ module      se_sram_srw_65536x8(
         if (read_not_write && select)
           begin
              data_out <= ram[address];
+             //read_address <= address;
           end
      end
 endmodule // se_sram_srw_65536x8
