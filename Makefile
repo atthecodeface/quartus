@@ -1,6 +1,5 @@
 
 ROOT:=$(CURDIR)
-ROOT:=.
 QUARTUS_DIR=$(ROOT)/quartus
 SCRIPTS_DIR=$(ROOT)/scripts
 RTL_DIR=$(ROOT)/rtl
@@ -45,23 +44,24 @@ sim_adc: compile $(SCRIPTS_DIR)/regress.tcl
 
 sim_addsub: compile $(SCRIPTS_DIR)/regress.tcl
 	./python/mif_to_hex.py mif/regression.base6502__Regress6502_Test6502_ALU__test_6502_addsub.mif $(MODELSIM_WORK)/a.hex
-	$(VSIM) -batch -nostdout -do 'source $(SCRIPTS_DIR)/regress.tcl' -l $(MODELSIM_WORK)/a.log lib $(MODELSIM_WORK) harness_tb_6502
+	$(VSIM) -batch -nostdout -do 'source $(SCRIPTS_DIR)/regress.tcl' -l $(MODELSIM_WORK)/a.log -lib $(MODELSIM_WORK) harness_tb_6502
 	@echo "Now check that b.mti has  0: 12 34 in it"
 	grep ' 0: 12 34' $(MODELSIM_WORK)/b.mti
 
-synth:$(MAKE_TARGETS)/synth.complete
+.PHONY:synth fit timing
+synth: $(MAKE_TARGETS)/synth.complete
 
-fit:$(MAKE_TARGETS)/fit.complete
+fit: $(MAKE_TARGETS)/fit.complete
 
-timing:$(MAKE_TARGETS)/timing.complete
+timing: $(MAKE_TARGETS)/timing.complete
 
 $(MAKE_TARGETS)/synth.complete: $(SCRIPTS_DIR)/synth.tcl
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl bbc_project bbc_project) && date > $(MAKE_TARGETS)/synth.complete
 
-$(MAKE_TARGETS)/fit.complete: synth
+$(MAKE_TARGETS)/fit.complete: $(MAKE_TARGETS)/synth.complete
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl bbc_project bbc_project) && date > $(MAKE_TARGETS)/fit.complete
 
-$(MAKE_TARGETS)/timing.complete: fit
+$(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl bbc_project bbc_project) && date > $(MAKE_TARGETS)/timing.complete
 
 quartus_shell:
