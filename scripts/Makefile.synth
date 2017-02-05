@@ -9,6 +9,34 @@ QUARTUS_CDB=SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_
 
 SYNTH_PROJECT ?= bbc_project
 
+help_synth:
+	$H "Makefile.synth contains targets and recipes"
+	$H "to enable synthesis, fitting and timing of"
+	$H "FPGA builds using Altera Quartus"
+	$H ""
+	$H "The makefile support different 'project's using the same tree"
+	$H "The project name is specified with 'SYNTH_PROJECT'"
+	$H "SYNTH_PROJECT defaults to 'bbc_project'"
+	$H ""
+	$H "The first step is synthesis (mapping):"
+	$H "  make SYNTH_PROJECT=<project> synth"
+	$H ""
+	$H "The second step is fitting:"
+	$H "  make SYNTH_PROJECT=<project> fit"
+	$H ""
+	$H "The third step is timing analysis:"
+	$H "  make SYNTH_PROJECT=<project> timing"
+	$H ""
+	$H "After fitting (or timing, indeed) the SRAM's making an"
+	$H "image may be updated with"
+	$H "  make SYNTH_PROJECT=<project> fpga_update_srams"
+	$H ""
+	$H "A resynthesis can be performed with"
+	$H "  make SYNTH_PROJECT=<project> resynth"
+	$H ""
+	$H "Rerunning timing can be performed with"
+	$H "  make SYNTH_PROJECT=<project> retime"
+
 clean: clean_synth
 .PHONY: clean_synth
 clean_synth:
@@ -38,7 +66,7 @@ $(MAKE_TARGETS)/fit.complete: $(MAKE_TARGETS)/synth.complete
 $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/timing.complete
 
-redo_mif:
+fpga_update_srams:
 	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(SYNTH_PROJECT))
 
 quartus_shell:

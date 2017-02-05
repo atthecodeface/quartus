@@ -1,6 +1,12 @@
 SRAM_CONTENTS=$(ROOT)/sram_contents
 SRAM_CONTENTS_REL=$(ROOT_REL)/sram_contents
 
+help_sram:
+	$H "Makefile.sram contains targets and recipes"
+	$H "to create the contents of the 'sram_contents'"
+	$H "directory"
+	$H ""
+
 clean: clean_sram
 
 .PHONY: clean_sram

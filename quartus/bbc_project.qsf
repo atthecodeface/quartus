@@ -1,4 +1,4 @@
-set_global_assignment -name SOURCE_TCL_SCRIPT_FILE bbc_project_synth.tcl
+set_global_assignment -name SOURCE_TCL_SCRIPT_FILE bbc_project.tcl
 set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 set_global_assignment -name TIMEQUEST_DO_REPORT_TIMING ON
 
@@ -12,9 +12,3 @@ set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
 
 set_global_assignment -name QIP_FILE modules/altclkctrl.qip
 set_global_assignment -name QSYS_FILE modules/altclkctrl.qsys
-#set_global_assignment -name HEX_FILE .././sram_contents/adc.hex
-#set_global_assignment -name HEX_FILE /git/quartus/sram_contents/adc.hex
-#set_global_assignment -name HEX_FILE ..//git/quartus/sram_contents/adc.hex
-#set_global_assignment -name MIF_FILE a.mif
-#set_global_assignment -name MIF_FILE c.mif
-#set_global_assignment -name MIF_FILE /git/quartus/sram_contents/b.mif

@@ -10,15 +10,26 @@ MAKE_TARGETS=$(ROOT)/make
 
 ALTERA=/altera
 
+H=@echo
 
 all: sim_adc
 # all: compile_verilog compile_rtl sim_tb_6502
 
-help: help_synth he
-	@echo "To initialize the make system:"
-	@echo "   make clean"
-	@echo "To make a modelsim simulation, do"
-	@echo "   make sim_adc"
+.PHONY: help
+help: help_synth help_sim help_sram
+
+.PHONY: help_toplevel
+help_toplevel:
+	$H "To initialize the make system:"
+	$H "   make clean"
+	$H
+	$H "The Makefile splits into a few sub-makes:"
+	$H " Makefile.sim"
+	$H "   Simulation makefile, with its own help (below)"
+	$H " Makefile.synth"
+	$H "   Synthesis, fit, timing makefile, with its own help (below)"
+	$H " Makefile.sram"
+	$H "   SRAM generation makefile, with its own help (below)"
 
 .PHONY: clean
 

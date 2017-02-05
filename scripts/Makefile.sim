@@ -6,6 +6,16 @@ VLIB=$(MODELSIM)/vlib
 VLOG=$(MODELSIM)/vlog
 VSIM=$(MODELSIM)/vsim
 
+help_sim:
+	$H "Makefile.sim contains targets and recipes"
+	$H "to enable Modelsim simulation and regressions"
+	$H ""
+	$H "The simplest thing to do is:"
+	$H "    make sim_adc"
+	$H "or"
+	$H "    make sim_addsub"
+	$H "which run simple regression tests on the 6502"
+
 clean: clean_sim
 
 .PHONY: clean_sim

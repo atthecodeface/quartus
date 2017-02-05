@@ -9,8 +9,11 @@
 #   set_output_delay -max -2ns -clock clk2 [get_ports time*]
 #   #
 create_clock -period 8.0 -name MainClock [get_ports clk]
-create_generated_clock -name cpu_clk  -source [get_ports clk] -edges { 1 2 5 } [get_nets {cpu_clk__gen*out*}]
-create_generated_clock -name sram_clk -source [get_ports clk] -edges { 3 4 7 } [get_nets {sram_clk__gen*out*}]
+create_generated_clock -name cpu_clk  -source [get_ports clk] -edges { 1 2 5 } [get_nets {*clk_cpu__gen*out*}]
+create_generated_clock -name sram_clk -source [get_ports clk] -edges { 3 4 7 } [get_nets {*clk_2MHz_video_clock__gen*out*}]
+create_generated_clock -name cpu_clk  -source [get_ports clk] -edges { 1 2 5 } [get_nets {*cpu_clk__gen*out*}]
+create_generated_clock -name sram_clk -source [get_ports clk] -edges { 1 2 5 } [get_nets {*clk_1MHzE_falling_gen*out*}]
+create_generated_clock -name sram_clk -source [get_ports clk] -edges { 1 2 5 } [get_nets {*clk_1MHzE_rising_gen*out*}]
 
 #This produces a large selection of pins - all 'pins' in the design
 #set fullcollection [get_pins -hierarchical *]
