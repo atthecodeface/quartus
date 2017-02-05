@@ -2,100 +2,68 @@ module bbc_project(clk, reset_n, leds);
    
   input clk, reset_n;
    output [7:0] leds;
-    wire sram_clk; // Gated version of clock 'clk' enabled by 'enable_sram_clk'
-    wire cpu_clk; // Gated version of clock 'clk' enabled by 'enable_cpu_clk'
+   wire         host_sram_request__valid;
+   wire         host_sram_request__read_enable;
+   wire         host_sram_request__write_enable;
+   wire[7:0]    host_sram_request__select;
+   wire[23:0]   host_sram_request__address;
+   wire[63:0]   host_sram_request__write_data;
+   wire         csr_request__valid;
+   wire         csr_request__read_not_write;
+   wire[15:0]   csr_request__select;
+   wire[15:0]   csr_request__address;
+   wire[31:0]   csr_request__data;
 
-    //b Inputs
+   wire         display_sram_write__enable;
+   wire[47:0]   display_sram_write__data;
+   wire[15:0]   display_sram_write__address;
+   wire         host_sram_response__ack;
+   wire         host_sram_response__read_data_valid;
+   wire[63:0]   host_sram_response__read_data;
+   wire         csr_response__ack;
+   wire         csr_response__read_data_valid;
+   wire[31:0]   csr_response__read_data;
 
-    //b Outputs
 
-// output components here
+    assign host_sram_request__valid=0;
+    assign host_sram_request__read_enable=0;
+    assign host_sram_request__write_enable=0;
+    assign host_sram_request__select=0;
+    assign host_sram_request__address=0;
+    assign host_sram_request__write_data=0;
 
-    //b Output combinatorials
+    assign csr_request__valid=0;
+    assign csr_request__read_not_write=0;
+    assign csr_request__select=0;
+    assign csr_request__address=0;
+    assign csr_request__data=0;
 
-    //b Output nets
+    assign leds = display_sram_write__data[7:0];
 
-    //b Internal and output registers
-    reg [15:0]cycle_counter;
-    reg nmi_n;
-    reg irq_n;
+    bbc_micro_with_rams bbc( .clk(clk),
+                         .reset_n(reset_n),
 
-    //b Internal combinatorials
-    reg enable_sram_clk;
-    reg enable_cpu_clk;
+                         .host_sram_request__valid(host_sram_request__valid),
+                         .host_sram_request__read_enable(host_sram_request__read_enable),
+                         .host_sram_request__write_enable(host_sram_request__write_enable),
+                         .host_sram_request__select(host_sram_request__select),
+                         .host_sram_request__address(host_sram_request__address),
+                         .host_sram_request__write_data(host_sram_request__write_data),
+                         .csr_request__valid(csr_request__valid),
+                         .csr_request__read_not_write(csr_request__read_not_write),
+                         .csr_request__select(csr_request__select),
+                         .csr_request__address(csr_request__address),
+                         .csr_request__data(csr_request__data),
 
-    //b Internal nets
-        //   Captured at the end of phase 2 (rising clock with phi[1] high)
-    wire [7:0]data_in;
-        //   Changes during phase 2 (phi[1] high) with data to write
-    wire [7:0]data_out;
-        //   Changes during phase 1 (phi[0] high) with whether to read or write
-    wire read_not_write;
-        //   Changes during phase 1 (phi[0] high) with address to read or write
-    wire [15:0]address;
-        //   Goes high during phase 2 if ready was low in phase 1 if read_not_write is 1, to permit someone else to use the memory bus
-    wire ba;
-
-   assign leds=address[7:0];
-
-    //b Clock gating module instances
-    clock_gate_module sram_clk__gen( .CLK_IN(clk), .ENABLE(enable_sram_clk), .CLK_OUT(sram_clk) );
-    clock_gate_module cpu_clk__gen( .CLK_IN(clk), .ENABLE(enable_cpu_clk), .CLK_OUT(cpu_clk) );
-    //b Module instances
-    se_sram_srw_65536x8 imem(
-        .sram_clock(sram_clk),
-        .write_data(data_out),
-        .address(address),
-        .write_enable(!(read_not_write!=1'h0)),
-        .read_not_write(read_not_write),
-        .select(1'h1),
-        .data_out(            data_in)         );
-    cpu6502 cpu6502_0(
-        .clk(cpu_clk),
-        .data_in(data_in),
-        .nmi_n(nmi_n),
-        .irq_n(irq_n),
-        .ready(1'h1),
-        .reset_n(reset_n),
-        .data_out(            data_out),
-        .read_not_write(            read_not_write),
-        .address(            address),
-        .ba(            ba)         );
-    //b interrupt_and_nmi__comb combinatorial process
-        //   
-        //       The interrupt and NMI are not currently configured to fire - they perhaps ought to be controlled.
-        //   
-        //       The clock gating is to ping-pong the CPU and the SRAM - to mimick the 6502 phi 1 / 2 latch operation.
-        //       
-    always @( //interrupt_and_nmi__comb
-        cycle_counter )
-    begin: interrupt_and_nmi__comb_code
-        enable_sram_clk = cycle_counter[0];
-        enable_cpu_clk = !(cycle_counter[0]!=1'h0);
-    end //always
-
-    //b interrupt_and_nmi__posedge_clk_active_low_reset_n clock process
-        //   
-        //       The interrupt and NMI are not currently configured to fire - they perhaps ought to be controlled.
-        //   
-        //       The clock gating is to ping-pong the CPU and the SRAM - to mimick the 6502 phi 1 / 2 latch operation.
-        //       
-    always @( posedge clk or negedge reset_n)
-    begin : interrupt_and_nmi__posedge_clk_active_low_reset_n__code
-        if (reset_n==1'b0)
-        begin
-            cycle_counter <= 16'h0;
-            irq_n <= 1'h1;
-            nmi_n <= 1'h1;
-        end
-        else
-        begin
-            cycle_counter <= (cycle_counter+16'h1);
-            if ((cycle_counter[7:0]==8'hff))
-            begin
-                irq_n <= 1'h1;
-                nmi_n <= 1'h1;
-            end //if
-        end //if
-    end //always
+                         .display_sram_write__enable(display_sram_write__enable),
+                         .display_sram_write__data(display_sram_write__data),
+                         .display_sram_write__address(display_sram_write__address),
+                         .host_sram_response__ack(host_sram_response__ack),
+                         .host_sram_response__read_data_valid(host_sram_response__read_data_valid),
+                         .host_sram_response__read_data(host_sram_response__read_data),
+                         .csr_response__ack(csr_response__ack),
+                         .csr_response__read_data_valid(csr_response__read_data_valid),
+                         .csr_response__read_data(csr_response__read_data)
+                         );
+   
 endmodule

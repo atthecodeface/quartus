@@ -7,6 +7,8 @@ QUARTUS=$(ALTERA)/quartus/bin
 QUARTUS_SH=SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) $(QUARTUS)/quartus_sh
 QUARTUS_CDB=SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) $(QUARTUS)/quartus_cdb
 
+SYNTH_PROJECT ?= bbc_project
+
 clean: clean_synth
 .PHONY: clean_synth
 clean_synth:
@@ -28,16 +30,16 @@ retime:
 	make timing
 
 $(MAKE_TARGETS)/synth.complete: $(SCRIPTS_DIR)/synth.tcl
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl bbc_project bbc_project) && date > $(MAKE_TARGETS)/synth.complete
+	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/synth.complete
 
 $(MAKE_TARGETS)/fit.complete: $(MAKE_TARGETS)/synth.complete
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl bbc_project bbc_project) && date > $(MAKE_TARGETS)/fit.complete
+	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/fit.complete
 
 $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl bbc_project bbc_project) && date > $(MAKE_TARGETS)/timing.complete
+	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/timing.complete
 
 redo_mif:
-	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif bbc_project)
+	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(SYNTH_PROJECT))
 
 quartus_shell:
 	$(QUARTUS_SH) -s
