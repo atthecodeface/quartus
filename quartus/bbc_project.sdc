@@ -31,6 +31,7 @@ set_multicycle_path -from $cpu_clk_enabled -to $cpu_clk_enabled -end -hold 1
 set_multicycle_path -from $video_clk_enabled -to $video_clk_enabled -end -setup 2 
 set_multicycle_path -from $video_clk_enabled -to $video_clk_enabled -end -hold 1 
 set_false_path      -from $cpu_clk_enabled -to $video_clk_enabled
+#set_false_path      -from [get_nets *se_sram_srw*] -to [get_registers *bbc_vidproc:vidproc|*palette*]
 
 # The following don't work as yet - need to get the hierarchy right - but they don't seem to be necessary
 # The key generated clock is cpu_clk, which runs at half frequency, but has full frequency to/from memory

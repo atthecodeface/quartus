@@ -25,7 +25,8 @@ module bbc_vidproc
     cursor,
     invert_n,
     disen,
-    data_in,
+    pixel_data_in,
+    cpu_data_in,
     address,
     chip_select_n,
     reset_n,
@@ -58,8 +59,10 @@ module bbc_vidproc
     input invert_n;
         //   Asserted by CRTC if black output required (e.g. during sync)
     input disen;
+        //   Data in (from SRAM)
+    input [7:0]pixel_data_in;
         //   Data in (from CPU)
-    input [7:0]data_in;
+    input [7:0]cpu_data_in;
         //   Valid with chip select
     input address;
         //   Active low chip select
@@ -395,7 +398,7 @@ module bbc_vidproc
             endcase
             if ((crtc_clock_enable!=1'h0))
             begin
-                pixel_shift_register <= data_in;
+                pixel_shift_register <= pixel_data_in;
                 cursor_shift_register <= {cursor_shift_register[2:0],1'h0};
                 if ((cursor!=1'h0))
                 begin
@@ -474,16 +477,16 @@ module bbc_vidproc
         begin
             if ((!(chip_select_n!=1'h0)&&(address==1'h0)))
             begin
-                control__cursor_segments <= data_in[7:5];
-                control__clock_rate <= data_in[4];
-                control__columns <= data_in[3:2];
-                control__teletext <= data_in[1];
-                control__flash <= data_in[0];
+                control__cursor_segments <= cpu_data_in[7:5];
+                control__clock_rate <= cpu_data_in[4];
+                control__columns <= cpu_data_in[3:2];
+                control__teletext <= cpu_data_in[1];
+                control__flash <= cpu_data_in[0];
             end //if
             if ((!(chip_select_n!=1'h0)&&(address==1'h1)))
             begin
-                palette__flashing[data_in[7:4]] <= data_in[3];
-                palette__base_color[data_in[7:4]] <= data_in[2:0];
+                palette__flashing[cpu_data_in[7:4]] <= cpu_data_in[3];
+                palette__base_color[cpu_data_in[7:4]] <= cpu_data_in[2:0];
             end //if
         end //if
     end //always
