@@ -168,9 +168,10 @@ module bbc_micro_with_rams
     //b Clock gating module instances
     clock_gate_module clk_cpu__gen( .CLK_IN(clk), .ENABLE(enable_cpu_clk), .CLK_OUT(clk_cpu) );
     clock_gate_module clk_2MHz_video_clock__gen( .CLK_IN(clk), .ENABLE(enable_clk_2MHz_video), .CLK_OUT(clk_2MHz_video_clock) );
+    clock_gate_module main_clk_cpu__gen( .CLK_IN(clk), .ENABLE(1'b1), .CLK_OUT(main_clk) );
     //b Module instances
     bbc_micro_clocking clocking(
-        .clk(clk),
+        .clk(main_clk),
         .csr_request__data(csr_request__data),
         .csr_request__address(csr_request__address),
         .csr_request__select(csr_request__select),
@@ -189,7 +190,7 @@ module bbc_micro_with_rams
         .clock_control__will_enable_2MHz_video(            clock_control__will_enable_2MHz_video),
         .clock_control__enable_cpu(            clock_control__enable_cpu)         );
     bbc_micro bbc(
-        .clk(clk),
+        .clk(main_clk),
         .host_sram_request__write_data(bbc_micro_host_sram_request__write_data),
         .host_sram_request__address(bbc_micro_host_sram_request__address),
         .host_sram_request__select(bbc_micro_host_sram_request__select),
@@ -319,7 +320,7 @@ module bbc_micro_with_rams
         .floppy_response__sector_id__track(            floppy_response__sector_id__track),
         .floppy_response__sector_id_valid(            floppy_response__sector_id_valid)         );
     bbc_micro_rams rams(
-        .clk(clk),
+        .clk(main_clk),
         .bbc_micro_host_sram_response__read_data(bbc_micro_host_sram_response__read_data),
         .bbc_micro_host_sram_response__read_data_valid(bbc_micro_host_sram_response__read_data_valid),
         .bbc_micro_host_sram_response__ack(bbc_micro_host_sram_response__ack),

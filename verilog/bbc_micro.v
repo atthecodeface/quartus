@@ -323,7 +323,7 @@ module bbc_micro
         .index_n(1'h1),
         .write_protect_n(1'h1),
         .track_0_n(1'h1),
-        .data_in(main_databus),
+        .data_in(cpu_data_out),
         .data_ack_n(!((address[2] & address_map_decode__fdc)!=1'h0)),
         .address(address[1:0]),
         .write_n(read_not_write),
@@ -353,7 +353,7 @@ module bbc_micro
         .rxd(1'h1),
         .rx_clk(1'h1),
         .tx_clk(1'h1),
-        .data_in(main_databus),
+        .data_in(cpu_data_out),
         .address(address[0]),
         .chip_select_n(!(address_map_decode__acia!=1'h0)),
         .chip_select(2'h3),
@@ -370,7 +370,7 @@ module bbc_micro
         .pa_in({selected_key_pressed,via_a_pa_out[6:0]}),
         .ca2_in(via_a_ca2_in),
         .ca1(vsync),
-        .data_in(main_databus),
+        .data_in(cpu_data_out),
         .address(address[3:0]),
         .chip_select_n(!(address_map_decode__via_a!=1'h0)),
         .chip_select(phi2),
@@ -389,7 +389,7 @@ module bbc_micro
         .pa_in(8'h0),
         .ca2_in(1'h0),
         .ca1(1'h0),
-        .data_in(main_databus),
+        .data_in(cpu_data_out),
         .address(address[3:0]),
         .chip_select_n(!(address_map_decode__via_b!=1'h0)),
         .chip_select(phi2),
@@ -408,7 +408,7 @@ module bbc_micro
         .cursor(1'h0),
         .invert_n(1'h1),
         .disen((crtc_display_enable & ~crtc_row_address[3])),
-        .data_in(((address_map_decode__vidproc!=1'h0)?main_databus:ram_databus)),
+        .data_in(((address_map_decode__vidproc!=1'h0)?cpu_data_out:ram_databus)),
         .address(address[0]),
         .chip_select_n(!(address_map_decode__vidproc!=1'h0)),
         .reset_n(reset_n),
@@ -890,7 +890,7 @@ module bbc_micro
         begin
             if ((address_map_decode__romsel!=1'h0))
             begin
-                rom_sel <= main_databus[3:0];
+                rom_sel <= cpu_data_out[3:0];
             end //if
         end //if
     end //always
@@ -945,7 +945,7 @@ module bbc_micro
         pending_host_sram_request__write_enable or
         address or
         pending_host_sram_request__address or
-        main_databus or
+        cpu_data_out or
         pending_host_sram_request__write_data )
     begin: srams__comb_code
     reg [1:0]memory_grant__var;
@@ -986,7 +986,7 @@ module bbc_micro
         memory_access__read_enable__var = 1'h0;
         memory_access__write_enable__var = 1'h0;
         memory_access__address__var = address[13:0];
-        memory_access__write_data__var = main_databus;
+        memory_access__write_data__var = cpu_data_out;
         if ((memory_grant__var==2'h1))
         begin
             memory_access__ram_select__var = address_map_decode__rams;
@@ -1130,12 +1130,11 @@ module bbc_micro
         last_memory_access__rom_select or
         basic_data_out or
         adfs_data_out or
-        cpu_data_out or
         read_not_write or
-        address_map_decode__rom or
-        address_map_decode__roms or
         cpu_reading_memory or
         cpu_memory_data_hold or
+        address_map_decode__rom or
+        address_map_decode__roms or
         address_map_decode__sheila or
         data_out_sheila )
     begin: databus_multiplexing__comb_code
@@ -1165,20 +1164,20 @@ module bbc_micro
         begin
             memory_databus__var = memory_databus__var | adfs_data_out;
         end //if
-        main_databus__var = cpu_data_out;
+        main_databus__var = 8'hff;
         if ((read_not_write!=1'h0))
         begin
             main_databus__var = memory_databus__var;
+            if (!(cpu_reading_memory!=1'h0))
+            begin
+                main_databus__var = cpu_memory_data_hold;
+            end //if
             if ((address_map_decode__rom!=1'h0))
             begin
                 if ((!(address_map_decode__roms[0]!=1'h0)&&!(address_map_decode__roms[1]!=1'h0)))
                 begin
                     main_databus__var = 8'hff;
                 end //if
-            end //if
-            if (!(cpu_reading_memory!=1'h0))
-            begin
-                main_databus__var = cpu_memory_data_hold;
             end //if
             if ((address_map_decode__sheila!=1'h0))
             begin
@@ -1203,7 +1202,7 @@ module bbc_micro
         begin
             if ((cpu_reading_memory!=1'h0))
             begin
-                cpu_memory_data_hold <= main_databus;
+                cpu_memory_data_hold <= memory_databus;
             end //if
         end //if
     end //always

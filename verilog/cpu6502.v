@@ -232,7 +232,7 @@ module cpu6502
         useq_decode__last_cycle or
         interrupt_state__nmi_pending or
         interrupt_state__irq_pending or
-        irq_will_be_disabled )
+        state__psr__i )
     begin: interrupt_logic__comb_code
     reg ir_fetch_required__var;
     reg ir_fetch_brk__var;
@@ -250,7 +250,7 @@ module cpu6502
             else
             
             begin
-                if (((interrupt_state__irq_pending!=1'h0)&&!(irq_will_be_disabled!=1'h0)))
+                if (((interrupt_state__irq_pending!=1'h0)&&!(state__psr__i!=1'h0)))
                 begin
                     ir_fetch_required__var = 1'h0;
                     ir_fetch_brk__var = 1'h1;
@@ -290,7 +290,7 @@ module cpu6502
                 else
                 
                 begin
-                    if (((interrupt_state__irq_pending!=1'h0)&&!(irq_will_be_disabled!=1'h0)))
+                    if (((interrupt_state__irq_pending!=1'h0)&&!(state__psr__i!=1'h0)))
                     begin
                         state__interrupt_reason <= 2'h2;
                     end //if

@@ -405,5 +405,10 @@ set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 set_global_assignment -name SDC_FILE $QUARTUS_DIR/bbc_project.sdc
 
 #a Set parameters (e.g. SRAMs)
-set_parameter -to "imem" -entity "bbc_project" -name initfile $SRAMS_DIR/b.mif
-#set_parameter -to "imem" -entity "bbc_project" -name initfile c.mif
+#set_parameter -to "imem"  -entity "bbc_project" -name initfile $SRAMS_DIR/b.mif
+set_parameter -to "display"       -entity "bbc_project|bbc|rams"    -name initfile $SRAMS_DIR/b.mif
+set_parameter -to "floppy"        -entity "bbc_project|bbc|rams"    -name initfile $SRAMS_DIR/b.mif
+set_parameter -to "basic"         -entity "bbc_project|bbc|bbc"     -name initfile $SRAMS_DIR/b.mif
+set_parameter -to "adfs"          -entity "bbc_project|bbc|bbc"     -name initfile $SRAMS_DIR/b.mif
+set_parameter -to "os"            -entity "bbc_project|bbc|bbc"     -name initfile $SRAMS_DIR/b.mif
+set_parameter -to "character_rom" -entity "bbc_project|bbc|bbc|saa" -name initfile $SRAMS_DIR/b.mif

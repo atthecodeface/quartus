@@ -36,7 +36,6 @@ module crtc6845
         //   Clock that rises when the 'enable' of the 6845 completes - but a real clock for this model
     input clk_1MHz;
     input clk_2MHz;
-    wire clk_pixel; // Gated version of clock 'clk_2MHz' enabled by 'crtc_clock_enable'
 
     //b Inputs
         //   Not on the real chip - really CLK - the character clock - but this is an enable for clk_2MHz
@@ -145,7 +144,6 @@ module crtc6845
     //b Internal nets
 
     //b Clock gating module instances
-    clock_gate_module clk_pixel__gen( .CLK_IN(clk_2MHz), .ENABLE(crtc_clock_enable), .CLK_OUT(clk_pixel) );
     //b Module instances
     //b outputs combinatorial process
         //   
@@ -332,7 +330,7 @@ module crtc6845
         vertical__start_vsync = vertical__start_vsync__var;
     end //always
 
-    //b horizontal_timing__posedge_clk_pixel_active_low_reset_n clock process
+    //b horizontal_timing__posedge_clk_2MHz_active_low_reset_n clock process
         //   
         //       Horizontal timing is control.h_total+1 characters wide (count from 0 to control.h_total inclusive)
         //       At control.h_displayed characters (count+1 == control.h_displayed) front porch starts (disen low)
@@ -358,8 +356,8 @@ module crtc6845
         //       Because the vsync has to start half-way through the row, h_total must be odd (hence h_total+1 characters is even, and divisible by 2)
         //       
         //       
-    always @( posedge clk_pixel or negedge reset_n)
-    begin : horizontal_timing__posedge_clk_pixel_active_low_reset_n__code
+    always @( posedge clk_2MHz or negedge reset_n)
+    begin : horizontal_timing__posedge_clk_2MHz_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             horizontal_state__counter <= 8'h0;
@@ -456,6 +454,23 @@ module crtc6845
                     vertical_state__vsync_counter <= (vertical_state__vsync_counter+6'h1);
                 end //if
             end //if
+            if (!(crtc_clock_enable!=1'h0))
+            begin
+                horizontal_state__counter <= horizontal_state__counter;
+                horizontal_state__sync_counter <= horizontal_state__sync_counter;
+                horizontal_state__sync <= horizontal_state__sync;
+                horizontal_state__display_enable <= horizontal_state__display_enable;
+                vertical_state__character_row_counter <= vertical_state__character_row_counter;
+                vertical_state__scan_line_counter <= vertical_state__scan_line_counter;
+                vertical_state__adjust_counter <= vertical_state__adjust_counter;
+                vertical_state__sync_counter <= vertical_state__sync_counter;
+                vertical_state__vsync_counter <= vertical_state__vsync_counter;
+                vertical_state__doing_adjust <= vertical_state__doing_adjust;
+                vertical_state__cursor_line <= vertical_state__cursor_line;
+                vertical_state__sync <= vertical_state__sync;
+                vertical_state__display_enable <= vertical_state__display_enable;
+                vertical_state__even_field <= vertical_state__even_field;
+            end //if
         end //if
     end //always
 
@@ -505,11 +520,11 @@ module crtc6845
         cursor_decode__disabled = cursor_decode__disabled__var;
     end //always
 
-    //b address_and_cursor__posedge_clk_pixel_active_low_reset_n clock process
+    //b address_and_cursor__posedge_clk_2MHz_active_low_reset_n clock process
         //   
         //       
-    always @( posedge clk_pixel or negedge reset_n)
-    begin : address_and_cursor__posedge_clk_pixel_active_low_reset_n__code
+    always @( posedge clk_2MHz or negedge reset_n)
+    begin : address_and_cursor__posedge_clk_2MHz_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             address_state__memory_address <= 14'h0;
@@ -537,6 +552,11 @@ module crtc6845
             begin
                 address_state__memory_address <= {control__start_addr_h,control__start_addr_l};
                 address_state__memory_address_line_start <= {control__start_addr_h,control__start_addr_l};
+            end //if
+            if (!(crtc_clock_enable!=1'h0))
+            begin
+                address_state__memory_address <= address_state__memory_address;
+                address_state__memory_address_line_start <= address_state__memory_address_line_start;
             end //if
         end //if
     end //always
@@ -646,17 +666,16 @@ module crtc6845
                     begin
                     control__cursor__address[13:8] <= data_in[5:0];
                     end
-    //synopsys  translate_off
-    //pragma coverage off
+                //synopsys  translate_off
+                //pragma coverage off
+                //synopsys  translate_on
                 default:
                     begin
-                        if (1)
-                        begin
-                            $display("%t *********CDL ASSERTION FAILURE:crtc6845:read_write_interface: Full switch statement did not cover all values", $time);
-                        end
+                    //Need a default case to make Cadence Lint happy, even though this is not a full case
                     end
-    //pragma coverage on
-    //synopsys  translate_on
+                //synopsys  translate_off
+                //pragma coverage on
+                //synopsys  translate_on
                 endcase
             end //if
         end //if
