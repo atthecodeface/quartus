@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_csr_interface
 module bbc_csr_interface
 (
     clk,
+    clk__enable,
 
     csr_select,
     csr_read_data,
@@ -35,6 +38,7 @@ module bbc_csr_interface
     //b Clocks
         //   4MHz clock in as a minimum
     input clk;
+    input clk__enable;
 
     //b Inputs
     input [15:0]csr_select;
@@ -93,7 +97,7 @@ module bbc_csr_interface
             csr_access__address <= 16'h0;
             csr_access__data <= 32'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((csr_response__read_data_valid!=1'h0))
             begin

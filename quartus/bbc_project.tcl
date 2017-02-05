@@ -405,10 +405,16 @@ set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 set_global_assignment -name SDC_FILE $QUARTUS_DIR/bbc_project.sdc
 
 #a Set parameters (e.g. SRAMs)
-#set_parameter -to "imem"  -entity "bbc_project" -name initfile $SRAMS_DIR/b.mif
-set_parameter -to "display"       -entity "bbc_project|bbc|rams"    -name initfile $SRAMS_DIR/b.mif
-set_parameter -to "floppy"        -entity "bbc_project|bbc|rams"    -name initfile $SRAMS_DIR/b.mif
-set_parameter -to "basic"         -entity "bbc_project|bbc|bbc"     -name initfile $SRAMS_DIR/b.mif
-set_parameter -to "adfs"          -entity "bbc_project|bbc|bbc"     -name initfile $SRAMS_DIR/b.mif
-set_parameter -to "os"            -entity "bbc_project|bbc|bbc"     -name initfile $SRAMS_DIR/b.mif
-set_parameter -to "character_rom" -entity "bbc_project|bbc|bbc|saa" -name initfile $SRAMS_DIR/b.mif
+set_parameter -entity "bbc_project" -to "bbc\|bbc\|basic\|ram"  -name initfile $SRAMS_DIR/basic2.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc\|bbc\|os12\|ram"  -name initfile $SRAMS_DIR/os12.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc\|bbc\|adfs\|ram"  -name initfile $SRAMS_DIR/adfs.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc\|rams\|floppy\|ram"  -name initfile $SRAMS_DIR/elite.qmif
+set_parameter -entity "bbc_project" -to "bbc\|bbc\|saa\|character_rom\|ram"  -name initfile $SRAMS_DIR/teletext.qmif
+
+# The following have no errors? (and no effect?)
+# Presumably entity has no hierarchy
+set_parameter -entity "bbc_project" -to "bbc_micro_with_rams:bbc\|bbc_micro_rams:rams\|se_sram_srw_65536x32:floppy\|se_sram_srw:ram"             -name initfile $SRAMS_DIR/elite.qmif
+set_parameter -entity "bbc_project" -to "bbc.rams.floppy.ram"  -name initfile $SRAMS_DIR/elite.qmif
+set_parameter -entity "bbc_project" -to "bbc.rams.display.ram"  -name initfile $SRAMS_DIR/elite.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro_with_rams:bbc|bbc_micro_rams:rams|se_sram_srw_65536x32:floppy|se_sram_srw:ram"             -name initfile $SRAMS_DIR/elite.qmif
+

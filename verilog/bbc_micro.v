@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_micro
 module bbc_micro
 (
     clk,
+    clk__enable,
 
     host_sram_request__valid,
     host_sram_request__read_enable,
@@ -77,10 +80,15 @@ module bbc_micro
     //b Clocks
         //   Clock at least at '4MHz' - CPU runs at least half of this
     input clk;
+    input clk__enable;
     wire cpu_clk; // Gated version of clock 'clk' enabled by 'enable_cpu_clk'
+    wire cpu_clk__enable;
     wire clk_1MHzE_falling; // Gated version of clock 'clk' enabled by 'enable_clk_1MHz_falling'
+    wire clk_1MHzE_falling__enable;
     wire clk_1MHzE_rising; // Gated version of clock 'clk' enabled by 'enable_clk_1MHz_rising'
+    wire clk_1MHzE_rising__enable;
     wire clk_2MHz_video_clock; // Gated version of clock 'clk' enabled by 'enable_clk_2MHz_video'
+    wire clk_2MHz_video_clock__enable;
 
     //b Inputs
     input host_sram_request__valid;
@@ -174,6 +182,8 @@ module bbc_micro
 
     //b Internal and output registers
     reg [3:0]rom_sel;
+        //   1MHz clock enable for SAA5050 in video clock domain, reset at start of display period
+    reg saa_enable;
         //   Real BBC SAA5050 registers this data on rising 1MHz so gets every other 2MHz clock tick data
     reg saa_lose;
         //   Real BBC clocks on 1MHz falling which is presumably coincident with 2MHz falling (not 1MHzE falling...)
@@ -298,13 +308,14 @@ module bbc_micro
     wire ba;
 
     //b Clock gating module instances
-    clock_gate_module cpu_clk__gen( .CLK_IN(clk), .ENABLE(enable_cpu_clk), .CLK_OUT(cpu_clk) );
-    clock_gate_module clk_1MHzE_falling__gen( .CLK_IN(clk), .ENABLE(enable_clk_1MHz_falling), .CLK_OUT(clk_1MHzE_falling) );
-    clock_gate_module clk_1MHzE_rising__gen( .CLK_IN(clk), .ENABLE(enable_clk_1MHz_rising), .CLK_OUT(clk_1MHzE_rising) );
-    clock_gate_module clk_2MHz_video_clock__gen( .CLK_IN(clk), .ENABLE(enable_clk_2MHz_video), .CLK_OUT(clk_2MHz_video_clock) );
+    assign cpu_clk__enable = (clk__enable && enable_cpu_clk);
+    assign clk_1MHzE_falling__enable = (clk__enable && enable_clk_1MHz_falling);
+    assign clk_1MHzE_rising__enable = (clk__enable && enable_clk_1MHz_rising);
+    assign clk_2MHz_video_clock__enable = (clk__enable && enable_clk_2MHz_video);
     //b Module instances
     fdc8271 fdc(
-        .clk(cpu_clk),
+        .clk(clk),
+        .clk__enable(cpu_clk__enable),
         .bbc_floppy_response__disk_ready(floppy_response__disk_ready),
         .bbc_floppy_response__write_protect(floppy_response__write_protect),
         .bbc_floppy_response__track_zero(floppy_response__track_zero),
@@ -347,7 +358,8 @@ module bbc_micro
         .irq_n(            nmi_n_fdc),
         .data_out(            data_out_fdc)         );
     acia6850 acia(
-        .clk(clk_1MHzE_falling),
+        .clk(clk),
+        .clk__enable(clk_1MHzE_falling__enable),
         .dcd(1'h1),
         .cts(1'h1),
         .rxd(1'h1),
@@ -362,8 +374,10 @@ module bbc_micro
         .irq_n(            irq_n_acia),
         .data_out(            data_out_acia)         );
     via6522 via_a(
-        .clk_io(clk_1MHzE_rising),
-        .clk(clk_1MHzE_falling),
+        .clk_io(clk),
+        .clk_io__enable(clk_1MHzE_rising__enable),
+        .clk(clk),
+        .clk__enable(clk_1MHzE_falling__enable),
         .pb_in({{{vsp_int_n,vsp_rdy_n},lightpen_buttons},4'h0}),
         .cb2_in(lightpen_strobe),
         .cb1(1'h0),
@@ -381,8 +395,10 @@ module bbc_micro
         .irq_n(            irq_n_via_a),
         .data_out(            data_out_via_a)         );
     via6522 via_b(
-        .clk_io(clk_1MHzE_rising),
-        .clk(clk_1MHzE_falling),
+        .clk_io(clk),
+        .clk_io__enable(clk_1MHzE_rising__enable),
+        .clk(clk),
+        .clk__enable(clk_1MHzE_falling__enable),
         .pb_in(8'h0),
         .cb2_in(1'h0),
         .cb1(1'h0),
@@ -400,8 +416,10 @@ module bbc_micro
         .irq_n(            irq_n_via_b),
         .data_out(            data_out_via_b)         );
     bbc_vidproc vidproc(
-        .clk_2MHz_video(clk_2MHz_video_clock),
-        .clk_cpu(cpu_clk),
+        .clk_2MHz_video(clk),
+        .clk_2MHz_video__enable(clk_2MHz_video_clock__enable),
+        .clk_cpu(clk),
+        .clk_cpu__enable(cpu_clk__enable),
         .saa5050_blue(saa5050_blue),
         .saa5050_green(saa5050_green),
         .saa5050_red(saa5050_red),
@@ -418,11 +436,13 @@ module bbc_micro
         .red(            vidproc_red),
         .crtc_clock_enable(            crtc_clock_enable)         );
     crtc6845 crtc(
-        .clk_1MHz(clk_1MHzE_falling),
-        .clk_2MHz(clk_2MHz_video_clock),
+        .clk_1MHz(clk),
+        .clk_1MHz__enable(clk_1MHzE_falling__enable),
+        .clk_2MHz(clk),
+        .clk_2MHz__enable(clk_2MHz_video_clock__enable),
         .crtc_clock_enable(crtc_clock_enable),
         .lpstb_n(lightpen_strobe),
-        .data_in(main_databus),
+        .data_in(cpu_data_out),
         .rs(address[0]),
         .chip_select_n(!(address_map_decode__crtc!=1'h0)),
         .read_not_write(read_not_write),
@@ -434,8 +454,8 @@ module bbc_micro
         .ma(            crtc_memory_address),
         .data_out(            crtc_data_out)         );
     saa5050 saa(
-        .clk_1MHz(clk_1MHzE_rising),
-        .clk_2MHz(clk_2MHz_video_clock),
+        .clk_2MHz(clk),
+        .clk_2MHz__enable(clk_2MHz_video_clock__enable),
         .host_sram_request__write_data(pending_host_sram_request__write_data),
         .host_sram_request__address(pending_host_sram_request__address),
         .host_sram_request__select(pending_host_sram_request__select),
@@ -454,11 +474,13 @@ module bbc_micro
         .data_n(1'h0),
         .superimpose_n(1'h0),
         .reset_n(reset_n),
+        .clk_1MHz_enable(saa_enable),
         .blue(            saa5050_blue),
         .green(            saa5050_green),
         .red(            saa5050_red)         );
     bbc_micro_keyboard keyboard(
-        .clk(clk_1MHzE_rising),
+        .clk(clk),
+        .clk__enable(clk_1MHzE_rising__enable),
         .bbc_keyboard__keys_down_cols_8_to_9(keyboard__keys_down_cols_8_to_9),
         .bbc_keyboard__keys_down_cols_0_to_7(keyboard__keys_down_cols_0_to_7),
         .bbc_keyboard__reset_pressed(keyboard__reset_pressed),
@@ -471,6 +493,7 @@ module bbc_micro
         .reset_out_n(            keyboard_reset_n)         );
     se_sram_srw_16384x8 ram_0(
         .sram_clock(clk),
+        .sram_clock__enable(1'b1),
         .write_data(memory_access__write_data),
         .address(memory_access__address),
         .write_enable(memory_access__write_enable),
@@ -479,6 +502,7 @@ module bbc_micro
         .data_out(            ram0_data_out)         );
     se_sram_srw_16384x8 ram_1(
         .sram_clock(clk),
+        .sram_clock__enable(1'b1),
         .write_data(memory_access__write_data),
         .address(memory_access__address),
         .write_enable(memory_access__write_enable),
@@ -487,6 +511,7 @@ module bbc_micro
         .data_out(            ram1_data_out)         );
     se_sram_srw_16384x8 basic(
         .sram_clock(clk),
+        .sram_clock__enable(1'b1),
         .write_data(memory_access__write_data),
         .address(memory_access__address),
         .write_enable(memory_access__write_enable),
@@ -495,6 +520,7 @@ module bbc_micro
         .data_out(            basic_data_out)         );
     se_sram_srw_16384x8 adfs(
         .sram_clock(clk),
+        .sram_clock__enable(1'b1),
         .write_data(memory_access__write_data),
         .address(memory_access__address),
         .write_enable(memory_access__write_enable),
@@ -503,6 +529,7 @@ module bbc_micro
         .data_out(            adfs_data_out)         );
     se_sram_srw_16384x8 os(
         .sram_clock(clk),
+        .sram_clock__enable(1'b1),
         .write_data(memory_access__write_data),
         .address(memory_access__address),
         .write_enable(memory_access__write_enable),
@@ -510,7 +537,8 @@ module bbc_micro
         .select(memory_access__os_select),
         .data_out(            os_data_out)         );
     cpu6502 main_cpu(
-        .clk(cpu_clk),
+        .clk(clk),
+        .clk__enable(cpu_clk__enable),
         .data_in(main_databus),
         .nmi_n(nmi_n),
         .irq_n(irq_n),
@@ -523,13 +551,7 @@ module bbc_micro
     //b clocking_logic combinatorial process
         //   
         //       
-    always @( //clocking_logic
-        clock_control__enable_2MHz_video or
-        clock_control__enable_1MHz_rising or
-        clock_control__enable_1MHz_falling or
-        clock_control__enable_cpu or
-        clock_control__phi or
-        address_map_decode__access_1mhz )
+    always @ ( * )//clocking_logic
     begin: clocking_logic__comb_code
         enable_clk_2MHz_video = clock_control__enable_2MHz_video;
         enable_clk_1MHz_rising = clock_control__enable_1MHz_rising;
@@ -543,13 +565,7 @@ module bbc_micro
     //b inputs_and_outputs__comb combinatorial process
         //   
         //       
-    always @( //inputs_and_outputs__comb
-        hsync or
-        vsync or
-        vidproc_pixels_valid_per_clock or
-        vidproc_red or
-        vidproc_green or
-        vidproc_blue )
+    always @ ( * )//inputs_and_outputs__comb
     begin: inputs_and_outputs__comb_code
     reg display__hsync__var;
     reg display__vsync__var;
@@ -595,7 +611,7 @@ module bbc_micro
             host_sram_response__read_data_valid <= 1'h0;
             host_sram_response__read_data <= 64'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((pending_host_sram_request__valid!=1'h0))
             begin
@@ -665,14 +681,7 @@ module bbc_micro
         //       For the modern world we make the clock in be a clock edge at '1MHzE falling'
         //   
         //       
-    always @( //via_6522s__comb
-        data_out_via_a or
-        address_map_decode__via_b or
-        data_out_via_b or
-        address_map_decode__acia or
-        data_out_acia or
-        address_map_decode__fdc or
-        data_out_fdc )
+    always @ ( * )//via_6522s__comb
     begin: via_6522s__comb_code
     reg [7:0]data_out_sheila__var;
         lightpen_buttons = 2'h3;
@@ -712,14 +721,14 @@ module bbc_micro
         //       For the modern world we make the clock in be a clock edge at '1MHzE falling'
         //   
         //       
-    always @( posedge clk_1MHzE_falling or negedge reset_n)
+    always @( posedge clk or negedge reset_n)
     begin : via_6522s__posedge_clk_1MHzE_falling_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             via_a_update_latch <= 1'h0;
             via_a_latch <= 8'h0;
         end
-        else
+        else if (clk_1MHzE_falling__enable)
         begin
             via_a_update_latch <= 1'h0;
             if ((address_map_decode__via_a!=1'h0))
@@ -736,10 +745,7 @@ module bbc_micro
     //b video__comb combinatorial process
         //   
         //       
-    always @( //video__comb
-        crtc_memory_address or
-        crtc_row_address or
-        via_a_latch )
+    always @ ( * )//video__comb
     begin: video__comb_code
     reg [14:0]video_mem_address__var;
         ttx_vdu = crtc_memory_address[13];
@@ -786,28 +792,30 @@ module bbc_micro
     //b video__posedge_clk_2MHz_video_clock_active_low_reset_n clock process
         //   
         //       
-    always @( posedge clk_2MHz_video_clock or negedge reset_n)
+    always @( posedge clk or negedge reset_n)
     begin : video__posedge_clk_2MHz_video_clock_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             saa_data <= 7'h0;
             saa_lose <= 1'h0;
+            saa_enable <= 1'h0;
         end
-        else
+        else if (clk_2MHz_video_clock__enable)
         begin
             saa_data <= ram_databus[6:0];
             saa_lose <= crtc_display_enable;
+            saa_enable <= !(saa_enable!=1'h0);
+            if ((!(saa_lose!=1'h0)&&(crtc_display_enable!=1'h0)))
+            begin
+                saa_enable <= 1'h1;
+            end //if
         end //if
     end //always
 
     //b glue_logic combinatorial process
         //   
         //       
-    always @( //glue_logic
-        nmi_n_fdc or
-        irq_n_via_a or
-        irq_n_via_b or
-        irq_n_acia )
+    always @ ( * )//glue_logic
     begin: glue_logic__comb_code
     reg nmi_n__var;
     reg irq_n__var;
@@ -838,10 +846,7 @@ module bbc_micro
         //       Decode the addresses from the CPU.
         //       This is bascially in the north center of the BBC micro schematic
         //       
-    always @( //address_map_decoding__comb
-        address or
-        read_not_write or
-        rom_sel )
+    always @ ( * )//address_map_decoding__comb
     begin: address_map_decoding__comb_code
     reg [1:0]address_map_decode__rams__var;
     reg [3:0]address_map_decode__roms__var;
@@ -880,13 +885,13 @@ module bbc_micro
         //       Decode the addresses from the CPU.
         //       This is bascially in the north center of the BBC micro schematic
         //       
-    always @( posedge cpu_clk or negedge reset_n)
+    always @( posedge clk or negedge reset_n)
     begin : address_map_decoding__posedge_cpu_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             rom_sel <= 4'h0;
         end
-        else
+        else if (cpu_clk__enable)
         begin
             if ((address_map_decode__romsel!=1'h0))
             begin
@@ -930,23 +935,7 @@ module bbc_micro
         //       etc), this implementation also supports host access to the
         //       memories as the lowest priority.
         //       
-    always @( //srams__comb
-        clock_control__will_enable_2MHz_video or
-        phi1 or
-        cpu_reading_memory or
-        pending_host_sram_request__valid or
-        pending_host_sram_request__select or
-        address_map_decode__rams or
-        video_mem_address or
-        address_map_decode__roms or
-        address_map_decode__os or
-        read_not_write or
-        pending_host_sram_request__read_enable or
-        pending_host_sram_request__write_enable or
-        address or
-        pending_host_sram_request__address or
-        cpu_data_out or
-        pending_host_sram_request__write_data )
+    always @ ( * )//srams__comb
     begin: srams__comb_code
     reg [1:0]memory_grant__var;
     reg [1:0]memory_access__ram_select__var;
@@ -1085,7 +1074,7 @@ module bbc_micro
             last_memory_access__address <= 14'h0;
             last_memory_access__write_data <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             cpu_reading_memory <= 1'h0;
             host_reading_memory <= 1'h0;
@@ -1121,22 +1110,7 @@ module bbc_micro
     //b databus_multiplexing__comb combinatorial process
         //   
         //       
-    always @( //databus_multiplexing__comb
-        last_memory_access__ram_select or
-        ram0_data_out or
-        ram1_data_out or
-        last_memory_access__os_select or
-        os_data_out or
-        last_memory_access__rom_select or
-        basic_data_out or
-        adfs_data_out or
-        read_not_write or
-        cpu_reading_memory or
-        cpu_memory_data_hold or
-        address_map_decode__rom or
-        address_map_decode__roms or
-        address_map_decode__sheila or
-        data_out_sheila )
+    always @ ( * )//databus_multiplexing__comb
     begin: databus_multiplexing__comb_code
     reg [7:0]ram_databus__var;
     reg [7:0]memory_databus__var;
@@ -1198,7 +1172,7 @@ module bbc_micro
         begin
             cpu_memory_data_hold <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((cpu_reading_memory!=1'h0))
             begin

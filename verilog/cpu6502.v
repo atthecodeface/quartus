@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module cpu6502
 module cpu6502
 (
     clk,
+    clk__enable,
 
     data_in,
     nmi_n,
@@ -29,6 +32,7 @@ module cpu6502
     //b Clocks
         //   Clock, rising edge is start of phi1, end of phi2 - the phi1/phi2 boundary is not required
     input clk;
+    input clk__enable;
 
     //b Inputs
         //   Captured at the end of phi2 (rising clock in here)
@@ -158,10 +162,7 @@ module cpu6502
     //b Module instances
     //b clock_control combinatorial process
         //   Clock control logic - phase 0 is always one tick, phase 1 can be extended for reads by 'ready'
-    always @( //clock_control
-        ready or
-        mem_request__enable or
-        mem_request__read_not_write )
+    always @ ( * )//clock_control
     begin: clock_control__comb_code
     reg clock_complete__var;
         clock_complete__var = ready;
@@ -173,14 +174,7 @@ module cpu6502
     end //always
 
     //b memory_interface__comb combinatorial process
-    always @( //memory_interface__comb
-        useq_decode__mem_request__enable or
-        ir_fetch_required or
-        useq_decode__mem_request__read_not_write or
-        useq_decode__mem_request__address or
-        state__pch or
-        state__pcl or
-        data_path__mem_data_out )
+    always @ ( * )//memory_interface__comb
     begin: memory_interface__comb_code
     reg mem_request__enable__var;
     reg mem_request__read_not_write__var;
@@ -211,7 +205,7 @@ module cpu6502
             state__ir <= 8'h0;
             state__ir <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((clock_complete!=1'h0))
             begin
@@ -228,11 +222,7 @@ module cpu6502
     end //always
 
     //b interrupt_logic__comb combinatorial process
-    always @( //interrupt_logic__comb
-        useq_decode__last_cycle or
-        interrupt_state__nmi_pending or
-        interrupt_state__irq_pending or
-        state__psr__i )
+    always @ ( * )//interrupt_logic__comb
     begin: interrupt_logic__comb_code
     reg ir_fetch_required__var;
     reg ir_fetch_brk__var;
@@ -272,7 +262,7 @@ module cpu6502
             state__interrupt_reason <= 2'h0;
             state__interrupt_reason <= 2'h0;
         end
-        else
+        else if (clk__enable)
         begin
             interrupt_state__nmi_last <= !(nmi_n!=1'h0);
             if ((!(nmi_n!=1'h0)&&!(interrupt_state__nmi_last!=1'h0)))
@@ -308,11 +298,7 @@ module cpu6502
     end //always
 
     //b state_update_logic__comb combinatorial process
-    always @( //state_update_logic__comb
-        state__psr__i or
-        useq_decode__src_write_enable or
-        data_path__result__irq or
-        state__cycle )
+    always @ ( * )//state_update_logic__comb
     begin: state_update_logic__comb_code
     reg irq_will_be_disabled__var;
         irq_will_be_disabled__var = state__psr__i;
@@ -349,7 +335,7 @@ module cpu6502
             state__dl <= 8'h0;
             state__psr__b <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((useq_decode__src_write_enable[0]!=1'h0))
             begin
@@ -513,12 +499,7 @@ module cpu6502
 
     //b instruction_decode__comb combinatorial process
         //   Decode 'ir' register (and other state, but not microsequencer)
-    always @( //instruction_decode__comb
-        state__ir or
-        state__psr__n or
-        state__psr__v or
-        state__psr__c or
-        state__psr__z )
+    always @ ( * )//instruction_decode__comb
     begin: instruction_decode__comb_code
     reg [3:0]ir_decode__addressing_mode__var;
     reg [2:0]ir_decode__ids_op__var;
@@ -1108,7 +1089,7 @@ module cpu6502
             state__cycle <= 5'h0;
             state__cycle <= 5'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((clock_complete!=1'h0))
             begin
@@ -1122,28 +1103,7 @@ module cpu6502
     end //always
 
     //b microsequencer_decode combinatorial process
-    always @( //microsequencer_decode
-        ir_decode__index_is_x or
-        state__cycle or
-        ir_decode__srcs or
-        ir_decode__ids_enable or
-        ir_decode__ids_op or
-        ir_decode__addressing_mode or
-        ir_decode__alu_op or
-        ir_decode__src_write_enable or
-        state__pch or
-        state__pcl or
-        state__dl or
-        state__adl or
-        state__adh or
-        state__sp or
-        state__ir or
-        ir_decode__bcc_passed or
-        ir_decode__memory_read or
-        ir_decode__memory_write or
-        data_path__result__carry or
-        state__interrupt_reason or
-        ir_fetch_brk )
+    always @ ( * )//microsequencer_decode
     begin: microsequencer_decode__comb_code
     reg [7:0]useq_decode__src_enable__var;
     reg [4:0]useq_decode__ids_enable__var;
@@ -1844,33 +1804,7 @@ module cpu6502
 
     //b datapath combinatorial process
         //   Data path - drive buses, perform shift, inc/dec, ALU operations
-    always @( //datapath
-        useq_decode__src_enable or
-        state__acc or
-        state__x or
-        state__y or
-        state__sp or
-        state__pcl or
-        state__pch or
-        state__psr__n or
-        state__psr__v or
-        ir_decode__addressing_mode or
-        state__interrupt_reason or
-        state__psr__d or
-        state__psr__i or
-        state__psr__z or
-        state__psr__c or
-        useq_decode__ids_enable or
-        state__dl or
-        state__cycle or
-        ir_decode__alu_carry_in_zero or
-        ir_decode__alu_carry_in_one or
-        useq_decode__ids_op or
-        useq_decode__add_a_in_op or
-        useq_decode__add_b_in_op or
-        useq_decode__alu_op or
-        state__ir or
-        useq_decode__mem_data_src )
+    always @ ( * )//datapath
     begin: datapath__comb_code
     reg [7:0]data_path__src_data__var;
     reg [15:0]data_path__ids_data_in__var;

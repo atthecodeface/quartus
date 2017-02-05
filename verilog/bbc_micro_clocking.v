@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_micro_clocking
 module bbc_micro_clocking
 (
     clk,
+    clk__enable,
 
     csr_request__valid,
     csr_request__read_not_write,
@@ -37,6 +40,7 @@ module bbc_micro_clocking
     //b Clocks
         //   4MHz clock in as a minimum
     input clk;
+    input clk__enable;
 
     //b Inputs
     input csr_request__valid;
@@ -119,6 +123,7 @@ module bbc_micro_clocking
     //b Module instances
     bbc_csr_interface csri(
         .clk(clk),
+        .clk__enable(1'b1),
         .csr_select(16'h0),
         .csr_read_data(csr_read_data),
         .csr_request__data(csr_request__data),
@@ -137,11 +142,7 @@ module bbc_micro_clocking
     //b control_logic__comb combinatorial process
         //   
         //       
-    always @( //control_logic__comb
-        control__disable_cpu or
-        control__reset_cpu or
-        control__cpu_clocks_per_2MHz_minus_one or
-        control__clocks_per_2MHz_minus_one )
+    always @ ( * )//control_logic__comb
     begin: control_logic__comb_code
         csr_read_data = {{{{14'h0,control__disable_cpu},control__reset_cpu},control__cpu_clocks_per_2MHz_minus_one},control__clocks_per_2MHz_minus_one};
     end //always
@@ -158,7 +159,7 @@ module bbc_micro_clocking
             control__reset_cpu <= 1'h0;
             control__disable_cpu <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if (((csr_access__valid!=1'h0)&&!(csr_access__read_not_write!=1'h0)))
             begin
@@ -186,14 +187,7 @@ module bbc_micro_clocking
         //   
         //       Now the actual clock enable for the CPU is the phi2 ending.
         //       
-    always @( //output_logic
-        cpu_clk_enable or
-        two_mhz__rise_enable or
-        two_mhz_high or
-        one_mhz__rise_enable or
-        one_mhz__fall_enable or
-        phase_of_clock or
-        control__reset_cpu )
+    always @ ( * )//output_logic
     begin: output_logic__comb_code
         clock_control__enable_cpu = cpu_clk_enable;
         clock_control__will_enable_2MHz_video = two_mhz__rise_enable;
@@ -207,18 +201,7 @@ module bbc_micro_clocking
     //b clocking_logic__comb combinatorial process
         //   
         //       
-    always @( //clocking_logic__comb
-        divider__phase_ending_cpu or
-        control__disable_cpu or
-        cpu_clk_high or
-        cpu_clk_low or
-        divider__phase_ending_2MHz or
-        two_mhz_high or
-        one_mhz_low or
-        phase_of_clock or
-        clock_status__cpu_1MHz_access or
-        one_mhz_high or
-        phi2_extension_required )
+    always @ ( * )//clocking_logic__comb
     begin: clocking_logic__comb_code
     reg phi1_completed__var;
     reg phi2_completed__var;
@@ -270,7 +253,7 @@ module bbc_micro_clocking
             phi2_extension_required <= 1'h0;
             phase_of_clock <= 2'h1;
         end
-        else
+        else if (clk__enable)
         begin
             divider__counter <= (divider__counter+8'h1);
             divider__phase_ending_2MHz <= 1'h0;

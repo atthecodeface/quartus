@@ -6,8 +6,10 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_display_sram
     //   
@@ -56,6 +58,7 @@
 module bbc_display_sram
 (
     clk,
+    clk__enable,
 
     csr_request__valid,
     csr_request__read_not_write,
@@ -86,6 +89,7 @@ module bbc_display_sram
     //b Clocks
         //   Clock running at 2MHz
     input clk;
+    input clk__enable;
 
     //b Inputs
     input csr_request__valid;
@@ -199,6 +203,7 @@ module bbc_display_sram
     //b Module instances
     bbc_csr_interface csri(
         .clk(clk),
+        .clk__enable(1'b1),
         .csr_select(16'h1),
         .csr_read_data(csr_read_data),
         .csr_request__data(csr_request__data),
@@ -220,13 +225,7 @@ module bbc_display_sram
         //       Possible should use display.clock_enable, which would enable a 1MHz pixel clock, although
         //       that is probably not necessary - and currently that signal is tied low...
         //       
-    always @( //display_input_state_control_logic__comb
-        display__hsync or
-        display_state__last_hsync or
-        display__vsync or
-        display_state__last_vsync or
-        display_state__clocks_since_hsync or
-        display_state__clocks_wide )
+    always @ ( * )//display_input_state_control_logic__comb
     begin: display_input_state_control_logic__comb_code
         display_combs__hsync_detected = ((display__hsync!=1'h0)&&!(display_state__last_hsync!=1'h0));
         display_combs__vsync_detected = ((display__vsync!=1'h0)&&!(display_state__last_vsync!=1'h0));
@@ -258,7 +257,7 @@ module bbc_display_sram
             display_state__even_field <= 1'h0;
             display_state__interlaced <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             display_state__last_vsync <= display__vsync;
             display_state__last_hsync <= display__hsync;
@@ -332,15 +331,7 @@ module bbc_display_sram
         //       Manage display input signals to generate screen coordinates and pixel validity
         //       Possible used display.clock_enable
         //       
-    always @( //display_input_state2__comb
-        display_state__pixel_x or
-        display__pixels_per_clock or
-        display_state__pixel_y or
-        display_combs__hsync_detected or
-        display_combs__vsync_detected or
-        display__blue or
-        display__green or
-        display__red )
+    always @ ( * )//display_input_state2__comb
     begin: display_input_state2__comb_code
     reg [7:0]display_combs__pixels_valid_by_x__var;
     reg [7:0]display_combs__pixels_valid_per_clock__var;
@@ -427,7 +418,7 @@ module bbc_display_sram
             display_state__pixels_to_add_green <= 8'h0;
             display_state__pixels_to_add_blue <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             display_state__num_pixels_to_add_valid <= 4'h0;
             if ((display_combs__pixels_valid[0]!=1'h0))
@@ -492,19 +483,7 @@ module bbc_display_sram
     //b sram_read_write__comb combinatorial process
         //   
         //       
-    always @( //sram_read_write__comb
-        sram_state__num_pixels_held_valid or
-        display_state__pixels_to_add_red or
-        display_state__pixels_to_add_green or
-        display_state__pixels_to_add_blue or
-        sram_state__pixels_held_valid_mask or
-        sram_state__pixels_held_red or
-        sram_state__pixels_held_green or
-        sram_state__pixels_held_blue or
-        display_state__num_pixels_to_add_valid or
-        sram_state__write_enable or
-        sram_state__write_data or
-        sram_state__write_address )
+    always @ ( * )//sram_read_write__comb
     begin: sram_read_write__comb_code
     reg [23:0]sram_combs__barrel_shift_red__var;
     reg [23:0]sram_combs__barrel_shift_green__var;
@@ -749,7 +728,7 @@ module bbc_display_sram
             sram_state__scanline_writes_left <= 10'h0;
             sram_state__scanlines_left <= 10'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((sram_combs__total_valid[4]!=1'h0))
             begin
@@ -896,7 +875,7 @@ module bbc_display_sram
     //b control_logic__comb combinatorial process
         //   
         //       
-    initial //control_logic__comb
+    always @ ( * )//control_logic__comb
     begin: control_logic__comb_code
         csr_read_data = 32'h0;
     end //always
@@ -922,7 +901,7 @@ module bbc_display_sram
             csrs__keys_down_cols_0_to_7 <= 64'h0;
             csrs__keys_down_cols_8_to_9 <= 16'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if (((csr_access__valid!=1'h0)&&!(csr_access__read_not_write!=1'h0)))
             begin
@@ -987,7 +966,7 @@ module bbc_display_sram
             keyboard__keys_down_cols_0_to_7 <= 64'h0;
             keyboard__keys_down_cols_8_to_9 <= 16'h0;
         end
-        else
+        else if (clk__enable)
         begin
             keyboard_state__reset_out <= 1'h0;
             if ((keyboard_state__reset_counter!=8'h0))

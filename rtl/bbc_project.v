@@ -41,6 +41,7 @@ module bbc_project(clk, reset_n, leds);
     assign leds = display_sram_write__data[7:0];
 
     bbc_micro_with_rams bbc( .clk(clk),
+                             .clk__enable(1'b1),
                          .reset_n(reset_n),
 
                          .host_sram_request__valid(host_sram_request__valid),

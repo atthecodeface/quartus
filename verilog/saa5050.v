@@ -6,8 +6,10 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module saa5050
     //   
@@ -101,8 +103,8 @@
     //   
 module saa5050
 (
-    clk_1MHz,
     clk_2MHz,
+    clk_2MHz__enable,
 
     host_sram_request__valid,
     host_sram_request__read_enable,
@@ -122,6 +124,7 @@ module saa5050
     data_n,
     superimpose_n,
     reset_n,
+    clk_1MHz_enable,
 
     blan,
     blue,
@@ -131,10 +134,9 @@ module saa5050
 );
 
     //b Clocks
-        //   Character clock, used to clock in the parallel data; real chip uses F1 and syncs to TR6; this clock RISES when F1 FALLS
-    input clk_1MHz;
         //   Supposedly 6MHz pixel clock (TR6), except we use 2MHz and deliver 3 pixels per tick; rising edge should be coincident with clk_1MHz edges
     input clk_2MHz;
+    input clk_2MHz__enable;
 
     //b Inputs
         //   Write only, writes on clk_2MHz rising, acknowledge must be handled by supermodule
@@ -167,6 +169,8 @@ module saa5050
         //   Not implemented
     input superimpose_n;
     input reset_n;
+        //   Clock enable high for clk_2MHz when the SAA's 1MHz would normally tick
+    input clk_1MHz_enable;
 
     //b Outputs
     output blan;
@@ -259,6 +263,7 @@ module saa5050
     //b Module instances
     se_sram_srw_128x64 character_rom(
         .sram_clock(clk_2MHz),
+        .sram_clock__enable(1'b1),
         .write_data(host_sram_request__write_data),
         .address((((host_sram_request__valid!=1'h0)&&(host_sram_request__select==8'h14))?host_sram_request__address[6:0]:load_state__character_data)),
         .write_enable(((host_sram_request__write_enable!=1'h0)&&(host_sram_request__select==8'h14))),
@@ -268,7 +273,7 @@ module saa5050
     //b scanline_and_loading clock process
         //   
         //       
-    always @( posedge clk_1MHz or negedge reset_n)
+    always @( posedge clk_2MHz or negedge reset_n)
     begin : scanline_and_loading__code
         if (reset_n==1'b0)
         begin
@@ -282,7 +287,7 @@ module saa5050
             load_state__flashing_counter <= 6'h0;
             load_state__flash_on <= 1'h0;
         end
-        else
+        else if (clk_2MHz__enable)
         begin
             load_state__last_lose <= lose;
             if ((lose!=1'h0))
@@ -327,30 +332,25 @@ module saa5050
                 end //if
                 load_state__end_of_field <= 1'h0;
             end //if
+            if (!(clk_1MHz_enable!=1'h0))
+            begin
+                load_state__last_lose <= load_state__last_lose;
+                load_state__character_data <= load_state__character_data;
+                load_state__character_data_toggle <= load_state__character_data_toggle;
+                load_state__scanline <= load_state__scanline;
+                load_state__end_of_scanline <= load_state__end_of_scanline;
+                load_state__end_of_row <= load_state__end_of_row;
+                load_state__end_of_field <= load_state__end_of_field;
+                load_state__flashing_counter <= load_state__flashing_counter;
+                load_state__flash_on <= load_state__flash_on;
+            end //if
         end //if
     end //always
 
     //b character_rom_and_control_decode__comb combinatorial process
         //   
         //       
-    always @( //character_rom_and_control_decode__comb
-        pixel_state__character_state__background_color or
-        load_state__character_data or
-        pixel_state__character_state__foreground_color or
-        pixel_state__character_state__held_character or
-        pixel_state__character_state__flashing or
-        pixel_state__character_state__text_mode or
-        pixel_state__character_state__contiguous_graphics or
-        pixel_state__character_state__dbl_height or
-        pixel_state__character_state__hold_graphics or
-        pixel_state__character_data_toggle or
-        load_state__character_data_toggle or
-        pixel_state__end_of_scanline or
-        load_state__end_of_scanline or
-        pixel_state__end_of_row or
-        load_state__end_of_row or
-        pixel_state__end_of_field or
-        load_state__end_of_field )
+    always @ ( * )//character_rom_and_control_decode__comb
     begin: character_rom_and_control_decode__comb_code
     reg [2:0]pixel__next_character_state__background_color__var;
     reg [2:0]pixel__next_character_state__foreground_color__var;
@@ -551,7 +551,7 @@ module saa5050
             pixel_state__row_contains_dbl_height <= 1'h0;
             pixel_state__last_row_contained_dbl_height <= 1'h0;
         end
-        else
+        else if (clk_2MHz__enable)
         begin
             pixel_state__character_data <= load_state__character_data;
             pixel_state__character_data_toggle <= load_state__character_data_toggle;
@@ -601,12 +601,7 @@ module saa5050
         //   
         //       Get two scanlines - current and next (next of 0 if none)
         //       
-    always @( //character_pixel_generation__comb
-        load_state__scanline or
-        pixel_rom_data or
-        pixel__current_character_state__text_mode or
-        pixel__current_character_state__contiguous_graphics or
-        pixel_state__character_data )
+    always @ ( * )//character_pixel_generation__comb
     begin: character_pixel_generation__comb_code
     reg [9:0]pixel__rom_scanline_data__var;
     reg [11:0]pixel__smoothed_scanline_data__var;
@@ -705,7 +700,7 @@ module saa5050
             hexpixel_state__character_state__dbl_height <= 1'h0;
             hexpixel_state__character_state__hold_graphics <= 1'h0;
         end
-        else
+        else if (clk_2MHz__enable)
         begin
             hexpixel_state__pixels <= pixel__smoothed_scanline_data[5:0];
             case (pixel_state__hexpixel_of_character) //synopsys parallel_case
@@ -742,10 +737,7 @@ module saa5050
     //b outputs_from_hexpixel combinatorial process
         //   
         //       
-    always @( //outputs_from_hexpixel
-        hexpixel_state__pixels or
-        hexpixel_state__character_state__foreground_color or
-        hexpixel_state__character_state__background_color )
+    always @ ( * )//outputs_from_hexpixel
     begin: outputs_from_hexpixel__comb_code
     reg [5:0]red__var;
     reg [5:0]blue__var;

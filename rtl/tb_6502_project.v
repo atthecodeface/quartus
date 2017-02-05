@@ -42,7 +42,8 @@ module tb_6502_project(clk, reset_n, leds);
     clock_gate_module sram_clk__gen( .CLK_IN(clk), .ENABLE(enable_sram_clk), .CLK_OUT(sram_clk) );
     clock_gate_module cpu_clk__gen( .CLK_IN(clk), .ENABLE(enable_cpu_clk), .CLK_OUT(cpu_clk) );
     //b Module instances
-    se_sram_srw_65536x8 imem(
+   //se_sram_srw #(16,8) imem(
+   se_sram_srw_65536x8 imem(
         .sram_clock(sram_clk),
         .write_data(data_out),
         .address(address),
@@ -51,7 +52,9 @@ module tb_6502_project(clk, reset_n, leds);
         .select(1'h1),
         .data_out(            data_in)         );
     cpu6502 cpu6502_0(
-        .clk(cpu_clk),
+        //.clk(cpu_clk),
+        .clk(clk),
+        .clk__enable(enable_cpu_clk),                      
         .data_in(data_in),
         .nmi_n(nmi_n),
         .irq_n(irq_n),

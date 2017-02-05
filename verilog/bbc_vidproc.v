@@ -6,14 +6,18 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_vidproc
 module bbc_vidproc
 (
     clk_2MHz_video,
+    clk_2MHz_video__enable,
     clk_cpu,
+    clk_cpu__enable,
 
     saa5050_blue,
     saa5050_green,
@@ -36,8 +40,10 @@ module bbc_vidproc
     //b Clocks
         //   2MHz video
     input clk_2MHz_video;
+    input clk_2MHz_video__enable;
         //   2MHz bus clock
     input clk_cpu;
+    input clk_cpu__enable;
 
     //b Inputs
         //   3 pixels out at 2MHz, blue component, from teletext
@@ -107,25 +113,7 @@ module bbc_vidproc
     //b Clock gating module instances
     //b Module instances
     //b pixel_output_interface__comb combinatorial process
-    always @( //pixel_output_interface__comb
-        pixel_values__base_color[0] or
-        pixel_values__base_color[1] or
-        pixel_values__base_color[2] or
-        pixel_values__base_color[3] or
-        pixel_values__base_color[4] or
-        pixel_values__base_color[5] or
-        pixel_values__base_color[6] or
-        pixel_values__base_color[7]        //pixel_values__base_color - Xilinx does not want arrays in sensitivity lists
- or
-        cursor_r or
-        pixel_values__flashing or
-        flash_r or
-        control__columns or
-        disen or
-        control__teletext or
-        saa5050_blue or
-        saa5050_green or
-        saa5050_red )
+    always @ ( * )//pixel_output_interface__comb
     begin: pixel_output_interface__comb_code
     reg [2:0]pixel_color__var[7:0];
     reg [2:0]colors_out__var[7:0];
@@ -286,7 +274,7 @@ module bbc_vidproc
             green <= 8'h0;
             blue <= 8'h0;
         end
-        else
+        else if (clk_2MHz_video__enable)
         begin
             flash_r <= control__flash;
             cursor_r <= cursor_shift_register[3];
@@ -374,7 +362,7 @@ module bbc_vidproc
             pixel_shift_register <= 8'h0;
             cursor_shift_register <= 4'h0;
         end
-        else
+        else if (clk_2MHz_video__enable)
         begin
             case (control__columns) //synopsys parallel_case
             2'h3: // req 1
@@ -429,7 +417,7 @@ module bbc_vidproc
         begin
             crtc_clock_enable <= 1'h0;
         end
-        else
+        else if (clk_2MHz_video__enable)
         begin
             crtc_clock_enable <= 1'h1;
             if (!(control__clock_rate!=1'h0))
@@ -482,7 +470,7 @@ module bbc_vidproc
             palette__base_color[14] <= 3'h0;
             palette__base_color[15] <= 3'h0;
         end
-        else
+        else if (clk_cpu__enable)
         begin
             if ((!(chip_select_n!=1'h0)&&(address==1'h0)))
             begin

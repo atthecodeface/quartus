@@ -6,14 +6,18 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module via6522
 module via6522
 (
     clk_io,
+    clk_io__enable,
     clk,
+    clk__enable,
 
     pb_in,
     cb2_in,
@@ -39,8 +43,10 @@ module via6522
     //b Clocks
         //   1MHz clock rising when I/O should be captured - can be antiphase to clk
     input clk_io;
+    input clk_io__enable;
         //   1MHz clock rising when bus cycle finishes
     input clk;
+    input clk__enable;
 
     //b Inputs
         //   Port b data in
@@ -195,21 +201,7 @@ module via6522
         //       POSSIBLY: The handshakes and pulse changes are on 'rising phi2' as opposed to the general operation which is on 'falling phi2'
         //       BUT: seems not to be true for read handshake, and specsheet waveforms are dodgy for write handshake...
         //       
-    always @( //port_controls__comb
-        pcr__ca1_control or
-        ca1 or
-        port_a__last_c1 or
-        pcr__ca2_control or
-        ca2_in or
-        port_a__last_c2 or
-        pcr__cb1_control or
-        cb1 or
-        port_b__last_c1 or
-        pcr__cb2_control or
-        cb2_in or
-        port_b__last_c2 or
-        port_a__c2_out or
-        port_b__c2_out )
+    always @ ( * )//port_controls__comb
     begin: port_controls__comb_code
     reg port_a_edges__c1__var;
     reg port_a_edges__c2__var;
@@ -385,7 +377,7 @@ module via6522
             port_a__c2_out <= 1'h0;
             port_b__c2_out <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             port_a__last_c1 <= ca1;
             port_b__last_c1 <= cb1;
@@ -491,13 +483,7 @@ module via6522
         //       The original 6522 does not synchronize the inputs pins, but it is cleaner for simulation and modern design to do so.
         //       Because of this it might be that switching to 'active edge' on a real 6522 would present the last 'active edge' data, whereas this design will present the last cycle data.
         //       
-    always @( //port_data_logic__comb
-        port_a__ddr or
-        port_a__outr or
-        port_b__ddr or
-        port_b__outr or
-        pb6_last_value or
-        port_b_inr )
+    always @ ( * )//port_data_logic__comb
     begin: port_data_logic__comb_code
     reg [7:0]pa_out__var;
     reg [7:0]pb_out__var;
@@ -528,7 +514,7 @@ module via6522
             port_a_inr <= 8'h0;
             port_b_inr <= 8'h0;
         end
-        else
+        else if (clk_io__enable)
         begin
             if (((port_a_edges__c1!=1'h0)||!(acr__pa_latch!=1'h0)))
             begin
@@ -562,7 +548,7 @@ module via6522
             port_b__ddr <= 8'h0;
             pb6_last_value <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if (((write_action==4'h3)||(write_action==4'h1)))
             begin
@@ -616,15 +602,7 @@ module via6522
         //       The timers all generate interrupts when they expire (reach zero) and have not previously expired.
         //       
         //       
-    always @( //timer_logic__comb
-        timer1__counter__low or
-        timer1__counter__high or
-        timer1__has_expired or
-        acr__timer_count_pulses or
-        pb6_negedge or
-        timer2__counter__low or
-        timer2__counter__high or
-        timer2__has_expired )
+    always @ ( * )//timer_logic__comb
     begin: timer_logic__comb_code
     reg timer1_expired__var;
     reg timer2_expired__var;
@@ -678,7 +656,7 @@ module via6522
             timer2__latch__low <= 8'h0;
             timer2__latch__high <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             timer1__counter__low <= (timer1__counter__low-8'h1);
             timer1__counter__high <= (timer1__counter__high-((timer1__counter__low==8'h0)?64'h1:64'h0));
@@ -747,34 +725,7 @@ module via6522
         //   
         //       Timers can be cleared by reading, or by writing the counter to start the timer.
         //       
-    always @( //interrupt_logic__comb
-        ier__ca1 or
-        write_action or
-        data_in or
-        ier__ca2 or
-        ier__cb1 or
-        ier__cb2 or
-        ier__timer1 or
-        ier__timer2 or
-        ier__sr or
-        ier__irq or
-        ifr__ca1 or
-        read_action or
-        port_a_edges__c1 or
-        ifr__ca2 or
-        pcr__ca2_control or
-        port_a_edges__c2 or
-        ifr__cb1 or
-        port_b_edges__c1 or
-        ifr__cb2 or
-        pcr__cb2_control or
-        port_b_edges__c2 or
-        ifr__timer1 or
-        timer1_expired or
-        ifr__timer2 or
-        timer2_expired or
-        ifr__sr or
-        ifr__irq )
+    always @ ( * )//interrupt_logic__comb
     begin: interrupt_logic__comb_code
     reg next_ier__ca1__var;
     reg next_ier__ca2__var;
@@ -1011,7 +962,7 @@ module via6522
             ier__sr <= 1'h0;
             ier__irq <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             ifr__ca1 <= next_ifr__ca1;
             ifr__ca2 <= next_ifr__ca2;
@@ -1049,7 +1000,7 @@ module via6522
             acr__pb_latch <= 1'h0;
             acr__pa_latch <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             shift_register <= 8'h0;
             if ((write_action==4'he))
@@ -1071,47 +1022,7 @@ module via6522
     end //always
 
     //b read_write_interface combinatorial process
-    always @( //read_write_interface
-        chip_select_n or
-        chip_select or
-        address or
-        port_a_inr or
-        port_b_inr or
-        port_a__ddr or
-        port_b__ddr or
-        timer1__counter__low or
-        timer1__counter__high or
-        timer1__latch__low or
-        timer1__latch__high or
-        timer2__counter__low or
-        timer2__counter__high or
-        shift_register or
-        acr__timer_pb7 or
-        acr__timer_continuous or
-        acr__timer_count_pulses or
-        acr__pb_latch or
-        acr__pa_latch or
-        pcr__cb2_control or
-        pcr__cb1_control or
-        pcr__ca2_control or
-        pcr__ca1_control or
-        ifr__irq or
-        ifr__timer1 or
-        ifr__timer2 or
-        ifr__cb1 or
-        ifr__cb2 or
-        ifr__sr or
-        ifr__ca1 or
-        ifr__ca2 or
-        ier__irq or
-        ier__timer1 or
-        ier__timer2 or
-        ier__cb1 or
-        ier__cb2 or
-        ier__sr or
-        ier__ca1 or
-        ier__ca2 or
-        read_not_write )
+    always @ ( * )//read_write_interface
     begin: read_write_interface__comb_code
     reg [7:0]data_out__var;
     reg [2:0]read_action__var;

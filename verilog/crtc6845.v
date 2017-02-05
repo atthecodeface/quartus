@@ -6,14 +6,18 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module crtc6845
 module crtc6845
 (
     clk_1MHz,
+    clk_1MHz__enable,
     clk_2MHz,
+    clk_2MHz__enable,
 
     crtc_clock_enable,
     lpstb_n,
@@ -35,7 +39,9 @@ module crtc6845
     //b Clocks
         //   Clock that rises when the 'enable' of the 6845 completes - but a real clock for this model
     input clk_1MHz;
+    input clk_1MHz__enable;
     input clk_2MHz;
+    input clk_2MHz__enable;
 
     //b Inputs
         //   Not on the real chip - really CLK - the character clock - but this is an enable for clk_2MHz
@@ -148,15 +154,7 @@ module crtc6845
     //b outputs combinatorial process
         //   
         //       
-    always @( //outputs
-        horizontal_state__display_enable or
-        vertical_state__display_enable or
-        vertical_state__scan_line_counter or
-        control__interlace_mode or
-        vertical_state__even_field or
-        address_state__memory_address or
-        horizontal_state__sync or
-        vertical_state__sync )
+    always @ ( * )//outputs
     begin: outputs__comb_code
     reg de__var;
     reg [4:0]ra__var;
@@ -208,28 +206,7 @@ module crtc6845
         //       Because the vsync has to start half-way through the row, h_total must be odd (hence h_total+1 characters is even, and divisible by 2)
         //       
         //       
-    always @( //horizontal_timing__comb
-        horizontal_state__counter or
-        control__h_total or
-        control__h_displayed or
-        control__h_sync_pos or
-        horizontal_state__sync_counter or
-        control__h_sync_width or
-        vertical_state__character_row_counter or
-        vertical_state__doing_adjust or
-        vertical_state__scan_line_counter or
-        vertical_state__adjust_counter or
-        control__v_max_scan_line or
-        control__interlace_mode or
-        control__v_total or
-        control__v_total_adjust or
-        vertical_state__even_field or
-        control__v_sync_pos or
-        control__v_displayed or
-        vertical_state__sync_counter or
-        control__v_sync_width or
-        control__cursor__start or
-        control__cursor__end )
+    always @ ( * )//horizontal_timing__comb
     begin: horizontal_timing__comb_code
     reg [6:0]vertical__next_character_row_counter__var;
     reg [4:0]vertical__next_scan_line_counter__var;
@@ -375,7 +352,7 @@ module crtc6845
             vertical_state__sync <= 1'h0;
             vertical_state__vsync_counter <= 6'h0;
         end
-        else
+        else if (clk_2MHz__enable)
         begin
             horizontal_state__counter <= horizontal__next_counter;
             if ((horizontal__complete!=1'h0))
@@ -477,12 +454,7 @@ module crtc6845
     //b address_and_cursor__comb combinatorial process
         //   
         //       
-    always @( //address_and_cursor__comb
-        control__cursor__address or
-        address_state__memory_address or
-        control__cursor__mode or
-        vertical_state__vsync_counter or
-        vertical_state__cursor_line )
+    always @ ( * )//address_and_cursor__comb
     begin: address_and_cursor__comb_code
     reg cursor_decode__disabled__var;
         cursor_decode__address_match = (control__cursor__address==address_state__memory_address);
@@ -530,7 +502,7 @@ module crtc6845
             address_state__memory_address <= 14'h0;
             address_state__memory_address_line_start <= 14'h0;
         end
-        else
+        else if (clk_2MHz__enable)
         begin
             if ((horizontal_state__display_enable!=1'h0))
             begin
@@ -562,7 +534,7 @@ module crtc6845
     end //always
 
     //b read_write_interface__comb combinatorial process
-    initial //read_write_interface__comb
+    always @ ( * )//read_write_interface__comb
     begin: read_write_interface__comb_code
         data_out = 8'hff;
     end //always
@@ -591,7 +563,7 @@ module crtc6845
             control__start_addr_h <= 6'h0;
             control__cursor__address <= 14'h0;
         end
-        else
+        else if (clk_1MHz__enable)
         begin
             if (((!(chip_select_n!=1'h0)&&(rs==1'h0))&&!(read_not_write!=1'h0)))
             begin

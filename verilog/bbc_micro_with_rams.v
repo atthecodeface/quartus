@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_micro_with_rams
 module bbc_micro_with_rams
 (
     clk,
+    clk__enable,
 
     host_sram_request__valid,
     host_sram_request__read_enable,
@@ -41,8 +44,11 @@ module bbc_micro_with_rams
     //b Clocks
         //   4MHz clock in as a minimum
     input clk;
+    input clk__enable;
     wire clk_cpu; // Gated version of clock 'clk' enabled by 'enable_cpu_clk'
+    wire clk_cpu__enable;
     wire clk_2MHz_video_clock; // Gated version of clock 'clk' enabled by 'enable_clk_2MHz_video'
+    wire clk_2MHz_video_clock__enable;
 
     //b Inputs
     input host_sram_request__valid;
@@ -166,12 +172,12 @@ module bbc_micro_with_rams
     wire [7:0]display__blue;
 
     //b Clock gating module instances
-    clock_gate_module clk_cpu__gen( .CLK_IN(clk), .ENABLE(enable_cpu_clk), .CLK_OUT(clk_cpu) );
-    clock_gate_module clk_2MHz_video_clock__gen( .CLK_IN(clk), .ENABLE(enable_clk_2MHz_video), .CLK_OUT(clk_2MHz_video_clock) );
-    clock_gate_module main_clk_cpu__gen( .CLK_IN(clk), .ENABLE(1'b1), .CLK_OUT(main_clk) );
+    assign clk_cpu__enable = (clk__enable && enable_cpu_clk);
+    assign clk_2MHz_video_clock__enable = (clk__enable && enable_clk_2MHz_video);
     //b Module instances
     bbc_micro_clocking clocking(
-        .clk(main_clk),
+        .clk(clk),
+        .clk__enable(1'b1),
         .csr_request__data(csr_request__data),
         .csr_request__address(csr_request__address),
         .csr_request__select(csr_request__select),
@@ -190,7 +196,8 @@ module bbc_micro_with_rams
         .clock_control__will_enable_2MHz_video(            clock_control__will_enable_2MHz_video),
         .clock_control__enable_cpu(            clock_control__enable_cpu)         );
     bbc_micro bbc(
-        .clk(main_clk),
+        .clk(clk),
+        .clk__enable(1'b1),
         .host_sram_request__write_data(bbc_micro_host_sram_request__write_data),
         .host_sram_request__address(bbc_micro_host_sram_request__address),
         .host_sram_request__select(bbc_micro_host_sram_request__select),
@@ -249,7 +256,8 @@ module bbc_micro_with_rams
         .display__clock_enable(            display__clock_enable),
         .clock_status__cpu_1MHz_access(            clock_status__cpu_1MHz_access)         );
     bbc_display_sram display_sram(
-        .clk(clk_2MHz_video_clock),
+        .clk(clk),
+        .clk__enable(clk_2MHz_video_clock__enable),
         .csr_request__data(csr_request__data),
         .csr_request__address(csr_request__address),
         .csr_request__select(csr_request__select),
@@ -274,7 +282,8 @@ module bbc_micro_with_rams
         .keyboard__keys_down_cols_0_to_7(            keyboard__keys_down_cols_0_to_7),
         .keyboard__reset_pressed(            keyboard__reset_pressed)         );
     bbc_floppy_sram floppy_sram(
-        .clk(clk_cpu),
+        .clk(clk),
+        .clk__enable(clk_cpu__enable),
         .sram_response__read_data(floppy_sram_response__read_data),
         .sram_response__read_data_valid(floppy_sram_response__read_data_valid),
         .sram_response__ack(floppy_sram_response__ack),
@@ -320,7 +329,8 @@ module bbc_micro_with_rams
         .floppy_response__sector_id__track(            floppy_response__sector_id__track),
         .floppy_response__sector_id_valid(            floppy_response__sector_id_valid)         );
     bbc_micro_rams rams(
-        .clk(main_clk),
+        .clk(clk),
+        .clk__enable(1'b1),
         .bbc_micro_host_sram_response__read_data(bbc_micro_host_sram_response__read_data),
         .bbc_micro_host_sram_response__read_data_valid(bbc_micro_host_sram_response__read_data_valid),
         .bbc_micro_host_sram_response__ack(bbc_micro_host_sram_response__ack),
@@ -360,20 +370,7 @@ module bbc_micro_with_rams
     //b stuff combinatorial process
         //   
         //       
-    always @( //stuff
-        floppy_sram_csr_response__ack or
-        display_sram_csr_response__ack or
-        clocking_csr_response__ack or
-        floppy_sram_csr_response__read_data_valid or
-        display_sram_csr_response__read_data_valid or
-        clocking_csr_response__read_data_valid or
-        floppy_sram_csr_response__read_data or
-        display_sram_csr_response__read_data or
-        clocking_csr_response__read_data or
-        clock_control__enable_2MHz_video or
-        clock_control__enable_cpu or
-        reset_n or
-        clock_control__reset_cpu )
+    always @ ( * )//stuff
     begin: stuff__comb_code
     reg csr_response__ack__var;
     reg csr_response__read_data_valid__var;

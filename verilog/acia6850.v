@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module acia6850
 module acia6850
 (
     clk,
+    clk__enable,
 
     dcd,
     rxd,
@@ -35,6 +38,7 @@ module acia6850
     //b Clocks
         //   Clock that rises when the 'enable' of the 6850 completes - but a real clock for this model
     input clk;
+    input clk__enable;
 
     //b Inputs
     input dcd;
@@ -156,18 +160,7 @@ module acia6850
         //       The data is shifted out of the shift register based on 'bit_action'
         //       The shift register is loaded on 'bit_action_load', in wait_for_data or last_stop_bit
         //       
-    always @( //transmit_logic__comb
-        transmit_data or
-        rxtx__bits or
-        rxtx__parity or
-        rxtx__stop or
-        control__counter_divide_select or
-        tx_if_state__divide or
-        tx_if_state__bits_remaining or
-        tx_if_state__fsm_state or
-        transmit_status__data_register_empty or
-        transmit_shift_register or
-        master_reset )
+    always @ ( * )//transmit_logic__comb
     begin: transmit_logic__comb_code
     reg tx_if__data_odd_parity__var;
     reg [9:0]tx_if__shift_register_from_data__var;
@@ -341,7 +334,7 @@ module acia6850
             transmit_if__dcd <= 1'h0;
             transmit_if__cts <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             case (tx_if_state__fsm_state) //synopsys parallel_case
             2'h0: // req 1
@@ -455,21 +448,7 @@ module acia6850
         //   
         //       At the point 'complete' is set the shift register data can be made ready - checking parity as required
         //       
-    always @( //receive_logic__comb
-        control__counter_divide_select or
-        rx_if_state__divide or
-        rx_if_state__data_parity_bits_remaining or
-        rx_if_state__stop_bits_remaining or
-        rx_if_state__fsm_state or
-        rx_if_state__shift_register or
-        rxtx__parity or
-        rxtx__bits or
-        rx_if_state__framing_error or
-        rx_if_state__complete or
-        receive_status__dcd or
-        receive_status__data_register_full or
-        receive_status__overrun or
-        control__rx_int_en )
+    always @ ( * )//receive_logic__comb
     begin: receive_logic__comb_code
     reg rx_if__divide_complete__var;
     reg [3:0]rx_if__bit_action__var;
@@ -663,7 +642,7 @@ module acia6850
             receive_status__cts <= 1'h0;
             receive_data <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             case (rx_if_state__fsm_state) //synopsys parallel_case
             3'h0: // req 1
@@ -849,10 +828,7 @@ module acia6850
         //       It contains the counter divide register, data bits / stop bits / parity configuration,
         //       rts control and transmit interrupt generation, and receive interrupt enable.
         //       
-    always @( //control_register_logic__comb
-        control__word_select or
-        control__counter_divide_select or
-        receive_irq )
+    always @ ( * )//control_register_logic__comb
     begin: control_register_logic__comb_code
     reg rxtx__bits__var;
     reg rxtx__stop__var;
@@ -950,7 +926,7 @@ module acia6850
             control__tx_ctl <= 2'h0;
             control__rx_int_en <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((write_action==2'h2))
             begin
@@ -963,20 +939,7 @@ module acia6850
     end //always
 
     //b read_write_interface__comb combinatorial process
-    always @( //read_write_interface__comb
-        chip_select_n or
-        chip_select or
-        address or
-        receive_irq or
-        receive_status__parity_error or
-        receive_status__overrun or
-        receive_status__framing_error or
-        receive_status__cts or
-        receive_status__dcd or
-        transmit_status__data_register_empty or
-        receive_status__data_register_full or
-        receive_data or
-        read_not_write )
+    always @ ( * )//read_write_interface__comb
     begin: read_write_interface__comb_code
     reg [7:0]data_out__var;
     reg [1:0]read_action__var;
@@ -1036,7 +999,7 @@ module acia6850
             transmit_status__data_register_empty <= 1'h0;
             transmit_data <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((tx_if__bit_action==4'h2))
             begin

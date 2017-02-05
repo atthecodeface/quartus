@@ -12,3 +12,4 @@ set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
 
 set_global_assignment -name QIP_FILE modules/altclkctrl.qip
 set_global_assignment -name QSYS_FILE modules/altclkctrl.qsys
+

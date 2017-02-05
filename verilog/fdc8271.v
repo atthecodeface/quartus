@@ -6,8 +6,10 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module fdc8271
     //   
@@ -117,6 +119,7 @@
 module fdc8271
 (
     clk,
+    clk__enable,
 
     bbc_floppy_response__sector_id_valid,
     bbc_floppy_response__sector_id__track,
@@ -173,6 +176,7 @@ module fdc8271
     //b Clocks
         //   
     input clk;
+    input clk__enable;
 
     //b Inputs
         //   Parallel data read, specific to the model
@@ -424,21 +428,7 @@ module fdc8271
         //   
         //       Read, write, DMA and control logic
         //       
-    always @( //read_write_logic__comb
-        command_state__busy or
-        command_register__full or
-        parameter_register__full or
-        result_register__full or
-        control__non_dma_mode or
-        drive_execution_state__read_data_valid or
-        interrupt_pending or
-        chip_select_n or
-        write_n or
-        address or
-        data_ack_n or
-        read_n or
-        result_register__data or
-        drive_execution_state__read_data_buffer )
+    always @ ( * )//read_write_logic__comb
     begin: read_write_logic__comb_code
     reg status_register__command_busy__var;
     reg status_register__command_register_full__var;
@@ -573,7 +563,7 @@ module fdc8271
             result_register__full <= 1'h0;
             interrupt_pending <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((command__takes_parameter!=1'h0))
             begin
@@ -627,14 +617,7 @@ module fdc8271
         //   
         //       Command interface controller consisting of the input buffer and output buffer
         //       
-    always @( //command_interface_controller__comb
-        command_state__fsm_state or
-        control__scan__sector or
-        command_state__command_num_sectors or
-        command_register__full or
-        parameter_register__full or
-        command_state__special_reg or
-        parameter_register__data )
+    always @ ( * )//command_interface_controller__comb
     begin: command_interface_controller__comb_code
     reg [2:0]command__drive_execution_command__var;
     reg command__takes_command__var;
@@ -995,7 +978,7 @@ module fdc8271
             command_state__command_num_sectors <= 5'h0;
             command_state__command_sector_length <= 3'h0;
         end
-        else
+        else if (clk__enable)
         begin
             case (command_state__fsm_state) //synopsys parallel_case
             6'h0: // req 1
@@ -1610,9 +1593,7 @@ module fdc8271
         //       + complete
         //   
         //       
-    always @( //drive_execution_controller__comb
-        drive_execution_state__fsm_state or
-        drive_operation__completing_op )
+    always @ ( * )//drive_execution_controller__comb
     begin: drive_execution_controller__comb_code
     reg drive_execution__result__valid__var;
     reg drive_execution__takes_command__var;
@@ -1751,7 +1732,7 @@ module fdc8271
             drive_execution_state__read_data_valid <= 4'h0;
             drive_execution_state__read_data_buffer <= 32'h0;
         end
-        else
+        else if (clk__enable)
         begin
             drive_execution_state__operation <= 3'h0;
             case (drive_execution_state__fsm_state) //synopsys parallel_case
@@ -2025,17 +2006,7 @@ module fdc8271
         //       g. sector byte--, repeat c
         //   
         //       
-    always @( //drive_operation_controller__comb
-        drive_operation_state__fsm_state or
-        internal_track_0 or
-        drive_operation_state__retry_count or
-        drive_execution_state__operation or
-        internal_index or
-        drive_operation_state__sector_id__bad_data_crc or
-        internal_id_ready or
-        internal_read_data_valid or
-        drive_operation_state__sector_id__bad_crc or
-        drive_timing__data_byte_ready )
+    always @ ( * )//drive_operation_controller__comb
     begin: drive_operation_controller__comb_code
     reg drive_operation__direction_set__var;
     reg drive_operation__direction_value__var;
@@ -2346,7 +2317,7 @@ module fdc8271
             drive_operation_state__sector_id__deleted_data <= 1'h0;
             drive_operation_state__read_data_buffer <= 32'h0;
         end
-        else
+        else if (clk__enable)
         begin
             case (drive_operation_state__fsm_state) //synopsys parallel_case
             5'h0: // req 1
@@ -2664,24 +2635,7 @@ module fdc8271
         //       The head may not be used (for reading or writing) until a
         //       configurable number of 4ms ticks after the step settling time.
         //       
-    always @( //drive_control_timings__comb
-        control__step_time or
-        control__head_settling_time or
-        drive_timing_state__timer_10us or
-        drive_timing_state__timer_1ms or
-        drive_outputs__step or
-        drive_timing_state__step_counter or
-        drive_timing_state__head_counter or
-        drive_timing_state__timer_data or
-        drive_operation__direction_set or
-        drive_operation__direction_value or
-        drive_outputs__direction or
-        drive_operation__step_start or
-        drive_outputs__low_current or
-        drive_outputs__load_head or
-        drive_outputs__write_enable or
-        drive_outputs__fault_reset or
-        drive_outputs__select )
+    always @ ( * )//drive_control_timings__comb
     begin: drive_control_timings__comb_code
     reg drive_timing__direction_can_be_set__var;
     reg drive_timing__step_can_start__var;
@@ -2772,7 +2726,7 @@ module fdc8271
             drive_outputs__fault_reset <= 1'h0;
             drive_outputs__select <= 2'h0;
         end
-        else
+        else if (clk__enable)
         begin
             drive_timing_state__direction_setting <= 1'h0;
             if ((drive_operation__direction_set!=1'h0))
@@ -2888,12 +2842,7 @@ module fdc8271
     //b bbc_drive_interface__comb combinatorial process
         //   
         //       
-    always @( //bbc_drive_interface__comb
-        bbc_floppy_response__read_data_valid or
-        bbc_floppy_response__index or
-        bbc_floppy_response__write_protect or
-        bbc_floppy_response__track_zero or
-        bbc_floppy_response__sector_id_valid )
+    always @ ( * )//bbc_drive_interface__comb
     begin: bbc_drive_interface__comb_code
         internal_read_data_valid = bbc_floppy_response__read_data_valid;
         internal_index = bbc_floppy_response__index;
@@ -2924,7 +2873,7 @@ module fdc8271
             bbc_floppy_op__sector_id__bad_data_crc <= 1'h0;
             bbc_floppy_op__sector_id__deleted_data <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             bbc_floppy_op__step_out <= ((drive_outputs__step!=1'h0)&&!(drive_outputs__direction!=1'h0));
             bbc_floppy_op__step_in <= ((drive_outputs__step!=1'h0)&&(drive_outputs__direction!=1'h0));

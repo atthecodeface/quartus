@@ -6,6 +6,7 @@ QUARTUS_IDB=$(ROOT)/quartus/incremental_db
 QUARTUS=$(ALTERA)/quartus/bin
 QUARTUS_SH=SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) $(QUARTUS)/quartus_sh
 QUARTUS_CDB=SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) $(QUARTUS)/quartus_cdb
+QUARTUS_EDA=SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) $(QUARTUS)/quartus_eda
 
 SYNTH_PROJECT ?= bbc_project
 
@@ -40,6 +41,7 @@ help_synth:
 clean: clean_synth
 .PHONY: clean_synth
 clean_synth:
+	rm -f $(MAKE_TARGETS)/synth.complete $(MAKE_TARGETS)/timing.complete $(MAKE_TARGETS)/fit.complete
 	rm -rf $(QUARTUS_OUTPUT) $(QUARTUS_DB) $(QUARTUS_IDB)
 
 .PHONY:synth fit timing
@@ -50,7 +52,7 @@ fit: $(MAKE_TARGETS)/fit.complete
 timing: $(MAKE_TARGETS)/timing.complete
 
 resynth:
-	rm -f $(MAKE_TARGETS)/synth.complete
+	make clean_synth
 	make synth
 
 retime:
@@ -74,3 +76,7 @@ quartus_shell:
 
 quartus_gui:
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -g)
+
+netlist:
+	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog bbc_project -c bbc_project)
+

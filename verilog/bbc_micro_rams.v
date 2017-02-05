@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_micro_rams
 module bbc_micro_rams
 (
     clk,
+    clk__enable,
 
     bbc_micro_host_sram_response__ack,
     bbc_micro_host_sram_response__read_data_valid,
@@ -56,6 +59,7 @@ module bbc_micro_rams
     //b Clocks
         //   4MHz clock in as a minimum
     input clk;
+    input clk__enable;
 
     //b Inputs
     input bbc_micro_host_sram_response__ack;
@@ -160,6 +164,7 @@ module bbc_micro_rams
     //b Module instances
     se_sram_srw_32768x64 display(
         .sram_clock(clk),
+        .sram_clock__enable(1'b1),
         .write_data(display_sram__write_data),
         .address(display_sram__address[14:0]),
         .write_enable(display_sram__write_enable),
@@ -168,6 +173,7 @@ module bbc_micro_rams
         .data_out(            display_sram_read_data)         );
     se_sram_srw_65536x32 floppy(
         .sram_clock(clk),
+        .sram_clock__enable(1'b1),
         .write_data(floppy_sram__write_data[31:0]),
         .address(floppy_sram__address[15:0]),
         .write_enable(floppy_sram__write_enable),
@@ -193,7 +199,7 @@ module bbc_micro_rams
             pending_display_sram_write__data <= 48'h0;
             pending_display_sram_write__address <= 16'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if (((clock_control__enable_2MHz_video!=1'h0)&&(display_sram_write__enable!=1'h0)))
             begin
@@ -239,7 +245,7 @@ module bbc_micro_rams
             floppy_sram_response__read_data <= 32'h0;
             pending_floppy_sram_response__read_data <= 32'h0;
         end
-        else
+        else if (clk__enable)
         begin
             pending_floppy_sram_response__ack <= 1'h0;
             if ((clock_control__enable_cpu!=1'h0))
@@ -300,7 +306,7 @@ module bbc_micro_rams
             bbc_micro_host_sram_request__write_data <= 64'h0;
             host_sram_response__read_data <= 64'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if ((((host_sram_request__valid!=1'h0)&&!(host_sram_response__ack!=1'h0))&&!(host_sram_pending!=1'h0)))
             begin
@@ -378,12 +384,7 @@ module bbc_micro_rams
         //       For speed of operation the SRAM arbiters or prioritized for the BBC micro
         //       accesses - host accesses are lower priority.
         //       
-    always @( //sram_arbitration
-        pending_host_sram_request__valid or
-        host_sram_pending or
-        pending_host_sram_request__select or
-        pending_floppy_sram_request__enable or
-        pending_display_sram_write__enable )
+    always @ ( * )//sram_arbitration
     begin: sram_arbitration__comb_code
     reg [1:0]sram_grant_host_request__var;
     reg sram_grant_floppy__var;
@@ -424,15 +425,7 @@ module bbc_micro_rams
         //       The display SRAM is 4bpp at a max resolution of (say) 1024x512, so 256kB max
         //       The memory is read/written at 64-bits per cycle, so 32kx64
         //       
-    always @( //display_sram_logic__comb
-        sram_grant_display_write or
-        sram_grant_host_request or
-        pending_host_sram_request__read_enable or
-        pending_host_sram_request__write_enable or
-        pending_display_sram_write__address or
-        pending_host_sram_request__address or
-        pending_display_sram_write__data or
-        pending_host_sram_request__write_data )
+    always @ ( * )//display_sram_logic__comb
     begin: display_sram_logic__comb_code
     reg display_sram__select__var;
     reg display_sram__read_not_write__var;
@@ -474,7 +467,7 @@ module bbc_micro_rams
         begin
             display_sram_reading_host <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             display_sram_reading_host <= 1'h0;
             if (((sram_grant_host_request==2'h1)&&(pending_host_sram_request__read_enable!=1'h0)))
@@ -489,16 +482,7 @@ module bbc_micro_rams
         //       The floppy SRAM is 32 bits wide, and must accommodate at least 100kB plus IDs, so must be at least 128kB
         //       Hence it should be 32kx32, or larger
         //       
-    always @( //floppy_sram_logic__comb
-        sram_grant_floppy or
-        sram_grant_host_request or
-        pending_floppy_sram_request__read_not_write or
-        pending_host_sram_request__read_enable or
-        pending_host_sram_request__write_enable or
-        pending_floppy_sram_request__address or
-        pending_host_sram_request__address or
-        pending_floppy_sram_request__write_data or
-        pending_host_sram_request__write_data )
+    always @ ( * )//floppy_sram_logic__comb
     begin: floppy_sram_logic__comb_code
     reg floppy_sram__select__var;
     reg floppy_sram__read_not_write__var;
@@ -541,7 +525,7 @@ module bbc_micro_rams
             sram_reading_floppy <= 1'h0;
             floppy_sram_reading_host <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             sram_reading_floppy <= sram_grant_floppy;
             floppy_sram_reading_host <= 1'h0;

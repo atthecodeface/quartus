@@ -6,8 +6,10 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_floppy_sram
     //   
@@ -17,6 +19,7 @@
 module bbc_floppy_sram
 (
     clk,
+    clk__enable,
 
     csr_request__valid,
     csr_request__read_not_write,
@@ -68,6 +71,7 @@ module bbc_floppy_sram
     //b Clocks
         //   Clock running at 2MHz
     input clk;
+    input clk__enable;
 
     //b Inputs
     input csr_request__valid;
@@ -239,15 +243,7 @@ module bbc_floppy_sram
     //b inputs_and_outputs__comb combinatorial process
         //   
         //       
-    always @( //inputs_and_outputs__comb
-        drive_state__floppy_op__step_in or
-        drive_state__last_floppy_op__step_in or
-        drive_state__floppy_op__step_out or
-        drive_state__last_floppy_op__step_out or
-        drive_state__floppy_op__next_id or
-        drive_state__last_floppy_op__next_id or
-        drive_state__floppy_op__read_data_enable or
-        drive_state__last_floppy_op__read_data_enable )
+    always @ ( * )//inputs_and_outputs__comb
     begin: inputs_and_outputs__comb_code
     reg drive_combs__do_step_in__var;
     reg drive_combs__do_step_out__var;
@@ -321,7 +317,7 @@ module bbc_floppy_sram
             drive_state__last_floppy_op__sector_id__bad_data_crc <= 1'h0;
             drive_state__last_floppy_op__sector_id__deleted_data <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             drive_state__selected_floppy <= 2'h0;
             floppy_response__index <= (current_floppy__current_physical_sector==8'h0);
@@ -362,9 +358,7 @@ module bbc_floppy_sram
     //b floppy_logic__comb combinatorial process
         //   
         //       
-    always @( //floppy_logic__comb
-        drive_combs__get_next_id or
-        drive_combs__do_read_data )
+    always @ ( * )//floppy_logic__comb
     begin: floppy_logic__comb_code
     reg [1:0]floppy_combs__fsm_request__var;
         floppy_combs__fsm_request__var = 2'h0;
@@ -407,7 +401,7 @@ module bbc_floppy_sram
             floppy_disk_state__next_sector_is_zero[2] <= 1'h0; // Should this be a bit vector?
             floppy_disk_state__next_sector_is_zero[3] <= 1'h0; // Should this be a bit vector?
         end
-        else
+        else if (clk__enable)
         begin
             if ((current_floppy__current_track==8'h0))
             begin
@@ -468,80 +462,7 @@ module bbc_floppy_sram
         //   
         //       Floppy FSM - read or write SRAM as requested
         //       
-    always @( //floppy_fsm__comb
-        drive_state__selected_floppy or
-        floppy_disk_state__disk_ready or
-        floppy_disk_state__write_protect or
-        floppy_disk_state__num_tracks[0] or
-        floppy_disk_state__num_tracks[1] or
-        floppy_disk_state__num_tracks[2] or
-        floppy_disk_state__num_tracks[3]        //floppy_disk_state__num_tracks - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__sram_data_base_address[0] or
-        floppy_disk_state__sram_data_base_address[1] or
-        floppy_disk_state__sram_data_base_address[2] or
-        floppy_disk_state__sram_data_base_address[3]        //floppy_disk_state__sram_data_base_address - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__sram_id_base_address[0] or
-        floppy_disk_state__sram_id_base_address[1] or
-        floppy_disk_state__sram_id_base_address[2] or
-        floppy_disk_state__sram_id_base_address[3]        //floppy_disk_state__sram_id_base_address - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__sectors_per_track[0] or
-        floppy_disk_state__sectors_per_track[1] or
-        floppy_disk_state__sectors_per_track[2] or
-        floppy_disk_state__sectors_per_track[3]        //floppy_disk_state__sectors_per_track - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__current_track[0] or
-        floppy_disk_state__current_track[1] or
-        floppy_disk_state__current_track[2] or
-        floppy_disk_state__current_track[3]        //floppy_disk_state__current_track - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__current_physical_sector[0] or
-        floppy_disk_state__current_physical_sector[1] or
-        floppy_disk_state__current_physical_sector[2] or
-        floppy_disk_state__current_physical_sector[3]        //floppy_disk_state__current_physical_sector - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__next_sector_is_zero or
-        floppy_disk_state__data_words_per_track[0] or
-        floppy_disk_state__data_words_per_track[1] or
-        floppy_disk_state__data_words_per_track[2] or
-        floppy_disk_state__data_words_per_track[3]        //floppy_disk_state__data_words_per_track - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__track_data_sram_offset[0] or
-        floppy_disk_state__track_data_sram_offset[1] or
-        floppy_disk_state__track_data_sram_offset[2] or
-        floppy_disk_state__track_data_sram_offset[3]        //floppy_disk_state__track_data_sram_offset - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__track_id_sram_offset[0] or
-        floppy_disk_state__track_id_sram_offset[1] or
-        floppy_disk_state__track_id_sram_offset[2] or
-        floppy_disk_state__track_id_sram_offset[3]        //floppy_disk_state__track_id_sram_offset - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__data_word_offset[0] or
-        floppy_disk_state__data_word_offset[1] or
-        floppy_disk_state__data_word_offset[2] or
-        floppy_disk_state__data_word_offset[3]        //floppy_disk_state__data_word_offset - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__sector_id__track[0] or
-        floppy_disk_state__sector_id__track[1] or
-        floppy_disk_state__sector_id__track[2] or
-        floppy_disk_state__sector_id__track[3]        //floppy_disk_state__sector_id__track - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__sector_id__head or
-        floppy_disk_state__sector_id__sector_number[0] or
-        floppy_disk_state__sector_id__sector_number[1] or
-        floppy_disk_state__sector_id__sector_number[2] or
-        floppy_disk_state__sector_id__sector_number[3]        //floppy_disk_state__sector_id__sector_number - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__sector_id__sector_length[0] or
-        floppy_disk_state__sector_id__sector_length[1] or
-        floppy_disk_state__sector_id__sector_length[2] or
-        floppy_disk_state__sector_id__sector_length[3]        //floppy_disk_state__sector_id__sector_length - Xilinx does not want arrays in sensitivity lists
- or
-        floppy_disk_state__sector_id__bad_crc or
-        floppy_disk_state__sector_id__bad_data_crc or
-        floppy_disk_state__sector_id__deleted_data )
+    always @ ( * )//floppy_fsm__comb
     begin: floppy_fsm__comb_code
         current_floppy__disk_ready = floppy_disk_state__disk_ready[drive_state__selected_floppy];
         current_floppy__write_protect = floppy_disk_state__write_protect[drive_state__selected_floppy];
@@ -624,7 +545,7 @@ module bbc_floppy_sram
             floppy_response__sector_id__bad_data_crc <= 1'h0;
             floppy_response__sector_id__deleted_data <= 1'h0;
         end
-        else
+        else if (clk__enable)
         begin
             floppy_state__sram_request__enable <= 1'h0;
             floppy_state__sram_request__write_data <= 32'h0;
@@ -746,14 +667,7 @@ module bbc_floppy_sram
     //b sram_interface combinatorial process
         //   
         //       
-    always @( //sram_interface
-        sram_response__ack or
-        sram_response__read_data_valid or
-        sram_response__read_data or
-        floppy_state__sram_request__enable or
-        floppy_state__sram_request__read_not_write or
-        floppy_state__sram_request__address or
-        floppy_state__sram_request__write_data )
+    always @ ( * )//sram_interface
     begin: sram_interface__comb_code
         sram_combs__ack = sram_response__ack;
         sram_combs__read_data_valid = sram_response__read_data_valid;
@@ -803,7 +717,7 @@ module bbc_floppy_sram
             floppy_disk_state__write_protect[2] <= 1'h0; // Should this be a bit vector?
             floppy_disk_state__write_protect[3] <= 1'h0; // Should this be a bit vector?
         end
-        else
+        else if (clk__enable)
         begin
             csr_response__ack <= 1'h0;
             csr_response__read_data_valid <= 1'h0;

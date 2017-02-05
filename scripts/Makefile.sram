@@ -19,4 +19,27 @@ all_sram: $(SRAM_CONTENTS)/adc.hex
 $(SRAM_CONTENTS)/adc.hex: $(PYTHON_DIR)/mif_to_hex.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif
 	#$(PYTHON_DIR)/mif_to_hex.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(SRAM_CONTENTS)/adc.hex
 	#$(PYTHON_DIR)/mif_to_intel_hex.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(SRAM_CONTENTS)/adc.hex
-	$(PYTHON_DIR)/mif_to_quartus_mif.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(SRAM_CONTENTS)/b.mif
+	$(PYTHON_DIR)/mif_to_quartus_mif.py 65536 8 $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(SRAM_CONTENTS)/b.mif
+
+#f sram.qmif_from_mif
+# Function to create Quartus MIF from a standard MIF
+#
+# @param $1	SRAM size
+# @param $2 SRAM width in bits
+# @param $3 Keep zeros
+# @param $4 Source MIF file
+#
+define sram.qmif_from_mif
+
+all_sram: $(SRAM_CONTENTS)/$4.qmif
+
+$(SRAM_CONTENTS)/$4.qmif: $(PYTHON_DIR)/mif_to_quartus_mif.py $(MIF_DIR)/$4.mif
+	$(PYTHON_DIR)/mif_to_quartus_mif.py $1 $2 $(MIF_DIR)/$4.mif $(SRAM_CONTENTS)/$4.qmif
+
+endef
+
+$(eval $(call sram.qmif_from_mif,128,64,0,teletext))
+$(eval $(call sram.qmif_from_mif,16384,8,1,adfs.rom))
+$(eval $(call sram.qmif_from_mif,16384,8,1,basic2.rom))
+$(eval $(call sram.qmif_from_mif,16384,8,1,os12.rom))
+$(eval $(call sram.qmif_from_mif,65536,32,0,elite))

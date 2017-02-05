@@ -14,7 +14,7 @@ module harness_tb_6502
       #5  clk =  ! clk;
    end
    
-   tb_6502 tb(.clk(clk), .reset_n(reset_n));
+   tb_6502 tb(.clk(clk), .clk__enable(1'b1), .reset_n(reset_n));
 
 endmodule // harness_tb_6502
 

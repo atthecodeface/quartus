@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module bbc_micro_keyboard
 module bbc_micro_keyboard
 (
     clk,
+    clk__enable,
 
     bbc_keyboard__reset_pressed,
     bbc_keyboard__keys_down_cols_0_to_7,
@@ -29,6 +32,7 @@ module bbc_micro_keyboard
 
     //b Clocks
     input clk;
+    input clk__enable;
 
     //b Inputs
     input bbc_keyboard__reset_pressed;
@@ -81,8 +85,7 @@ module bbc_micro_keyboard
         //   
         //       If the switch is pressed (the 'Break' key, really) then reset is pulled low
         //       
-    always @( //reset_button_logic__comb
-        reset_pressed )
+    always @ ( * )//reset_button_logic__comb
     begin: reset_button_logic__comb_code
     reg reset_out_n__var;
         reset_out_n__var = 1'h1;
@@ -113,7 +116,7 @@ module bbc_micro_keyboard
             keys_pressed[8] <= 8'h0;
             keys_pressed[9] <= 8'h0;
         end
-        else
+        else if (clk__enable)
         begin
             reset_pressed <= 1'h0;
             keys_pressed[0] <= bbc_keyboard__keys_down_cols_0_to_7[7:0];
@@ -157,22 +160,7 @@ module bbc_micro_keyboard
         //       The keys that are pressed are kept in this module as active high 'keys_pressed' array of bit vectors.
         //       Key column N bit M is pressed if keys_pressed[N][M] is a 1.
         //       
-    always @( //keyboard_logic__comb
-        column or
-        keyboard_enable_n or
-        column_select or
-        keys_pressed[0] or
-        keys_pressed[1] or
-        keys_pressed[2] or
-        keys_pressed[3] or
-        keys_pressed[4] or
-        keys_pressed[5] or
-        keys_pressed[6] or
-        keys_pressed[7] or
-        keys_pressed[8] or
-        keys_pressed[9]        //keys_pressed - Xilinx does not want arrays in sensitivity lists
- or
-        row_select )
+    always @ ( * )//keyboard_logic__comb
     begin: keyboard_logic__comb_code
     reg [3:0]column_to_use__var;
     reg [7:0]matrix_output__var;
@@ -236,7 +224,7 @@ module bbc_micro_keyboard
         begin
             column <= 4'h0;
         end
-        else
+        else if (clk__enable)
         begin
             if (!(keyboard_enable_n!=1'h0))
             begin

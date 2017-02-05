@@ -6,13 +6,16 @@
 // Verilog option sv_assertions 0
 // Verilog option assert delay string '<NULL>'
 // Verilog option include_coverage 0
-// Verilog option clock_gate_module_instance_type 'clock_gate_module'
+// Verilog option clock_gate_module_instance_type 'banana'
 // Verilog option clock_gate_module_instance_extra_ports ''
+// Verilog option use_always_at_star 1
+// Verilog option clocks_must_have_enables 1
 
 //a Module tb_6502
 module tb_6502
 (
     clk,
+    clk__enable,
 
     reset_n
 
@@ -20,8 +23,11 @@ module tb_6502
 
     //b Clocks
     input clk;
+    input clk__enable;
     wire sram_clk; // Gated version of clock 'clk' enabled by 'enable_sram_clk'
+    wire sram_clk__enable;
     wire cpu_clk; // Gated version of clock 'clk' enabled by 'enable_cpu_clk'
+    wire cpu_clk__enable;
 
     //b Inputs
     input reset_n;
@@ -56,11 +62,12 @@ module tb_6502
     wire ba;
 
     //b Clock gating module instances
-    clock_gate_module sram_clk__gen( .CLK_IN(clk), .ENABLE(enable_sram_clk), .CLK_OUT(sram_clk) );
-    clock_gate_module cpu_clk__gen( .CLK_IN(clk), .ENABLE(enable_cpu_clk), .CLK_OUT(cpu_clk) );
+    assign sram_clk__enable = (clk__enable && enable_sram_clk);
+    assign cpu_clk__enable = (clk__enable && enable_cpu_clk);
     //b Module instances
     se_sram_srw_65536x8 imem(
-        .sram_clock(sram_clk),
+        .sram_clock(clk),
+        .sram_clock__enable(sram_clk__enable),
         .write_data(data_out),
         .address(address),
         .write_enable(!(read_not_write!=1'h0)),
@@ -68,7 +75,8 @@ module tb_6502
         .select(1'h1),
         .data_out(            data_in)         );
     cpu6502 cpu6502_0(
-        .clk(cpu_clk),
+        .clk(clk),
+        .clk__enable(cpu_clk__enable),
         .data_in(data_in),
         .nmi_n(nmi_n),
         .irq_n(irq_n),
@@ -84,8 +92,7 @@ module tb_6502
         //   
         //       The clock gating is to ping-pong the CPU and the SRAM - to mimick the 6502 phi 1 / 2 latch operation.
         //       
-    always @( //interrupt_and_nmi__comb
-        cycle_counter )
+    always @ ( * )//interrupt_and_nmi__comb
     begin: interrupt_and_nmi__comb_code
         enable_sram_clk = cycle_counter[0];
         enable_cpu_clk = !(cycle_counter[0]!=1'h0);
@@ -105,7 +112,7 @@ module tb_6502
             irq_n <= 1'h1;
             nmi_n <= 1'h1;
         end
-        else
+        else if (clk__enable)
         begin
             cycle_counter <= (cycle_counter+16'h1);
             if ((cycle_counter[7:0]==8'hff))
