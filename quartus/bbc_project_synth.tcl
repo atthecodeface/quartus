@@ -1,6 +1,7 @@
 #a Environment import
 global env
 set RTL_DIR        $env(RTL_DIR)
+set SRAMS_DIR      $env(SRAMS_DIR)
 set VERILOG_DIR    $env(VERILOG_DIR)
 set QUARTUS_OUTPUT $env(QUARTUS_OUTPUT)
 set QUARTUS_DIR    $env(QUARTUS_DIR)
@@ -376,8 +377,8 @@ set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 
 #a Project files
-#add_file altclkctrl/synthesis/altclkctrl.qip SYNTHESIS
-#set_global_assignment -name QIP_FILE altclkctrl/synthesis/altclkctrl.qip
+# add_file altclkctrl/synthesis/altclkctrl.qip SYNTHESIS
+# set_global_assignment -name QIP_FILE altclkctrl/synthesis/altclkctrl.qip
 set_global_assignment -name VERILOG_FILE $RTL_DIR/bbc_project.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/clock_gate_module.v
@@ -402,3 +403,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/tb_6502.v
 set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 
 set_global_assignment -name SDC_FILE $QUARTUS_DIR/bbc_project.sdc
+
+#a Set parameters (e.g. SRAMs)
+set_parameter -to "imem" -entity "bbc_project" -name initfile $SRAMS_DIR/b.mif
+#set_parameter -to "imem" -entity "bbc_project" -name initfile c.mif

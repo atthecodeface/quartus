@@ -1,0 +1,47 @@
+MODELSIM_WORK_NAME=modelsim_lib
+MODELSIM_WORK=$(ROOT)/$(MODELSIM_WORK_NAME)
+
+MODELSIM=$(ALTERA)/modelsim_ase/linuxaloem
+VLIB=$(MODELSIM)/vlib
+VLOG=$(MODELSIM)/vlog
+VSIM=$(MODELSIM)/vsim
+
+clean: clean_sim
+
+.PHONY: clean_sim
+clean_sim:
+	rm -rf $(MODELSIM_WORK)
+	$(VLIB) $(MODELSIM_WORK_NAME)
+
+sim_compile: $(MAKE_TARGETS)/sim_compile_verilog $(MAKE_TARGETS)/sim_compile_rtl $(MAKE_TARGETS)/sim_compile_libs
+
+$(MAKE_TARGETS)/sim_compile_verilog: verilog/*v
+	($(VLOG) -work $(MODELSIM_WORK) $(VERILOG_DIR)/*v) && touch $(MAKE_TARGETS)/sim_compile_verilog
+
+$(MAKE_TARGETS)/sim_compile_rtl: rtl/*v
+	($(VLOG) -work $(MODELSIM_WORK) $(RTL_DIR)/*v) && touch $(MAKE_TARGETS)/sim_compile_rtl
+
+$(MAKE_TARGETS)/sim_compile_libs:
+	$(VLOG) -work $(MODELSIM_WORK) $(ALTERA)/quartus/eda/sim_lib/mentor/cyclonev_atoms_ncrypt.v
+	$(VLOG) -work $(MODELSIM_WORK) $(ALTERA)/quartus/eda/sim_lib/cyclonev_atoms.v
+	touch $(MAKE_TARGETS)/sim_compile_libs
+
+#sim_tb_6502: compile
+#	$(VSIM) -batch tb_6502
+
+sim_adc_gui: sim_compile $(SCRIPTS_DIR)/regress.tcl
+	./python/mif_to_hex.py mif/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(MODELSIM_WORK)/a.hex
+	$(VSIM) -do 'source $(SCRIPTS_DIR)/regress.tcl' -l $(MODELSIM_WORK)/a.log -lib $(MODELSIM_WORK) harness_tb_6502
+
+sim_adc: sim_compile $(SCRIPTS_DIR)/regress.tcl
+	./python/mif_to_hex.py mif/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(MODELSIM_WORK)/a.hex
+	$(VSIM) -batch -nostdout -do 'source $(SCRIPTS_DIR)/regress.tcl' -l $(MODELSIM_WORK)/a.log -lib $(MODELSIM_WORK) harness_tb_6502
+	@echo "Now check that b.mti has 0: 02 03 in it"
+	grep ' 0: 02 03' $(MODELSIM_WORK)/b.mti
+
+sim_addsub: sim_compile $(SCRIPTS_DIR)/regress.tcl
+	./python/mif_to_hex.py mif/regression.base6502__Regress6502_Test6502_ALU__test_6502_addsub.mif $(MODELSIM_WORK)/a.hex
+	$(VSIM) -batch -nostdout -do 'source $(SCRIPTS_DIR)/regress.tcl' -l $(MODELSIM_WORK)/a.log -lib $(MODELSIM_WORK) harness_tb_6502
+	@echo "Now check that b.mti has  0: 12 34 in it"
+	grep ' 0: 12 34' $(MODELSIM_WORK)/b.mti
+

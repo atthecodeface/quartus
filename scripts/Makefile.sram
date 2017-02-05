@@ -1,0 +1,16 @@
+SRAM_CONTENTS=$(ROOT)/sram_contents
+SRAM_CONTENTS_REL=$(ROOT_REL)/sram_contents
+
+clean: clean_sram
+
+.PHONY: clean_sram
+clean_sram:
+	rm -rf  $(SRAM_CONTENTS)
+	mkdir $(SRAM_CONTENTS)
+
+all_sram: $(SRAM_CONTENTS)/adc.hex
+
+$(SRAM_CONTENTS)/adc.hex: $(PYTHON_DIR)/mif_to_hex.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif
+	#$(PYTHON_DIR)/mif_to_hex.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(SRAM_CONTENTS)/adc.hex
+	#$(PYTHON_DIR)/mif_to_intel_hex.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(SRAM_CONTENTS)/adc.hex
+	$(PYTHON_DIR)/mif_to_quartus_mif.py $(MIF_DIR)/regression.base6502__Regress6502_Test6502_ALU__test_6502_adc.mif $(SRAM_CONTENTS)/b.mif
