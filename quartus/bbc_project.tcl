@@ -395,7 +395,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_display_sram.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_csr_interface.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/acia6850.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/via6522.v
-set_global_assignment -name VERILOG_FILE $VERILOG_DIR/tb_6502.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer.v
 
 
 set_global_assignment -name TOP_LEVEL_ENTITY bbc_project

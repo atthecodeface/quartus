@@ -29,6 +29,13 @@ module bbc_project(clk, reset_n, leds);
    wire         csr_response__read_data_valid;
    wire[31:0]   csr_response__read_data;
 
+   wire   video_bus__vsync;
+   wire   video_bus__hsync;
+   wire   video_bus__display_enable;
+   wire [7:0] video_bus__red;
+   wire [7:0] video_bus__green;
+   wire [7:0] video_bus__blue;
+
 
     assign host_sram_request__valid=0;
     assign host_sram_request__read_enable=0;
@@ -111,45 +118,50 @@ module bbc_project(clk, reset_n, leds);
    //  8: A
    //  9: A
    // VGA
-   //  R0-7:
-   //  G0-7:
-   //  B0-7:
-   //  VGA_BLANK_N:
-   //  VGA_SYNC_N:
-   //  VGA_CLK:
-   //  R3:
-   //  R4:
-   //  R5:
-   //  R6:
-   //  R7:
-   //  R0:
-
+   //  R7-0: F13,E12,D12,C12,B12,E13,C13,A13
+   //  G7-0: E11,F11,G12,G11,G10,H12,G1,G0
+   //  B7-0: J14,G15,F15,H14,F14,H13,G13,B13
+   //  VGA_BLANK_N: F10
+   //  VGA_VSYNC_N: D11
+   //  VGA_HSYNC_N: B11
+   //  VGA_SYNC_N:  C10
+   //  VGA_CLK:     A11
    
-    bbc_micro_with_rams bbc( .clk(clk),
-                             .clk__enable(1'b1),
-                         .reset_n(reset_n),
+   bbc_micro_with_rams bbc( .clk(clk),
+                            .clk__enable(1'b1),
+                            .video_clk(video_clk),
+                            .video_clk__enable(1'b1),
+                            .reset_n(reset_n),
 
-                         .host_sram_request__valid(host_sram_request__valid),
-                         .host_sram_request__read_enable(host_sram_request__read_enable),
-                         .host_sram_request__write_enable(host_sram_request__write_enable),
-                         .host_sram_request__select(host_sram_request__select),
-                         .host_sram_request__address(host_sram_request__address),
-                         .host_sram_request__write_data(host_sram_request__write_data),
-                         .csr_request__valid(csr_request__valid),
-                         .csr_request__read_not_write(csr_request__read_not_write),
-                         .csr_request__select(csr_request__select),
-                         .csr_request__address(csr_request__address),
-                         .csr_request__data(csr_request__data),
+                            .host_sram_request__valid(host_sram_request__valid),
+                            .host_sram_request__read_enable(host_sram_request__read_enable),
+                            .host_sram_request__write_enable(host_sram_request__write_enable),
+                            .host_sram_request__select(host_sram_request__select),
+                            .host_sram_request__address(host_sram_request__address),
+                            .host_sram_request__write_data(host_sram_request__write_data),
+                            .csr_request__valid(csr_request__valid),
+                            .csr_request__read_not_write(csr_request__read_not_write),
+                            .csr_request__select(csr_request__select),
+                            .csr_request__address(csr_request__address),
+                            .csr_request__data(csr_request__data),
 
-                         .display_sram_write__enable(display_sram_write__enable),
-                         .display_sram_write__data(display_sram_write__data),
-                         .display_sram_write__address(display_sram_write__address),
-                         .host_sram_response__ack(host_sram_response__ack),
-                         .host_sram_response__read_data_valid(host_sram_response__read_data_valid),
-                         .host_sram_response__read_data(host_sram_response__read_data),
-                         .csr_response__ack(csr_response__ack),
-                         .csr_response__read_data_valid(csr_response__read_data_valid),
-                         .csr_response__read_data(csr_response__read_data)
+                            .display_sram_write__enable(display_sram_write__enable),
+                            .display_sram_write__data(display_sram_write__data),
+                            .display_sram_write__address(display_sram_write__address),
+                            .host_sram_response__ack(host_sram_response__ack),
+                            .host_sram_response__read_data_valid(host_sram_response__read_data_valid),
+                            .host_sram_response__read_data(host_sram_response__read_data),
+                            .csr_response__ack(csr_response__ack),
+                            .csr_response__read_data_valid(csr_response__read_data_valid),
+                            .csr_response__read_data(csr_response__read_data),
+
+                            .video_bus__vsync(video_bus__vsync),
+                            .video_bus__hsync(video_bus__hsync),
+                            .video_bus__display_enable(video_bus__display_enable),
+                            .video_bus__red(video_bus__red),
+                            .video_bus__green(video_bus__green),
+                            .video_bus__blue(video_bus__blue)
+      
                          );
    
 endmodule

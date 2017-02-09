@@ -14,6 +14,8 @@
 //a Module bbc_micro_with_rams
 module bbc_micro_with_rams
 (
+    video_clk,
+    video_clk__enable,
     clk,
     clk__enable,
 
@@ -30,6 +32,12 @@ module bbc_micro_with_rams
     csr_request__data,
     reset_n,
 
+    video_bus__vsync,
+    video_bus__hsync,
+    video_bus__display_enable,
+    video_bus__red,
+    video_bus__green,
+    video_bus__blue,
     display_sram_write__enable,
     display_sram_write__data,
     display_sram_write__address,
@@ -42,6 +50,8 @@ module bbc_micro_with_rams
 );
 
     //b Clocks
+    input video_clk;
+    input video_clk__enable;
         //   4MHz clock in as a minimum
     input clk;
     input clk__enable;
@@ -65,6 +75,12 @@ module bbc_micro_with_rams
     input reset_n;
 
     //b Outputs
+    output video_bus__vsync;
+    output video_bus__hsync;
+    output video_bus__display_enable;
+    output [7:0]video_bus__red;
+    output [7:0]video_bus__green;
+    output [7:0]video_bus__blue;
     output display_sram_write__enable;
     output [47:0]display_sram_write__data;
     output [15:0]display_sram_write__address;
@@ -83,6 +99,12 @@ module bbc_micro_with_rams
     reg [31:0]csr_response__read_data;
 
     //b Output nets
+    wire video_bus__vsync;
+    wire video_bus__hsync;
+    wire video_bus__display_enable;
+    wire [7:0]video_bus__red;
+    wire [7:0]video_bus__green;
+    wire [7:0]video_bus__blue;
     wire display_sram_write__enable;
     wire [47:0]display_sram_write__data;
     wire [15:0]display_sram_write__address;
@@ -117,6 +139,9 @@ module bbc_micro_with_rams
     wire floppy_sram_request__read_not_write;
     wire [19:0]floppy_sram_request__address;
     wire [31:0]floppy_sram_request__write_data;
+    wire framebuffer_csr_response__ack;
+    wire framebuffer_csr_response__read_data_valid;
+    wire [31:0]framebuffer_csr_response__read_data;
     wire floppy_sram_csr_response__ack;
     wire floppy_sram_csr_response__read_data_valid;
     wire [31:0]floppy_sram_csr_response__read_data;
@@ -367,6 +392,31 @@ module bbc_micro_with_rams
         .host_sram_response__read_data(            host_sram_response__read_data),
         .host_sram_response__read_data_valid(            host_sram_response__read_data_valid),
         .host_sram_response__ack(            host_sram_response__ack)         );
+    framebuffer fb(
+        .video_clk(video_clk),
+        .video_clk__enable(1'b1),
+        .sram_clk(clk),
+        .sram_clk__enable(clk_2MHz_video_clock__enable),
+        .csr_clk(clk),
+        .csr_clk__enable(clk_cpu__enable),
+        .csr_request__data(csr_request__data),
+        .csr_request__address(csr_request__address),
+        .csr_request__select(csr_request__select),
+        .csr_request__read_not_write(csr_request__read_not_write),
+        .csr_request__valid(csr_request__valid),
+        .display_sram_write__address(display_sram_write__address),
+        .display_sram_write__data(display_sram_write__data),
+        .display_sram_write__enable(display_sram_write__enable),
+        .reset_n(reset_n),
+        .csr_response__read_data(            framebuffer_csr_response__read_data),
+        .csr_response__read_data_valid(            framebuffer_csr_response__read_data_valid),
+        .csr_response__ack(            framebuffer_csr_response__ack),
+        .video_bus__blue(            video_bus__blue),
+        .video_bus__green(            video_bus__green),
+        .video_bus__red(            video_bus__red),
+        .video_bus__display_enable(            video_bus__display_enable),
+        .video_bus__hsync(            video_bus__hsync),
+        .video_bus__vsync(            video_bus__vsync)         );
     //b stuff combinatorial process
         //   
         //       
