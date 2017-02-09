@@ -171,11 +171,11 @@ module bbc_micro_rams
         .read_not_write(display_sram__read_not_write),
         .select(display_sram__select),
         .data_out(            display_sram_read_data)         );
-    se_sram_srw_65536x32 floppy(
+    se_sram_srw_32768x32 floppy(
         .sram_clock(clk),
         .sram_clock__enable(1'b1),
         .write_data(floppy_sram__write_data[31:0]),
-        .address(floppy_sram__address[15:0]),
+        .address(floppy_sram__address[14:0]),
         .write_enable(floppy_sram__write_enable),
         .read_not_write(floppy_sram__read_not_write),
         .select(floppy_sram__select),

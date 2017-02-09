@@ -416,3 +416,48 @@ set_parameter -entity "bbc_project" -to "bbc.rams.floppy.ram"  -name initfile $S
 set_parameter -entity "bbc_project" -to "bbc.rams.display.ram"  -name initfile $SRAMS_DIR/elite.qmif
 set_parameter -entity "bbc_project" -to "bbc_micro_with_rams:bbc|bbc_micro_rams:rams|se_sram_srw_65536x32:floppy|se_sram_srw:ram"             -name initfile $SRAMS_DIR/elite.qmif
 
+#a Set I/Os
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to clk
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to reset_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__clock
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__shdn
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__hsync_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__display_enable
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[0]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[1]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[2]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[3]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[4]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[5]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[6]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[7]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[0]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[1]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[2]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[3]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[4]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[5]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[6]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[7]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[0]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[1]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[2]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[3]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[4]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[5]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[6]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[7]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[0]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[1]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[2]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[3]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[4]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[5]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[6]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[7]

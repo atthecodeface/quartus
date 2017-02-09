@@ -10,13 +10,13 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name IGNORE_VERILOG_INITIAL_CONSTRUCTS ON
 set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 1
-set_global_assignment -name PARALLEL_SYNTHESIS off
+set_global_assignment -name PARALLEL_SYNTHESIS OFF
 
 # User state machine encoding permits CDL to control the encoding
 # Which produces faster logic, fewer registers (1504 vs 1626, for example)
 # and fewer ALMs (1526 vs 1580 in the example)
-set_global_assignment -name EXTRACT_VERILOG_STATE_MACHINES off
-set_global_assignment -name STATE_MACHINE_PROCESSING "User-Encoded"
+set_global_assignment -name EXTRACT_VERILOG_STATE_MACHINES OFF
+set_global_assignment -name STATE_MACHINE_PROCESSING "USER-ENCODED"
 
 #set_global_assignment -name EXTRACT_VERILOG_STATE_MACHINES on
 #set_global_assignment -name STATE_MACHINE_PROCESSING "Auto"
@@ -27,3 +27,6 @@ set_global_assignment -name STATE_MACHINE_PROCESSING "User-Encoded"
 #set_global_assignment -name QIP_FILE modules/altclkctrl.qip
 #set_global_assignment -name QSYS_FILE modules/altclkctrl.qsys
 
+
+set_global_assignment -name QIP_FILE modules/pll_lcd.qip
+set_global_assignment -name SIP_FILE modules/pll_lcd.sip
