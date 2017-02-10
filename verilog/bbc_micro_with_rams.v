@@ -145,6 +145,9 @@ module bbc_micro_with_rams
     wire floppy_sram_csr_response__ack;
     wire floppy_sram_csr_response__read_data_valid;
     wire [31:0]floppy_sram_csr_response__read_data;
+    wire keyboard_sram_csr_response__ack;
+    wire keyboard_sram_csr_response__read_data_valid;
+    wire [31:0]keyboard_sram_csr_response__read_data;
     wire display_sram_csr_response__ack;
     wire display_sram_csr_response__read_data_valid;
     wire [31:0]display_sram_csr_response__read_data;
@@ -288,7 +291,6 @@ module bbc_micro_with_rams
         .csr_request__select(csr_request__select),
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
-        .keyboard_reset_n(1'h1),
         .display__blue(display__blue),
         .display__green(display__green),
         .display__red(display__red),
@@ -302,7 +304,20 @@ module bbc_micro_with_rams
         .csr_response__ack(            display_sram_csr_response__ack),
         .sram_write__address(            display_sram_write__address),
         .sram_write__data(            display_sram_write__data),
-        .sram_write__enable(            display_sram_write__enable),
+        .sram_write__enable(            display_sram_write__enable)         );
+    bbc_keyboard_csr keyboard_csr(
+        .clk(clk),
+        .clk__enable(clk_cpu__enable),
+        .csr_request__data(csr_request__data),
+        .csr_request__address(csr_request__address),
+        .csr_request__select(csr_request__select),
+        .csr_request__read_not_write(csr_request__read_not_write),
+        .csr_request__valid(csr_request__valid),
+        .keyboard_reset_n(1'h1),
+        .reset_n(reset_n),
+        .csr_response__read_data(            keyboard_sram_csr_response__read_data),
+        .csr_response__read_data_valid(            keyboard_sram_csr_response__read_data_valid),
+        .csr_response__ack(            keyboard_sram_csr_response__ack),
         .keyboard__keys_down_cols_8_to_9(            keyboard__keys_down_cols_8_to_9),
         .keyboard__keys_down_cols_0_to_7(            keyboard__keys_down_cols_0_to_7),
         .keyboard__reset_pressed(            keyboard__reset_pressed)         );

@@ -644,7 +644,10 @@ module bbc_floppy_sram
     //synopsys  translate_on
             endcase
             floppy_response__read_data_valid <= 1'h0;
-            floppy_response__read_data <= sram_combs__read_data;
+            if ((sram_combs__read_data_valid!=1'h0))
+            begin
+                floppy_response__read_data <= sram_combs__read_data;
+            end //if
             if ((floppy_state__fsm_state==4'h4))
             begin
                 floppy_response__read_data_valid <= 1'h1;
@@ -725,7 +728,7 @@ module bbc_floppy_sram
             floppy_disk_state__disk_ready[0] <= 1'h1;
             floppy_disk_state__num_tracks[0] <= 8'h50;
             floppy_disk_state__sectors_per_track[0] <= 8'ha;
-            floppy_disk_state__sram_id_base_address[0] <= 20'hf000;
+            floppy_disk_state__sram_id_base_address[0] <= 20'h7000;
             floppy_disk_state__sram_data_base_address[0] <= 20'h0;
             floppy_disk_state__data_words_per_track[0] <= 12'ha00;
             floppy_disk_state__write_protect[0] <= 1'h1;

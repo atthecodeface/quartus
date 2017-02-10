@@ -65,7 +65,6 @@ module bbc_display_sram
     csr_request__select,
     csr_request__address,
     csr_request__data,
-    keyboard_reset_n,
     display__clock_enable,
     display__hsync,
     display__vsync,
@@ -75,9 +74,6 @@ module bbc_display_sram
     display__blue,
     reset_n,
 
-    keyboard__reset_pressed,
-    keyboard__keys_down_cols_0_to_7,
-    keyboard__keys_down_cols_8_to_9,
     csr_response__ack,
     csr_response__read_data_valid,
     csr_response__read_data,
@@ -97,7 +93,6 @@ module bbc_display_sram
     input [15:0]csr_request__select;
     input [15:0]csr_request__address;
     input [31:0]csr_request__data;
-    input keyboard_reset_n;
     input display__clock_enable;
     input display__hsync;
     input display__vsync;
@@ -108,9 +103,6 @@ module bbc_display_sram
     input reset_n;
 
     //b Outputs
-    output keyboard__reset_pressed;
-    output [63:0]keyboard__keys_down_cols_0_to_7;
-    output [15:0]keyboard__keys_down_cols_8_to_9;
     output csr_response__ack;
     output csr_response__read_data_valid;
     output [31:0]csr_response__read_data;
@@ -160,20 +152,11 @@ module bbc_display_sram
     reg [7:0]display_state__pixels_to_add_red;
     reg [7:0]display_state__pixels_to_add_green;
     reg [7:0]display_state__pixels_to_add_blue;
-    reg [7:0]keyboard_state__reset_counter;
-    reg keyboard_state__reset_out;
     reg [10:0]csrs__h_back_porch;
     reg [10:0]csrs__v_back_porch;
-    reg csrs__reset_pressed;
-    reg [7:0]csrs__reset_counter;
-    reg [63:0]csrs__keys_down_cols_0_to_7;
-    reg [15:0]csrs__keys_down_cols_8_to_9;
     reg [15:0]csrs__sram_base_address;
     reg [9:0]csrs__sram_scanlines;
     reg [9:0]csrs__sram_writes_per_scanline;
-    reg keyboard__reset_pressed;
-    reg [63:0]keyboard__keys_down_cols_0_to_7;
-    reg [15:0]keyboard__keys_down_cols_8_to_9;
 
     //b Internal combinatorials
     reg [31:0]csr_read_data;
@@ -896,10 +879,6 @@ module bbc_display_sram
             csrs__h_back_porch <= 11'h6e8;
             csrs__v_back_porch <= 11'h0;
             csrs__v_back_porch <= 11'h7ba;
-            csrs__reset_pressed <= 1'h0;
-            csrs__reset_counter <= 8'h0;
-            csrs__keys_down_cols_0_to_7 <= 64'h0;
-            csrs__keys_down_cols_8_to_9 <= 16'h0;
         end
         else if (clk__enable)
         begin
@@ -920,23 +899,6 @@ module bbc_display_sram
                     csrs__h_back_porch <= csr_access__data[10:0];
                     csrs__v_back_porch <= csr_access__data[26:16];
                     end
-                4'h4: // req 1
-                    begin
-                    csrs__reset_pressed <= csr_access__data[0];
-                    csrs__reset_counter <= csr_access__data[31:24];
-                    end
-                4'h8: // req 1
-                    begin
-                    csrs__keys_down_cols_0_to_7 <= {csrs__keys_down_cols_0_to_7[63:32],csr_access__data};
-                    end
-                4'h9: // req 1
-                    begin
-                    csrs__keys_down_cols_0_to_7 <= {csr_access__data,csrs__keys_down_cols_0_to_7[31:0]};
-                    end
-                4'ha: // req 1
-                    begin
-                    csrs__keys_down_cols_8_to_9 <= csr_access__data[15:0];
-                    end
                 //synopsys  translate_off
                 //pragma coverage off
                 //synopsys  translate_on
@@ -949,39 +911,6 @@ module bbc_display_sram
                 //synopsys  translate_on
                 endcase
             end //if
-        end //if
-    end //always
-
-    //b reset_and_keys clock process
-        //   
-        //       
-    always @( posedge clk or negedge reset_n)
-    begin : reset_and_keys__code
-        if (reset_n==1'b0)
-        begin
-            keyboard_state__reset_out <= 1'h0;
-            keyboard_state__reset_counter <= 8'h0;
-            keyboard_state__reset_counter <= 8'hff;
-            keyboard__reset_pressed <= 1'h0;
-            keyboard__keys_down_cols_0_to_7 <= 64'h0;
-            keyboard__keys_down_cols_8_to_9 <= 16'h0;
-        end
-        else if (clk__enable)
-        begin
-            keyboard_state__reset_out <= 1'h0;
-            if ((keyboard_state__reset_counter!=8'h0))
-            begin
-                keyboard_state__reset_out <= 1'h1;
-                keyboard_state__reset_counter <= (keyboard_state__reset_counter-8'h1);
-            end //if
-            if ((keyboard__reset_pressed!=1'h0))
-            begin
-                keyboard_state__reset_out <= 1'h1;
-                keyboard_state__reset_counter <= csrs__reset_counter;
-            end //if
-            keyboard__reset_pressed <= csrs__reset_pressed;
-            keyboard__keys_down_cols_0_to_7 <= csrs__keys_down_cols_0_to_7;
-            keyboard__keys_down_cols_8_to_9 <= csrs__keys_down_cols_8_to_9;
         end //if
     end //always
 
