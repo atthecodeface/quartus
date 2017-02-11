@@ -396,6 +396,8 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_csr_interface.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/acia6850.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/via6522.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/de1_cl_controls.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/led_ws2812_chain.v
 
 
 set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
@@ -471,3 +473,11 @@ set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[6]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[7]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[8]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[9]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__sr_data
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__left_rotary__direction_pin
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__left_rotary__transition_pin
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__right_rotary__direction_pin
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__right_rotary__transition_pin
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_control__sr_clock
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_control__sr_shift
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to led_data_pin

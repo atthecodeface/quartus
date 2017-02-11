@@ -155,8 +155,10 @@ module bbc_display_sram
     reg [10:0]csrs__h_back_porch;
     reg [10:0]csrs__v_back_porch;
     reg [15:0]csrs__sram_base_address;
+    reg [15:0]csrs__sram_base_address_odd_fields;
     reg [9:0]csrs__sram_scanlines;
     reg [9:0]csrs__sram_writes_per_scanline;
+    reg csrs__sram_interlace_in_same_buffer;
 
     //b Internal combinatorials
     reg [31:0]csr_read_data;
@@ -826,7 +828,10 @@ module bbc_display_sram
                 end //if
                 if ((display_state__interlaced!=1'h0))
                 begin
-                    sram_state__address <= (sram_state__address+{6'h0,csrs__sram_writes_per_scanline});
+                    if ((csrs__sram_interlace_in_same_buffer!=1'h0))
+                    begin
+                        sram_state__address <= (sram_state__address+{6'h0,csrs__sram_writes_per_scanline});
+                    end //if
                     if ((sram_state__scanlines_left==10'h1))
                     begin
                         sram_state__scanlines_left <= 10'h0;
@@ -849,7 +854,7 @@ module bbc_display_sram
                 sram_state__address <= csrs__sram_base_address;
                 if ((display_state__restart_frame_odd_field!=1'h0))
                 begin
-                    sram_state__address <= (csrs__sram_base_address+{6'h0,csrs__sram_writes_per_scanline});
+                    sram_state__address <= csrs__sram_base_address_odd_fields;
                 end //if
             end //if
         end //if
@@ -871,8 +876,13 @@ module bbc_display_sram
         if (reset_n==1'b0)
         begin
             csrs__sram_base_address <= 16'h0;
+            csrs__sram_base_address <= 16'h0;
+            csrs__sram_base_address_odd_fields <= 16'h0;
+            csrs__sram_base_address_odd_fields <= 16'h8000;
             csrs__sram_writes_per_scanline <= 10'h0;
             csrs__sram_writes_per_scanline <= 10'h28;
+            csrs__sram_interlace_in_same_buffer <= 1'h0;
+            csrs__sram_interlace_in_same_buffer <= 1'h0;
             csrs__sram_scanlines <= 10'h0;
             csrs__sram_scanlines <= 10'h1f4;
             csrs__h_back_porch <= 11'h0;
@@ -888,10 +898,12 @@ module bbc_display_sram
                 4'h0: // req 1
                     begin
                     csrs__sram_base_address <= csr_access__data[15:0];
+                    csrs__sram_base_address_odd_fields <= csr_access__data[31:16];
                     end
                 4'h1: // req 1
                     begin
                     csrs__sram_writes_per_scanline <= csr_access__data[9:0];
+                    csrs__sram_interlace_in_same_buffer <= csr_access__data[15];
                     csrs__sram_scanlines <= csr_access__data[25:16];
                     end
                 4'h2: // req 1

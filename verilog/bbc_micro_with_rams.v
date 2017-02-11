@@ -145,9 +145,9 @@ module bbc_micro_with_rams
     wire floppy_sram_csr_response__ack;
     wire floppy_sram_csr_response__read_data_valid;
     wire [31:0]floppy_sram_csr_response__read_data;
-    wire keyboard_sram_csr_response__ack;
-    wire keyboard_sram_csr_response__read_data_valid;
-    wire [31:0]keyboard_sram_csr_response__read_data;
+    wire keyboard_csr_response__ack;
+    wire keyboard_csr_response__read_data_valid;
+    wire [31:0]keyboard_csr_response__read_data;
     wire display_sram_csr_response__ack;
     wire display_sram_csr_response__read_data_valid;
     wire [31:0]display_sram_csr_response__read_data;
@@ -315,9 +315,9 @@ module bbc_micro_with_rams
         .csr_request__valid(csr_request__valid),
         .keyboard_reset_n(1'h1),
         .reset_n(reset_n),
-        .csr_response__read_data(            keyboard_sram_csr_response__read_data),
-        .csr_response__read_data_valid(            keyboard_sram_csr_response__read_data_valid),
-        .csr_response__ack(            keyboard_sram_csr_response__ack),
+        .csr_response__read_data(            keyboard_csr_response__read_data),
+        .csr_response__read_data_valid(            keyboard_csr_response__read_data_valid),
+        .csr_response__ack(            keyboard_csr_response__ack),
         .keyboard__keys_down_cols_8_to_9(            keyboard__keys_down_cols_8_to_9),
         .keyboard__keys_down_cols_0_to_7(            keyboard__keys_down_cols_0_to_7),
         .keyboard__reset_pressed(            keyboard__reset_pressed)         );
@@ -449,6 +449,9 @@ module bbc_micro_with_rams
         csr_response__ack__var = csr_response__ack__var | clocking_csr_response__ack;
         csr_response__read_data_valid__var = csr_response__read_data_valid__var | clocking_csr_response__read_data_valid;
         csr_response__read_data__var = csr_response__read_data__var | clocking_csr_response__read_data;
+        csr_response__ack__var = csr_response__ack__var | keyboard_csr_response__ack;
+        csr_response__read_data_valid__var = csr_response__read_data_valid__var | keyboard_csr_response__read_data_valid;
+        csr_response__read_data__var = csr_response__read_data__var | keyboard_csr_response__read_data;
         enable_clk_2MHz_video = clock_control__enable_2MHz_video;
         enable_cpu_clk = clock_control__enable_cpu;
         bbc_reset_n = (reset_n & !(clock_control__reset_cpu!=1'h0));

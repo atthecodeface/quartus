@@ -19,11 +19,19 @@ module bbc_micro_de1_cl
     clk,
     clk__enable,
 
+    inputs_status__sr_data,
+    inputs_status__left_rotary__direction_pin,
+    inputs_status__left_rotary__transition_pin,
+    inputs_status__right_rotary__direction_pin,
+    inputs_status__right_rotary__transition_pin,
     switches,
     keys,
     video_locked,
     reset_n,
 
+    inputs_control__sr_clock,
+    inputs_control__sr_shift,
+    led_data_pin,
     leds,
     lcd__vsync_n,
     lcd__hsync_n,
@@ -47,6 +55,12 @@ module bbc_micro_de1_cl
     wire clk_2MHz_video_clock__enable;
 
     //b Inputs
+        //   DE1 CL daughterboard shifter register etc status
+    input inputs_status__sr_data;
+    input inputs_status__left_rotary__direction_pin;
+    input inputs_status__left_rotary__transition_pin;
+    input inputs_status__right_rotary__direction_pin;
+    input inputs_status__right_rotary__transition_pin;
         //   DE1 switches
     input [9:0]switches;
         //   DE1 keys
@@ -57,6 +71,11 @@ module bbc_micro_de1_cl
     input reset_n;
 
     //b Outputs
+        //   DE1 CL daughterboard shifter register control
+    output inputs_control__sr_clock;
+    output inputs_control__sr_shift;
+        //   DE1 CL daughterboard neopixel LED pin
+    output led_data_pin;
         //   DE1 leds
     output [9:0]leds;
         //   LCD display out to computer lab daughterboard
@@ -83,8 +102,16 @@ module bbc_micro_de1_cl
     reg lcd__backlight;
 
     //b Output nets
+        //   DE1 CL daughterboard shifter register control
+    wire inputs_control__sr_clock;
+    wire inputs_control__sr_shift;
+        //   DE1 CL daughterboard neopixel LED pin
+    wire led_data_pin;
 
     //b Internal and output registers
+    reg [3:0]last_fn_key;
+    reg fn_key_pressed;
+    reg [9:0]fn_keys_down;
     reg debug_state__data;
     reg debug_state__last_data;
     reg [31:0]debug_state__counter;
@@ -104,6 +131,11 @@ module bbc_micro_de1_cl
     reg [15:0]keyboard__keys_down_cols_8_to_9;
     reg framebuffer_reset_n;
     reg bbc_reset_n;
+    reg led_data__valid;
+    reg led_data__last;
+    reg [7:0]led_data__red;
+    reg [7:0]led_data__green;
+    reg [7:0]led_data__blue;
     reg enable_cpu_clk;
     reg enable_clk_2MHz_video;
     reg bbc_micro_host_sram_request__valid;
@@ -120,6 +152,27 @@ module bbc_micro_de1_cl
 
     //b Internal nets
     wire [31:0]floppy_sram_read_data;
+    wire user_inputs__updated_switches;
+    wire user_inputs__diamond__a;
+    wire user_inputs__diamond__b;
+    wire user_inputs__diamond__x;
+    wire user_inputs__diamond__y;
+    wire user_inputs__joystick__u;
+    wire user_inputs__joystick__d;
+    wire user_inputs__joystick__l;
+    wire user_inputs__joystick__r;
+    wire user_inputs__joystick__c;
+    wire user_inputs__left_dial__pressed;
+    wire user_inputs__left_dial__direction;
+    wire user_inputs__left_dial__direction_pulse;
+    wire user_inputs__right_dial__pressed;
+    wire user_inputs__right_dial__direction;
+    wire user_inputs__right_dial__direction_pulse;
+    wire user_inputs__touchpanel_irq;
+    wire user_inputs__temperature_alarm;
+    wire led_request__ready;
+    wire led_request__first;
+    wire [7:0]led_request__led_number;
     wire bbc_micro_host_sram_response__ack;
     wire bbc_micro_host_sram_response__read_data_valid;
     wire [63:0]bbc_micro_host_sram_response__read_data;
@@ -380,6 +433,50 @@ module bbc_micro_de1_cl
         .video_bus__display_enable(            video_bus__display_enable),
         .video_bus__hsync(            video_bus__hsync),
         .video_bus__vsync(            video_bus__vsync)         );
+    de1_cl_controls controls(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .inputs_status__right_rotary__transition_pin(inputs_status__right_rotary__transition_pin),
+        .inputs_status__right_rotary__direction_pin(inputs_status__right_rotary__direction_pin),
+        .inputs_status__left_rotary__transition_pin(inputs_status__left_rotary__transition_pin),
+        .inputs_status__left_rotary__direction_pin(inputs_status__left_rotary__direction_pin),
+        .inputs_status__sr_data(inputs_status__sr_data),
+        .sr_divider(8'h31),
+        .reset_n(reset_n),
+        .user_inputs__temperature_alarm(            user_inputs__temperature_alarm),
+        .user_inputs__touchpanel_irq(            user_inputs__touchpanel_irq),
+        .user_inputs__right_dial__direction_pulse(            user_inputs__right_dial__direction_pulse),
+        .user_inputs__right_dial__direction(            user_inputs__right_dial__direction),
+        .user_inputs__right_dial__pressed(            user_inputs__right_dial__pressed),
+        .user_inputs__left_dial__direction_pulse(            user_inputs__left_dial__direction_pulse),
+        .user_inputs__left_dial__direction(            user_inputs__left_dial__direction),
+        .user_inputs__left_dial__pressed(            user_inputs__left_dial__pressed),
+        .user_inputs__joystick__c(            user_inputs__joystick__c),
+        .user_inputs__joystick__r(            user_inputs__joystick__r),
+        .user_inputs__joystick__l(            user_inputs__joystick__l),
+        .user_inputs__joystick__d(            user_inputs__joystick__d),
+        .user_inputs__joystick__u(            user_inputs__joystick__u),
+        .user_inputs__diamond__y(            user_inputs__diamond__y),
+        .user_inputs__diamond__x(            user_inputs__diamond__x),
+        .user_inputs__diamond__b(            user_inputs__diamond__b),
+        .user_inputs__diamond__a(            user_inputs__diamond__a),
+        .user_inputs__updated_switches(            user_inputs__updated_switches),
+        .inputs_control__sr_shift(            inputs_control__sr_shift),
+        .inputs_control__sr_clock(            inputs_control__sr_clock)         );
+    led_ws2812_chain led_chain(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .led_data__blue(led_data__blue),
+        .led_data__green(led_data__green),
+        .led_data__red(led_data__red),
+        .led_data__last(led_data__last),
+        .led_data__valid(led_data__valid),
+        .divider_400ns(8'h13),
+        .reset_n(reset_n),
+        .led_data_pin(            led_data_pin),
+        .led_request__led_number(            led_request__led_number),
+        .led_request__first(            led_request__first),
+        .led_request__ready(            led_request__ready)         );
     //b debug_logic__comb combinatorial process
         //   
         //       
@@ -387,11 +484,11 @@ module bbc_micro_de1_cl
     begin: debug_logic__comb_code
     reg debug_comb__selected_data__var;
     reg [9:0]leds__var;
-        debug_comb__selected_data__var = lcd__vsync_n;
+       debug_comb__selected_data__var = clock_control__enable_cpu;
         case (switches[8:6]) //synopsys parallel_case
         3'h0: // req 1
             begin
-            debug_comb__selected_data__var = lcd__vsync_n;
+               //debug_comb__selected_data__var = lcd__vsync_n;
             end
         3'h1: // req 1
             begin
@@ -407,7 +504,7 @@ module bbc_micro_de1_cl
             end
         3'h4: // req 1
             begin
-            debug_comb__selected_data__var = display_sram_write__enable;
+            //debug_comb__selected_data__var = display_sram_write__enable;
             end
         3'h5: // req 1
             begin
@@ -464,12 +561,18 @@ module bbc_micro_de1_cl
         end //if
     end //always
 
-    //b stuff__comb combinatorial process
+    //b misc_logic__comb combinatorial process
         //   
         //       
-    always @ ( * )//stuff__comb
-    begin: stuff__comb_code
+    always @ ( * )//misc_logic__comb
+    begin: misc_logic__comb_code
     reg [63:0]keyboard__keys_down_cols_0_to_7__var;
+    reg [15:0]keyboard__keys_down_cols_8_to_9__var;
+    reg led_data__valid__var;
+    reg led_data__last__var;
+    reg [7:0]led_data__red__var;
+    reg [7:0]led_data__green__var;
+    reg [7:0]led_data__blue__var;
         csr_request__valid = 1'h0;
         csr_request__read_not_write = 1'h0;
         csr_request__select = 16'h0;
@@ -483,10 +586,58 @@ module bbc_micro_de1_cl
         bbc_micro_host_sram_request__write_data = 64'h0;
         keyboard__reset_pressed = 1'h0;
         keyboard__keys_down_cols_0_to_7__var = 64'h0;
-        keyboard__keys_down_cols_8_to_9 = 16'h0;
+        keyboard__keys_down_cols_8_to_9__var = 16'h0;
         keyboard__keys_down_cols_0_to_7__var[0] = !(keys[0]!=1'h0);
         keyboard__keys_down_cols_0_to_7__var[8] = !(keys[1]!=1'h0);
-        keyboard__keys_down_cols_0_to_7__var[1] = !(keys[2]!=1'h0);
+        keyboard__keys_down_cols_0_to_7__var[45] = !(keys[2]!=1'h0);
+        keyboard__keys_down_cols_0_to_7__var[13] = user_inputs__joystick__u;
+        keyboard__keys_down_cols_0_to_7__var[20] = user_inputs__joystick__d;
+        keyboard__keys_down_cols_0_to_7__var[54] = user_inputs__joystick__l;
+        keyboard__keys_down_cols_0_to_7__var[62] = user_inputs__joystick__r;
+        keyboard__keys_down_cols_0_to_7__var[2] = user_inputs__joystick__c;
+        keyboard__keys_down_cols_0_to_7__var[22] = user_inputs__diamond__y;
+        keyboard__keys_down_cols_8_to_9__var[6] = user_inputs__diamond__a;
+        keyboard__keys_down_cols_0_to_7__var[12] = user_inputs__diamond__b;
+        keyboard__keys_down_cols_0_to_7__var[44] = user_inputs__diamond__x;
+        keyboard__keys_down_cols_0_to_7__var[15] = fn_keys_down[1];
+        keyboard__keys_down_cols_0_to_7__var[23] = fn_keys_down[2];
+        keyboard__keys_down_cols_0_to_7__var[31] = fn_keys_down[3];
+        keyboard__keys_down_cols_0_to_7__var[33] = fn_keys_down[4];
+        keyboard__keys_down_cols_0_to_7__var[39] = fn_keys_down[5];
+        keyboard__keys_down_cols_0_to_7__var[47] = fn_keys_down[6];
+        keyboard__keys_down_cols_0_to_7__var[49] = fn_keys_down[7];
+        keyboard__keys_down_cols_0_to_7__var[55] = fn_keys_down[8];
+        keyboard__keys_down_cols_0_to_7__var[63] = fn_keys_down[9];
+        keyboard__keys_down_cols_8_to_9__var[11] = user_inputs__joystick__u;
+        keyboard__keys_down_cols_8_to_9__var[10] = user_inputs__joystick__d;
+        keyboard__keys_down_cols_8_to_9__var[9] = user_inputs__joystick__l;
+        keyboard__keys_down_cols_8_to_9__var[15] = user_inputs__joystick__r;
+        led_data__valid__var = 1'h0;
+        led_data__last__var = 1'h0;
+        led_data__red__var = 8'h0;
+        led_data__green__var = 8'h0;
+        led_data__blue__var = 8'h0;
+        if ((led_request__ready!=1'h0))
+        begin
+            case (led_request__led_number) //synopsys parallel_case
+            8'h0: // req 1
+                begin
+                led_data__valid__var = 1'h1;
+                led_data__last__var = 1'h0;
+                led_data__red__var = debug_state__counter[7:0];
+                led_data__green__var = ~debug_state__counter[7:0];
+                led_data__blue__var = 8'h0;
+                end
+            default: // req 1
+                begin
+                led_data__valid__var = 1'h1;
+                led_data__last__var = 1'h1;
+                led_data__blue__var = {last_fn_key,last_fn_key};
+                led_data__green__var = 8'h0;
+                led_data__red__var = 8'h0;
+                end
+            endcase
+        end //if
         enable_clk_2MHz_video = clock_control__enable_2MHz_video;
         enable_cpu_clk = clock_control__enable_cpu;
         bbc_reset_n = ((reset_n & !(clock_control__reset_cpu!=1'h0)) & switches[0]);
@@ -499,13 +650,65 @@ module bbc_micro_de1_cl
         lcd__blue = (video_bus__blue[7:2] ^ debug_state__counter[5:0]);
         lcd__backlight = switches[1];
         keyboard__keys_down_cols_0_to_7 = keyboard__keys_down_cols_0_to_7__var;
+        keyboard__keys_down_cols_8_to_9 = keyboard__keys_down_cols_8_to_9__var;
+        led_data__valid = led_data__valid__var;
+        led_data__last = led_data__last__var;
+        led_data__red = led_data__red__var;
+        led_data__green = led_data__green__var;
+        led_data__blue = led_data__blue__var;
     end //always
 
-    //b stuff__posedge_clk_cpu_active_low_reset_n clock process
+    //b misc_logic__posedge_clk_active_low_reset_n clock process
         //   
         //       
     always @( posedge clk or negedge reset_n)
-    begin : stuff__posedge_clk_cpu_active_low_reset_n__code
+    begin : misc_logic__posedge_clk_active_low_reset_n__code
+        if (reset_n==1'b0)
+        begin
+            fn_keys_down <= 10'h0;
+            fn_key_pressed <= 1'h0;
+            last_fn_key <= 4'h1;
+        end
+        else if (clk__enable)
+        begin
+            if ((user_inputs__right_dial__direction_pulse!=1'h0))
+            begin
+                fn_keys_down <= 10'h0;
+                fn_key_pressed <= 1'h1;
+                if ((user_inputs__right_dial__direction!=1'h0))
+                begin
+                    last_fn_key <= (last_fn_key+4'h1);
+                    if ((last_fn_key==4'h9))
+                    begin
+                        last_fn_key <= 4'h1;
+                    end //if
+                end //if
+                else
+                
+                begin
+                    last_fn_key <= (last_fn_key-4'h1);
+                    if ((last_fn_key==4'h1))
+                    begin
+                        last_fn_key <= 4'h9;
+                    end //if
+                end //else
+            end //if
+            if ((user_inputs__right_dial__pressed!=1'h0))
+            begin
+                fn_keys_down <= 10'h0;
+                fn_keys_down[last_fn_key] <= 1'h1;
+            end //if
+            else
+            
+            begin
+                fn_keys_down <= 10'h0;
+            end //else
+        end //if
+    end //always
+
+    //b floppy_and_framebuffer clock process
+    always @( posedge clk or negedge reset_n)
+    begin : floppy_and_framebuffer__code
         if (reset_n==1'b0)
         begin
             floppy_sram_request_r__enable <= 1'h0;

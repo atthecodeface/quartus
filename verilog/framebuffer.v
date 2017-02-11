@@ -170,7 +170,7 @@ module framebuffer
         .write_data_0(sram_state__write_request__data[47:0]),
         .address_0(sram_state__write_request__address[13:0]),
         .read_not_write_0(1'h0),
-        .select_0(sram_state__write_request__enable),
+        .select_0(((sram_state__write_request__enable!=1'h0)&&(sram_state__write_request__address[15:14]==2'h0))),
         .data_out_1(            pixel_read_data)         );
     bbc_csr_interface csri(
         .clk(csr_clk),
@@ -382,7 +382,7 @@ module framebuffer
     reg [7:0]pixel_combs__red__var;
     reg [7:0]pixel_combs__green__var;
     reg [7:0]pixel_combs__blue__var;
-        pixel_combs__next_num_valid__var = (pixel_state__num_valid-5'h1);
+        pixel_combs__next_num_valid__var = (pixel_state__num_valid-5'h2);
         if ((pixel_state__num_valid==5'h0))
         begin
             pixel_combs__next_num_valid__var = 5'h0;
@@ -444,9 +444,9 @@ module framebuffer
             pixel_state__load_data_buffer <= pixel_combs__sram_request;
             if ((video_combs__will_display_pixels!=1'h0))
             begin
-                pixel_state__shift__red[15:1] <= pixel_state__shift__red[14:0];
-                pixel_state__shift__green[15:1] <= pixel_state__shift__green[14:0];
-                pixel_state__shift__blue[15:1] <= pixel_state__shift__blue[14:0];
+                pixel_state__shift__red[15:2] <= pixel_state__shift__red[13:0];
+                pixel_state__shift__green[15:2] <= pixel_state__shift__green[13:0];
+                pixel_state__shift__blue[15:2] <= pixel_state__shift__blue[13:0];
                 pixel_state__num_valid <= pixel_combs__next_num_valid;
             end //if
             if ((pixel_combs__load_shift_register!=1'h0))
