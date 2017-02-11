@@ -98,15 +98,20 @@ module pll_lcd (
 	);
 
 endmodule
-module bbc_project(clk, reset_n, leds,
+module bbc_project(clk, reset_n, leds, switches, keys,
                    lcd__clock, lcd__vsync_n, lcd__hsync_n, lcd__display_enable, lcd__red, lcd__green, lcd__blue,
-                   lcd__shdn);
+                   lcd__backlight);
    
    input clk         //synthesis altera_chip_pin_lc="@AF14"
          ; // clock_50 : 
    input reset_n     //synthesis altera_chip_pin_lc="@Y16"
-         ; // key 3: 
-   output [7:0] leds //synthesis altera_chip_pin_lc="@W20,@Y19,@W19,@W17,@V18,@V17,@W16,@V16"
+         ; // key 3:
+   input [9:0] switches  //synthesis altera_chip_pin_lc="@AE12,@AD10,@AC9,@AE11,@AD12,@AD11,@AF10,@AF9,@AC12,@AB12"
+                 ;
+   input [2:0] keys  //synthesis altera_chip_pin_lc="@W15,@AA15,@AA14"
+                 ;
+
+   output [9:0] leds //synthesis altera_chip_pin_lc="@Y21,@W21,@W20,@Y19,@W19,@W17,@V18,@V17,@W16,@V16"
                 ; // LEDS: 
    
    output       lcd__clock              //synthesis altera_chip_pin_lc="@AK27"
@@ -117,64 +122,16 @@ module bbc_project(clk, reset_n, leds,
                 ;
    output       lcd__display_enable     //synthesis altera_chip_pin_lc="@AH27"
                 ;
-   output [5:0] lcd__red                //synthesis altera_chip_pin_lc="@AC22,@AA20,@AD21,@AE22,@AF23,@AF24"
+   output [5:0] lcd__red                //synthesis altera_chip_pin_lc="@AF24,@AF23,@AE22,@AD21,@AA20,@AC22"
                 ;
-   output [6:0] lcd__green              //synthesis altera_chip_pin_lc="@AG22,@AH22,@AJ22,@AK22,@AH23,@AK23,@AG23"
+   output [6:0] lcd__green              //synthesis altera_chip_pin_lc="@AG23,@AK23,@AH23,@AK22,@AJ22,@AH22,@AG22"
                 ;
-   output [5:0] lcd__blue               //synthesis altera_chip_pin_lc="@AK24,@AJ24,@AJ25,@AH25,@AK26,@AJ26"
+   output [5:0] lcd__blue               //synthesis altera_chip_pin_lc="@AJ26,@AK26,@AH25,@AJ25,@AJ24,@AK24"
                 ;
-   output       lcd__shdn               //synthesis altera_chip_pin_lc="@AA21"
+   output       lcd__backlight          //synthesis altera_chip_pin_lc="@AA21"
                 ;
    
-   wire         host_sram_request__valid;
-   wire         host_sram_request__read_enable;
-   wire         host_sram_request__write_enable;
-   wire[7:0]    host_sram_request__select;
-   wire[23:0]   host_sram_request__address;
-   wire[63:0]   host_sram_request__write_data;
-   wire         csr_request__valid;
-   wire         csr_request__read_not_write;
-   wire[15:0]   csr_request__select;
-   wire[15:0]   csr_request__address;
-   wire[31:0]   csr_request__data;
-
-   wire         display_sram_write__enable;
-   wire[47:0]   display_sram_write__data;
-   wire[15:0]   display_sram_write__address;
-   wire         host_sram_response__ack;
-   wire         host_sram_response__read_data_valid;
-   wire[63:0]   host_sram_response__read_data;
-   wire         csr_response__ack;
-   wire         csr_response__read_data_valid;
-   wire[31:0]   csr_response__read_data;
-
-   wire         video_bus__vsync;
-   wire   video_bus__hsync;
-   wire   video_bus__display_enable;
-   wire [7:0] video_bus__red;
-   wire [7:0] video_bus__green;
-   wire [7:0] video_bus__blue;
-
-   assign lcd__clock          = video_clk;
-   assign lcd__vsync_n        = !video_bus__vsync;
-   assign lcd__hsync_n        = !video_bus__hsync;
-   assign lcd__display_enable = video_bus__display_enable;
-   assign lcd__red            = video_bus__red[7:2];
-   assign lcd__green          = video_bus__green[7:1];
-   assign lcd__blue           = video_bus__blue[7:2];
-
-    assign host_sram_request__valid=0;
-    assign host_sram_request__read_enable=0;
-    assign host_sram_request__write_enable=0;
-    assign host_sram_request__select=0;
-    assign host_sram_request__address=0;
-    assign host_sram_request__write_data=0;
-
-    assign csr_request__valid=0;
-    assign csr_request__read_not_write=0;
-    assign csr_request__select=0;
-    assign csr_request__address=0;
-    assign csr_request__data=0;
+   assign lcd__clock          = !video_clk;
 
    // e.g. output [7:0] sum /* synthesis altera_chip_pin_lc="@17, @166, @191, @152, @15, @148, @147, @149" */;
    // pin assignments
@@ -252,46 +209,27 @@ module bbc_project(clk, reset_n, leds,
    //  VGA_SYNC_N:  C10 - to ADV7123
    //  VGA_CLK:     A11 - to ADV7123
    
-
-   assign leds[6:0] = display_sram_write__data[6:0];
+   wire         video_clk;
+   wire         video_clk_locked;
    pll_lcd video_clk_gen( .refclk(clk), .rst(!reset_n), .outclk_0(video_clk), .locked(video_clk_locked) );
-   assign leds[7] = video_clk_locked;
-   assign lcd__shdn = reset_n;
-   bbc_micro_with_rams bbc( .clk(clk),
-                            .clk__enable(1'b1),
-                            .video_clk(video_clk),
-                            .video_clk__enable(1'b1),
-                            .reset_n(reset_n),
 
-                            .host_sram_request__valid(host_sram_request__valid),
-                            .host_sram_request__read_enable(host_sram_request__read_enable),
-                            .host_sram_request__write_enable(host_sram_request__write_enable),
-                            .host_sram_request__select(host_sram_request__select),
-                            .host_sram_request__address(host_sram_request__address),
-                            .host_sram_request__write_data(host_sram_request__write_data),
-                            .csr_request__valid(csr_request__valid),
-                            .csr_request__read_not_write(csr_request__read_not_write),
-                            .csr_request__select(csr_request__select),
-                            .csr_request__address(csr_request__address),
-                            .csr_request__data(csr_request__data),
+   bbc_micro_de1_cl bbc_micro(.video_clk(video_clk),
+                              .video_clk__enable(1'b1),
+                              .clk(clk),
+                              .clk__enable(1'b1),
 
-                            .display_sram_write__enable(display_sram_write__enable),
-                            .display_sram_write__data(display_sram_write__data),
-                            .display_sram_write__address(display_sram_write__address),
-                            .host_sram_response__ack(host_sram_response__ack),
-                            .host_sram_response__read_data_valid(host_sram_response__read_data_valid),
-                            .host_sram_response__read_data(host_sram_response__read_data),
-                            .csr_response__ack(csr_response__ack),
-                            .csr_response__read_data_valid(csr_response__read_data_valid),
-                            .csr_response__read_data(csr_response__read_data),
+                              .switches(switches),
+                              .keys({1'b0,keys}),
+                              .video_locked(video_clk_locked),
+                              .reset_n(reset_n),
 
-                            .video_bus__vsync(video_bus__vsync),
-                            .video_bus__hsync(video_bus__hsync),
-                            .video_bus__display_enable(video_bus__display_enable),
-                            .video_bus__red(video_bus__red),
-                            .video_bus__green(video_bus__green),
-                            .video_bus__blue(video_bus__blue)
-      
-                         );
+                              .leds(leds),
+                              .lcd__vsync_n(lcd__vsync_n),
+                              .lcd__hsync_n(lcd__hsync_n),
+                              .lcd__display_enable(lcd__display_enable),
+                              .lcd__red(lcd__red),
+                              .lcd__green(lcd__green),
+                              .lcd__blue(lcd__blue),
+                              .lcd__backlight(lcd__backlight) );
    
 endmodule

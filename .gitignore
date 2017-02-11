@@ -1,6 +1,6 @@
 *~
-*pyc
-*vcd
-*log
+*.pyc
+*.vcd
+*.log
 make
 modelsim_lib

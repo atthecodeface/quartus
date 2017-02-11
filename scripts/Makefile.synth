@@ -49,6 +49,8 @@ synth: $(MAKE_TARGETS)/synth.complete
 
 fit: $(MAKE_TARGETS)/fit.complete
 
+asm: $(MAKE_TARGETS)/asm.complete
+
 timing: $(MAKE_TARGETS)/timing.complete
 
 resynth:
@@ -64,6 +66,9 @@ $(MAKE_TARGETS)/synth.complete: $(SCRIPTS_DIR)/synth.tcl
 
 $(MAKE_TARGETS)/fit.complete: $(MAKE_TARGETS)/synth.complete
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/fit.complete
+
+$(MAKE_TARGETS)/asm.complete: $(MAKE_TARGETS)/fit.complete
+	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/asm.complete
 
 $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/timing.complete

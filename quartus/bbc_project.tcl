@@ -385,7 +385,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/fdc8271.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/crtc6845.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/cpu6502.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_vidproc.v
-set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_with_rams.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_de1_cl.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_rams.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_keyboard.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_clocking.v
@@ -403,11 +403,11 @@ set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 set_global_assignment -name SDC_FILE $QUARTUS_DIR/bbc_project.sdc
 
 #a Set parameters (e.g. SRAMs)
-set_parameter -entity "bbc_project" -to "bbc\|bbc\|basic\|ram"  -name initfile $SRAMS_DIR/basic2.rom.qmif
-set_parameter -entity "bbc_project" -to "bbc\|bbc\|os12\|ram"  -name initfile $SRAMS_DIR/os12.rom.qmif
-set_parameter -entity "bbc_project" -to "bbc\|bbc\|adfs\|ram"  -name initfile $SRAMS_DIR/adfs.rom.qmif
-set_parameter -entity "bbc_project" -to "bbc\|rams\|floppy\|ram"  -name initfile $SRAMS_DIR/elite.qmif
-set_parameter -entity "bbc_project" -to "bbc\|bbc\|saa\|character_rom\|ram"  -name initfile $SRAMS_DIR/teletext.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|basic\|ram"  -name initfile $SRAMS_DIR/basic2.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|os\|ram"  -name initfile $SRAMS_DIR/os12.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|adfs\|ram"  -name initfile $SRAMS_DIR/dfs.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|floppy\|ram"  -name initfile $SRAMS_DIR/elite.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|saa\|character_rom\|ram"  -name initfile $SRAMS_DIR/teletext.qmif
 
 # The following have no errors? (and no effect?)
 # Presumably entity has no hierarchy
@@ -420,7 +420,7 @@ set_parameter -entity "bbc_project" -to "bbc_micro_with_rams:bbc|bbc_micro_rams:
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to clk
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to reset_n
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__clock
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__shdn
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__backlight
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__hsync_n
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__display_enable
@@ -448,11 +448,6 @@ set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[4]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[5]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[6]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[7]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[0]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[1]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[2]
@@ -461,3 +456,18 @@ set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[4]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[5]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[6]
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[7]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[8]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[9]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to keys[0]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to keys[1]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to keys[2]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[0]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[1]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[2]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[3]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[4]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[5]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[6]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[7]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[8]
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[9]
