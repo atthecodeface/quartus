@@ -39,6 +39,7 @@ $(SRAM_CONTENTS)/$4.qmif: $(PYTHON_DIR)/mif_to_quartus_mif.py $(MIF_DIR)/$4.mif
 endef
 
 $(eval $(call sram.qmif_from_mif,128,64,0,teletext))
+$(eval $(call sram.qmif_from_mif,256,7,0,ps2_bbc_kbd))
 $(eval $(call sram.qmif_from_mif,16384,8,1,adfs.rom))
 $(eval $(call sram.qmif_from_mif,16384,8,1,dfs.rom))
 $(eval $(call sram.qmif_from_mif,16384,8,1,basic2.rom))

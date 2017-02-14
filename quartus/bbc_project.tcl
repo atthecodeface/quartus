@@ -388,16 +388,23 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_vidproc.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_de1_cl.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_rams.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_keyboard.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_keyboard_ps2.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_clocking.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_floppy_sram.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_display_sram.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_csr_interface.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_csr.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/acia6850.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/via6522.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/de1_cl_controls.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/led_ws2812_chain.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/ps2_host.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/ps2_host_keyboard.v
+
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_teletext.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext.v
 
 
 set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
@@ -405,11 +412,13 @@ set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 set_global_assignment -name SDC_FILE $QUARTUS_DIR/bbc_project.sdc
 
 #a Set parameters (e.g. SRAMs)
-set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|basic\|ram"  -name initfile $SRAMS_DIR/basic2.rom.qmif
-set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|os\|ram"  -name initfile $SRAMS_DIR/os12.rom.qmif
-set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|adfs\|ram"  -name initfile $SRAMS_DIR/dfs.rom.qmif
-set_parameter -entity "bbc_project" -to "bbc_micro\|floppy\|ram"  -name initfile $SRAMS_DIR/elite.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|basic\|ram"               -name initfile $SRAMS_DIR/basic2.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|os\|ram"                  -name initfile $SRAMS_DIR/os12.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|adfs\|ram"                -name initfile $SRAMS_DIR/dfs.rom.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|floppy\|ram"                   -name initfile $SRAMS_DIR/elite.qmif
 set_parameter -entity "bbc_project" -to "bbc_micro\|bbc\|saa\|character_rom\|ram"  -name initfile $SRAMS_DIR/teletext.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|ftb\|character_rom\|ram"       -name initfile $SRAMS_DIR/teletext.qmif
+set_parameter -entity "bbc_project" -to "bbc_micro\|bbc_ps2_kbd\|kbd_map\|ram"     -name initfile $SRAMS_DIR/ps2_bbc_kbd.qmif
 
 # The following have no errors? (and no effect?)
 # Presumably entity has no hierarchy
@@ -481,3 +490,5 @@ set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__right
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_control__sr_clock
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_control__sr_shift
 set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to led_data_pin
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to ps2_dat
+set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to ps2_clk

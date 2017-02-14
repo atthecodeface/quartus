@@ -106,7 +106,8 @@ module bbc_project(clk, reset_n, leds, switches, keys,
                    inputs_control__sr_clock, inputs_control__sr_shift,
                    led_data_pin,
                    lcd__clock, lcd__vsync_n, lcd__hsync_n, lcd__display_enable, lcd__red, lcd__green, lcd__blue,
-                   lcd__backlight);
+                   lcd__backlight,
+                   ps2_dat, ps2_clk);
    
    input clk         //synthesis altera_chip_pin_lc="@AF14"
          ; // clock_50 : 
@@ -155,6 +156,11 @@ module bbc_project(clk, reset_n, leds, switches, keys,
                 ;
    output       lcd__backlight          //synthesis altera_chip_pin_lc="@AA21"
                 ;
+   inout        ps2_clk                 //synthesis altera_chip_pin_lc="@AD7"
+                ; // other one is AE9
+   inout        ps2_dat                 //synthesis altera_chip_pin_lc="@AE7"
+                ; // other one is AD9
+   
    
    assign lcd__clock          = !video_clk;
 
@@ -179,11 +185,25 @@ module bbc_project(clk, reset_n, leds, switches, keys,
    wire         video_clk_locked;
    pll_lcd video_clk_gen( .refclk(clk), .rst(!reset_n), .outclk_0(video_clk), .locked(video_clk_locked) );
 
+   wire         ps2_in__clk;
+   wire         ps2_in__data;
+   wire         ps2_out__clk;
+   wire         ps2_out__data;
+   assign ps2_clk = ps2_out__clk  ? 1'bz: 1'b0;
+   assign ps2_dat = ps2_out__data ? 1'bz: 1'b0;
+   assign ps2_in__clk = ps2_clk;
+   assign ps2_in__data = ps2_dat;
+   
    bbc_micro_de1_cl bbc_micro(.video_clk(video_clk),
                               .video_clk__enable(1'b1),
                               .clk(clk),
                               .clk__enable(1'b1),
 
+                              .ps2_in__clk(ps2_in__clk),
+                              .ps2_in__data(ps2_in__data),
+                              .ps2_out__clk(ps2_out__clk),
+                              .ps2_out__data(ps2_out__data),
+                              
                               .inputs_status__sr_data(inputs_status__sr_data),
                               .inputs_status__left_rotary__direction_pin(inputs_status__left_rotary__direction_pin),
                               .inputs_status__left_rotary__transition_pin(inputs_status__left_rotary__transition_pin),

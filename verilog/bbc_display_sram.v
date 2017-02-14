@@ -186,11 +186,11 @@ module bbc_display_sram
 
     //b Clock gating module instances
     //b Module instances
-    bbc_csr_interface csri(
+    csr_target_csr csri(
         .clk(clk),
         .clk__enable(1'b1),
         .csr_select(16'h1),
-        .csr_read_data(csr_read_data),
+        .csr_access_data(csr_read_data),
         .csr_request__data(csr_request__data),
         .csr_request__address(csr_request__address),
         .csr_request__select(csr_request__select),
