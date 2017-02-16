@@ -100,6 +100,11 @@ module bbc_micro_de1_cl
 // output components here
 
     //b Output combinatorials
+        //   DE1 CL daughterboard neopixel LED pin
+    reg led_data_pin;
+        //   PS2 output pin driver open collector
+    reg ps2_out__data;
+    reg ps2_out__clk;
         //   DE1 leds
     reg [9:0]leds;
         //   LCD display out to computer lab daughterboard
@@ -115,15 +120,9 @@ module bbc_micro_de1_cl
         //   DE1 CL daughterboard shifter register control
     wire inputs_control__sr_clock;
     wire inputs_control__sr_shift;
-        //   DE1 CL daughterboard neopixel LED pin
-    wire led_data_pin;
-        //   PS2 output pin driver open collector
-    wire ps2_out__data;
-    wire ps2_out__clk;
 
     //b Internal and output registers
     reg [3:0]last_fn_key;
-    reg fn_key_pressed;
     reg [9:0]fn_keys_down;
     reg debug_state__data;
     reg debug_state__last_data;
@@ -189,6 +188,7 @@ module bbc_micro_de1_cl
     wire user_inputs__right_dial__direction_pulse;
     wire user_inputs__touchpanel_irq;
     wire user_inputs__temperature_alarm;
+    wire led_chain;
     wire led_request__ready;
     wire led_request__first;
     wire [7:0]led_request__led_number;
@@ -226,6 +226,8 @@ module bbc_micro_de1_cl
     wire ps2_rx_data__parity_error;
     wire ps2_rx_data__protocol_error;
     wire ps2_rx_data__timeout;
+    wire ps2_out_host__data;
+    wire ps2_out_host__clk;
     wire clock_control__enable_cpu;
     wire clock_control__will_enable_2MHz_video;
     wire clock_control__enable_2MHz_video;
@@ -485,7 +487,7 @@ module bbc_micro_de1_cl
         .video_clk(video_clk),
         .video_clk__enable(1'b1),
         .sram_clk(clk),
-        .sram_clk__enable(clk_2MHz_video_clock__enable),
+        .sram_clk__enable(1'b1),
         .csr_clk(clk),
         .csr_clk__enable(clk_cpu__enable),
         .csr_request__data(csr_request__data),
@@ -518,8 +520,8 @@ module bbc_micro_de1_cl
         .ps2_rx_data__parity_error(            ps2_rx_data__parity_error),
         .ps2_rx_data__data(            ps2_rx_data__data),
         .ps2_rx_data__valid(            ps2_rx_data__valid),
-        .ps2_out__clk(            ps2_out__clk),
-        .ps2_out__data(            ps2_out__data)         );
+        .ps2_out__clk(            ps2_out_host__clk),
+        .ps2_out__data(            ps2_out_host__data)         );
     ps2_host_keyboard key_decode(
         .clk(clk),
         .clk__enable(1'b1),
@@ -563,7 +565,7 @@ module bbc_micro_de1_cl
         .user_inputs__updated_switches(            user_inputs__updated_switches),
         .inputs_control__sr_shift(            inputs_control__sr_shift),
         .inputs_control__sr_clock(            inputs_control__sr_clock)         );
-    led_ws2812_chain led_chain(
+    led_ws2812_chain neopixel_leds(
         .clk(clk),
         .clk__enable(1'b1),
         .led_data__blue(led_data__blue),
@@ -573,7 +575,7 @@ module bbc_micro_de1_cl
         .led_data__valid(led_data__valid),
         .divider_400ns(8'h13),
         .reset_n(reset_n),
-        .led_data_pin(            led_data_pin),
+        .led_chain(            led_chain),
         .led_request__led_number(            led_request__led_number),
         .led_request__first(            led_request__first),
         .led_request__ready(            led_request__ready)         );
@@ -582,41 +584,45 @@ module bbc_micro_de1_cl
         //       
     always @ ( * )//debug_logic__comb
     begin: debug_logic__comb_code
+    reg ps2_out__clk__var;
     reg debug_comb__selected_data__var;
     reg [9:0]leds__var;
+        ps2_out__data = ps2_out_host__data;
+        ps2_out__clk__var = ps2_out_host__clk;
+        ps2_out__clk__var = (ps2_out_host__clk & switches[3]);
         debug_comb__selected_data__var = clock_control__enable_cpu;
         case (switches[8:6]) //synopsys parallel_case
         3'h0: // req 1
             begin
-            debug_comb__selected_data__var = 1'h0;
+            debug_comb__selected_data__var = tt_display_sram_write__enable;
             end
         3'h1: // req 1
             begin
-            debug_comb__selected_data__var = clock_control__enable_cpu;
+            debug_comb__selected_data__var = !(ps2_in__clk!=1'h0);
             end
         3'h2: // req 1
             begin
-            debug_comb__selected_data__var = clock_control__enable_1MHz_falling;
+            debug_comb__selected_data__var = !(ps2_in__data!=1'h0);
             end
         3'h3: // req 1
             begin
-            debug_comb__selected_data__var = floppy_response__read_data_valid;
+            debug_comb__selected_data__var = ps2_key__valid;
             end
         3'h4: // req 1
             begin
-            debug_comb__selected_data__var = 1'h0;
+            debug_comb__selected_data__var = ((ps2_rx_data__valid!=1'h0)&&(ps2_rx_data__parity_error!=1'h0));
             end
         3'h5: // req 1
             begin
-            debug_comb__selected_data__var = floppy_sram_request_r__enable;
+            debug_comb__selected_data__var = ((ps2_rx_data__valid!=1'h0)&&(ps2_rx_data__timeout!=1'h0));
             end
         3'h6: // req 1
             begin
-            debug_comb__selected_data__var = clock_control__phi[0];
+            debug_comb__selected_data__var = ((ps2_rx_data__valid!=1'h0)&&(ps2_rx_data__protocol_error!=1'h0));
             end
         3'h7: // req 1
             begin
-            debug_comb__selected_data__var = clock_control__phi[0];
+            debug_comb__selected_data__var = ps2_rx_data__valid;
             end
     //synopsys  translate_off
     //pragma coverage off
@@ -635,6 +641,7 @@ module bbc_micro_de1_cl
         begin
             leds__var = debug_state__counter[15:6];
         end //if
+        ps2_out__clk = ps2_out__clk__var;
         debug_comb__selected_data = debug_comb__selected_data__var;
         leds = leds__var;
     end //always
@@ -657,10 +664,18 @@ module bbc_micro_de1_cl
         begin
             debug_state__data <= debug_comb__selected_data;
             debug_state__last_data <= debug_state__data;
-            if (((debug_state__data!=1'h0)&&!(debug_state__last_data!=1'h0)))
+            if ((((switches[5]!=1'h0)&&(debug_state__data!=1'h0))&&!(debug_state__last_data!=1'h0)))
             begin
                 debug_state__counter <= (debug_state__counter+32'h1);
             end //if
+            else
+            
+            begin
+                if ((!(switches[5]!=1'h0)&&(debug_state__data!=1'h0)))
+                begin
+                    debug_state__counter <= (debug_state__counter+32'h1);
+                end //if
+            end //else
             tt_display_sram_write__enable <= 1'h0;
             tt_display_sram_write__data <= 48'h0;
             tt_display_sram_write__address <= 16'h0;
@@ -670,6 +685,12 @@ module bbc_micro_de1_cl
                 tt_display_sram_write__address[8] <= ps2_key__extended;
                 tt_display_sram_write__address[7:0] <= ps2_key__key_number;
                 tt_display_sram_write__data <= ((ps2_key__release!=1'h0)?64'h30:64'h31);
+            end //if
+            if ((user_inputs__right_dial__pressed!=1'h0))
+            begin
+                tt_display_sram_write__enable <= 1'h1;
+                tt_display_sram_write__address <= {7'h1,9'h0};
+                tt_display_sram_write__data <= (48'h30 | {44'h0,last_fn_key});
             end //if
         end //if
     end //always
@@ -718,6 +739,7 @@ module bbc_micro_de1_cl
         keyboard__keys_down_cols_8_to_9__var[6] = keyboard__keys_down_cols_8_to_9__var[6] | user_inputs__diamond__a;
         keyboard__keys_down_cols_0_to_7__var[12] = keyboard__keys_down_cols_0_to_7__var[12] | user_inputs__diamond__b;
         keyboard__keys_down_cols_0_to_7__var[44] = keyboard__keys_down_cols_0_to_7__var[44] | user_inputs__diamond__x;
+        keyboard__keys_down_cols_0_to_7__var[2] = keyboard__keys_down_cols_0_to_7__var[2] | fn_keys_down[0];
         keyboard__keys_down_cols_0_to_7__var[15] = keyboard__keys_down_cols_0_to_7__var[15] | fn_keys_down[1];
         keyboard__keys_down_cols_0_to_7__var[23] = keyboard__keys_down_cols_0_to_7__var[23] | fn_keys_down[2];
         keyboard__keys_down_cols_0_to_7__var[31] = keyboard__keys_down_cols_0_to_7__var[31] | fn_keys_down[3];
@@ -727,10 +749,6 @@ module bbc_micro_de1_cl
         keyboard__keys_down_cols_0_to_7__var[49] = keyboard__keys_down_cols_0_to_7__var[49] | fn_keys_down[7];
         keyboard__keys_down_cols_0_to_7__var[55] = keyboard__keys_down_cols_0_to_7__var[55] | fn_keys_down[8];
         keyboard__keys_down_cols_0_to_7__var[63] = keyboard__keys_down_cols_0_to_7__var[63] | fn_keys_down[9];
-        keyboard__keys_down_cols_8_to_9__var[11] = keyboard__keys_down_cols_8_to_9__var[11] | user_inputs__joystick__u;
-        keyboard__keys_down_cols_8_to_9__var[10] = keyboard__keys_down_cols_8_to_9__var[10] | user_inputs__joystick__d;
-        keyboard__keys_down_cols_8_to_9__var[9] = keyboard__keys_down_cols_8_to_9__var[9] | user_inputs__joystick__l;
-        keyboard__keys_down_cols_8_to_9__var[15] = keyboard__keys_down_cols_8_to_9__var[15] | user_inputs__joystick__r;
         led_data__valid__var = 1'h0;
         led_data__last__var = 1'h0;
         led_data__red__var = 8'h0;
@@ -738,20 +756,79 @@ module bbc_micro_de1_cl
         led_data__blue__var = 8'h0;
         if ((led_request__ready!=1'h0))
         begin
+            led_data__valid__var = 1'h1;
             case (led_request__led_number) //synopsys parallel_case
             8'h0: // req 1
                 begin
-                led_data__valid__var = 1'h1;
-                led_data__last__var = 1'h0;
                 led_data__red__var = debug_state__counter[7:0];
                 led_data__green__var = ~debug_state__counter[7:0];
                 led_data__blue__var = 8'h0;
+                end
+            8'h1: // req 1
+                begin
+                led_data__red__var = 8'h1f;
+                led_data__green__var = 8'h0;
+                led_data__blue__var = 8'h0;
+                end
+            8'h2: // req 1
+                begin
+                led_data__red__var = 8'h0;
+                led_data__green__var = 8'h1f;
+                led_data__blue__var = 8'h0;
+                end
+            8'h3: // req 1
+                begin
+                led_data__red__var = 8'h0;
+                led_data__green__var = 8'h0;
+                led_data__blue__var = 8'h1f;
+                end
+            8'h4: // req 1
+                begin
+                led_data__red__var = 8'h1f;
+                led_data__green__var = 8'h1f;
+                led_data__blue__var = 8'h0;
+                end
+            8'h5: // req 1
+                begin
+                led_data__red__var = 8'h0;
+                led_data__green__var = 8'h1f;
+                led_data__blue__var = 8'h1f;
+                end
+            8'h6: // req 1
+                begin
+                led_data__red__var = 8'h1f;
+                led_data__green__var = 8'h0;
+                led_data__blue__var = 8'h1f;
+                end
+            8'h7: // req 1
+                begin
+                led_data__red__var = 8'h0;
+                led_data__green__var = 8'h1f;
+                led_data__blue__var = 8'h0;
+                end
+            8'h8: // req 1
+                begin
+                led_data__red__var = 8'h0;
+                led_data__green__var = 8'h0;
+                led_data__blue__var = 8'h1f;
+                end
+            8'h9: // req 1
+                begin
+                led_data__red__var = 8'h1f;
+                led_data__green__var = 8'h1f;
+                led_data__blue__var = 8'h0;
+                end
+            8'ha: // req 1
+                begin
+                led_data__red__var = 8'h0;
+                led_data__green__var = 8'h1f;
+                led_data__blue__var = 8'h1f;
                 end
             default: // req 1
                 begin
                 led_data__valid__var = 1'h1;
                 led_data__last__var = 1'h1;
-                led_data__blue__var = {last_fn_key,last_fn_key};
+                led_data__blue__var = (({{1'h0,last_fn_key},3'h0}-{4'h0,last_fn_key})<<64'h2);
                 led_data__green__var = 8'h0;
                 led_data__red__var = 8'h0;
                 end
@@ -777,6 +854,7 @@ module bbc_micro_de1_cl
             lcd__green__var = tt_video_bus__green[7:1];
             lcd__blue__var = tt_video_bus__blue[7:2];
         end //if
+        led_data_pin = !(led_chain!=1'h0);
         keyboard__keys_down_cols_0_to_7 = keyboard__keys_down_cols_0_to_7__var;
         keyboard__keys_down_cols_8_to_9 = keyboard__keys_down_cols_8_to_9__var;
         led_data__valid = led_data__valid__var;
@@ -800,7 +878,6 @@ module bbc_micro_de1_cl
         if (reset_n==1'b0)
         begin
             fn_keys_down <= 10'h0;
-            fn_key_pressed <= 1'h0;
             last_fn_key <= 4'h1;
         end
         else if (clk__enable)
@@ -808,20 +885,19 @@ module bbc_micro_de1_cl
             if ((user_inputs__right_dial__direction_pulse!=1'h0))
             begin
                 fn_keys_down <= 10'h0;
-                fn_key_pressed <= 1'h1;
                 if ((user_inputs__right_dial__direction!=1'h0))
                 begin
                     last_fn_key <= (last_fn_key+4'h1);
                     if ((last_fn_key==4'h9))
                     begin
-                        last_fn_key <= 4'h1;
+                        last_fn_key <= 4'h0;
                     end //if
                 end //if
                 else
                 
                 begin
                     last_fn_key <= (last_fn_key-4'h1);
-                    if ((last_fn_key==4'h1))
+                    if ((last_fn_key==4'h0))
                     begin
                         last_fn_key <= 4'h9;
                     end //if

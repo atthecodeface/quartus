@@ -77,7 +77,7 @@ module tb_led_ws2812_chain
         .led_data__valid(led_data__valid),
         .divider_400ns(divider_400ns),
         .reset_n(reset_n),
-        .led_data_pin(            led_data_pin),
+        .led_chain(            led_data_pin),
         .led_request__led_number(            led_request__led_number),
         .led_request__first(            led_request__first),
         .led_request__ready(            led_request__ready)         );

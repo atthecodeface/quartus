@@ -13,7 +13,7 @@
 
 //a Module ps2_host
     //   
-    //   oThe PS/2 interface is a bidirectional serial interface running on an
+    //   The PS/2 interface is a bidirectional serial interface running on an
     //   open collector bus pin pair (clock and data).
     //   
     //   A slave, such as a keyboard or mouse, owns the @clock pin, except for
@@ -243,12 +243,13 @@ module ps2_host
     //b receive_logic__comb combinatorial process
         //   
         //       Wait for clock falling; check that data is low, and then start
+        //       The PS2 protocol is ODD parity, hence all 9 bits zero would be a parity error.
         //       
     always @ ( * )//receive_logic__comb
     begin: receive_logic__comb_code
     reg receive_combs__parity_error__var;
     reg [3:0]receive_combs__action__var;
-        receive_combs__parity_error__var = 1'h0;
+        receive_combs__parity_error__var = 1'h1;
         if ((receive_state__shift_register[0]!=1'h0))
         begin
             receive_combs__parity_error__var = !(receive_combs__parity_error__var!=1'h0);
@@ -356,6 +357,7 @@ module ps2_host
     //b receive_logic__posedge_slow_clk_active_low_reset_n clock process
         //   
         //       Wait for clock falling; check that data is low, and then start
+        //       The PS2 protocol is ODD parity, hence all 9 bits zero would be a parity error.
         //       
     always @( posedge clk or negedge reset_n)
     begin : receive_logic__posedge_slow_clk_active_low_reset_n__code

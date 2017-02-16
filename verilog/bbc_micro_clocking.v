@@ -170,6 +170,10 @@ module bbc_micro_clocking
             end //if
             control__cpu_clocks_per_2MHz_minus_one <= 8'h2;
             control__clocks_per_2MHz_minus_one <= 8'h4;
+            control__cpu_clocks_per_2MHz_minus_one <= 8'h2;
+            control__clocks_per_2MHz_minus_one <= 8'h14;
+            control__cpu_clocks_per_2MHz_minus_one <= 8'h2;
+            control__clocks_per_2MHz_minus_one <= 8'ha;
         end //if
     end //always
 

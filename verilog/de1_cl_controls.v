@@ -397,7 +397,7 @@ module de1_cl_controls
                 end //else
                 if (((rotary_state__t_toggle[0]!=1'h0)&&!(rotary_state__t_value[0]!=1'h0)))
                 begin
-                    rotary_state__direction[0] <= rotary_state__d_value[0];
+                    rotary_state__direction[0] <= !(rotary_state__d_value[0]!=1'h0);
                     rotary_state__direction_pulse[0] <= 1'h1;
                 end //if
             end //if
@@ -446,7 +446,7 @@ module de1_cl_controls
                 end //else
                 if (((rotary_state__t_toggle[1]!=1'h0)&&!(rotary_state__t_value[1]!=1'h0)))
                 begin
-                    rotary_state__direction[1] <= rotary_state__d_value[1];
+                    rotary_state__direction[1] <= !(rotary_state__d_value[1]!=1'h0);
                     rotary_state__direction_pulse[1] <= 1'h1;
                 end //if
             end //if

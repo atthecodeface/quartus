@@ -63,7 +63,7 @@ module led_ws2812_chain
     divider_400ns,
     reset_n,
 
-    led_data_pin,
+    led_chain,
     led_request__ready,
     led_request__first,
     led_request__led_number
@@ -88,7 +88,7 @@ module led_ws2812_chain
 
     //b Outputs
         //   Data in pin for LED chain
-    output led_data_pin;
+    output led_chain;
         //   LED data request
     output led_request__ready;
     output led_request__first;
@@ -98,7 +98,7 @@ module led_ws2812_chain
 
     //b Output combinatorials
         //   Data in pin for LED chain
-    reg led_data_pin;
+    reg led_chain;
         //   LED data request
     reg led_request__ready;
     reg led_request__first;
@@ -592,7 +592,7 @@ module led_ws2812_chain
     begin: data_chain_driver_logic__comb_code
         data_chain_combs__clk_enable = (data_chain_state__divider==8'h0);
         data_chain_combs__taking_transmitter_data = (!(data_chain_state__sr__valid!=1'h0)&&(data_transmitter_combs__drive_bits__valid!=1'h0));
-        led_data_pin = data_chain_state__output_data;
+        led_chain = data_chain_state__output_data;
     end //always
 
     //b data_chain_driver_logic__posedge_clk_active_low_reset_n clock process
