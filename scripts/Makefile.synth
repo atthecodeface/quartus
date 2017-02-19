@@ -83,6 +83,7 @@ bbc_project_rebuild:
 
 fpga_update_srams:
 	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(SYNTH_PROJECT))
+	(make asm)
 
 quartus_shell:
 	$(QUARTUS_SH) -s

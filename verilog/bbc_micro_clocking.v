@@ -34,7 +34,8 @@ module bbc_micro_clocking
     clock_control__enable_1MHz_rising,
     clock_control__enable_1MHz_falling,
     clock_control__phi,
-    clock_control__reset_cpu
+    clock_control__reset_cpu,
+    clock_control__debug
 );
 
     //b Clocks
@@ -62,6 +63,7 @@ module bbc_micro_clocking
     output clock_control__enable_1MHz_falling;
     output [1:0]clock_control__phi;
     output clock_control__reset_cpu;
+    output [3:0]clock_control__debug;
 
 // output components here
 
@@ -73,6 +75,7 @@ module bbc_micro_clocking
     reg clock_control__enable_1MHz_falling;
     reg [1:0]clock_control__phi;
     reg clock_control__reset_cpu;
+    reg [3:0]clock_control__debug;
 
     //b Output nets
     wire csr_response__ack;
@@ -155,7 +158,9 @@ module bbc_micro_clocking
         if (reset_n==1'b0)
         begin
             control__cpu_clocks_per_2MHz_minus_one <= 8'h0;
+            control__cpu_clocks_per_2MHz_minus_one <= 8'h2;
             control__clocks_per_2MHz_minus_one <= 8'h0;
+            control__clocks_per_2MHz_minus_one <= 8'hb;
             control__reset_cpu <= 1'h0;
             control__disable_cpu <= 1'h0;
         end
@@ -168,12 +173,6 @@ module bbc_micro_clocking
                 control__reset_cpu <= csr_access__data[16];
                 control__disable_cpu <= csr_access__data[17];
             end //if
-            control__cpu_clocks_per_2MHz_minus_one <= 8'h2;
-            control__clocks_per_2MHz_minus_one <= 8'h4;
-            control__cpu_clocks_per_2MHz_minus_one <= 8'h2;
-            control__clocks_per_2MHz_minus_one <= 8'h14;
-            control__cpu_clocks_per_2MHz_minus_one <= 8'h2;
-            control__clocks_per_2MHz_minus_one <= 8'ha;
         end //if
     end //always
 
@@ -193,6 +192,7 @@ module bbc_micro_clocking
         //       
     always @ ( * )//output_logic
     begin: output_logic__comb_code
+    reg [3:0]clock_control__debug__var;
         clock_control__enable_cpu = cpu_clk_enable;
         clock_control__will_enable_2MHz_video = two_mhz__rise_enable;
         clock_control__enable_2MHz_video = two_mhz_high;
@@ -200,6 +200,11 @@ module bbc_micro_clocking
         clock_control__enable_1MHz_falling = one_mhz__fall_enable;
         clock_control__phi = phase_of_clock;
         clock_control__reset_cpu = control__reset_cpu;
+        clock_control__debug__var[0] = cpu_clk_low;
+        clock_control__debug__var[1] = divider__phase_ending_cpu;
+        clock_control__debug__var[2] = divider__phase_ending_2MHz;
+        clock_control__debug__var[3] = control__disable_cpu;
+        clock_control__debug = clock_control__debug__var;
     end //always
 
     //b clocking_logic__comb combinatorial process
@@ -209,7 +214,7 @@ module bbc_micro_clocking
     begin: clocking_logic__comb_code
     reg phi1_completed__var;
     reg phi2_completed__var;
-        cpu_clk__phase_ending = ((divider__phase_ending_cpu!=1'h0)&&!(control__disable_cpu!=1'h0));
+        cpu_clk__phase_ending = (((divider__phase_ending_cpu!=1'h0)&&!(control__disable_cpu!=1'h0))||(cpu_clk_high!=1'h0));
         cpu_clk__fall_enable = ((cpu_clk_high!=1'h0)&&(cpu_clk__phase_ending!=1'h0));
         cpu_clk__rise_enable = ((cpu_clk_low!=1'h0)&&(cpu_clk__phase_ending!=1'h0));
         two_mhz__phase_ending = (cpu_clk__phase_ending & divider__phase_ending_2MHz);

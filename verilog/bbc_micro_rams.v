@@ -40,6 +40,7 @@ module bbc_micro_rams
     clock_control__enable_1MHz_falling,
     clock_control__phi,
     clock_control__reset_cpu,
+    clock_control__debug,
     reset_n,
 
     bbc_micro_host_sram_request__valid,
@@ -85,6 +86,7 @@ module bbc_micro_rams
     input clock_control__enable_1MHz_falling;
     input [1:0]clock_control__phi;
     input clock_control__reset_cpu;
+    input [3:0]clock_control__debug;
     input reset_n;
 
     //b Outputs

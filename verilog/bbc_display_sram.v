@@ -127,6 +127,7 @@ module bbc_display_sram
     reg [15:0]sram_state__write_address;
     reg [47:0]sram_state__write_data;
     reg [15:0]sram_state__address;
+    reg [15:0]sram_state__line_start_address;
     reg [9:0]sram_state__scanline_writes_left;
     reg [9:0]sram_state__scanlines_left;
     reg [3:0]sram_state__num_pixels_held_valid;
@@ -156,8 +157,9 @@ module bbc_display_sram
     reg [10:0]csrs__v_back_porch;
     reg [15:0]csrs__sram_base_address;
     reg [15:0]csrs__sram_base_address_odd_fields;
-    reg [9:0]csrs__sram_scanlines;
     reg [9:0]csrs__sram_writes_per_scanline;
+    reg [9:0]csrs__sram_offset_per_scanline;
+    reg [9:0]csrs__sram_scanlines;
     reg csrs__sram_interlace_in_same_buffer;
 
     //b Internal combinatorials
@@ -173,6 +175,7 @@ module bbc_display_sram
     reg display_combs__hsync_detected;
     reg display_combs__vsync_detected;
     reg display_combs__vsync_late_in_line;
+    reg [10:0]display_combs__pixels_per_clock;
     reg [7:0]display_combs__pixels_valid_per_clock;
     reg [7:0]display_combs__pixels_valid_by_x;
     reg [7:0]display_combs__pixels_valid;
@@ -212,9 +215,16 @@ module bbc_display_sram
         //       
     always @ ( * )//display_input_state_control_logic__comb
     begin: display_input_state_control_logic__comb_code
+    reg [10:0]display_combs__pixels_per_clock__var;
         display_combs__hsync_detected = ((display__hsync!=1'h0)&&!(display_state__last_hsync!=1'h0));
         display_combs__vsync_detected = ((display__vsync!=1'h0)&&!(display_state__last_vsync!=1'h0));
+        display_combs__pixels_per_clock__var = 11'h8;
+        if ((display__pixels_per_clock==3'h3))
+        begin
+            display_combs__pixels_per_clock__var = 11'h6;
+        end //if
         display_combs__vsync_late_in_line = (display_state__clocks_since_hsync>{1'h0,display_state__clocks_wide[10:1]});
+        display_combs__pixels_per_clock = display_combs__pixels_per_clock__var;
     end //always
 
     //b display_input_state_control_logic__posedge_clk_active_low_reset_n clock process
@@ -234,9 +244,9 @@ module bbc_display_sram
             display_state__restart_line <= 1'h0;
             display_state__restart_frame_even_field <= 1'h0;
             display_state__restart_frame_odd_field <= 1'h0;
+            display_state__pixel_x <= 11'h0;
             display_state__scanlines_since_vsync <= 11'h0;
             display_state__clocks_wide <= 11'h0;
-            display_state__pixel_x <= 11'h0;
             display_state__pixel_y <= 11'h0;
             display_state__last_field_was_even <= 1'h0;
             display_state__even_field <= 1'h0;
@@ -246,24 +256,25 @@ module bbc_display_sram
         begin
             display_state__last_vsync <= display__vsync;
             display_state__last_hsync <= display__hsync;
-            display_state__x_back_porch <= (display_state__x_back_porch+11'h8);
+            display_state__x_back_porch <= (display_state__x_back_porch+display_combs__pixels_per_clock);
             display_state__clocks_since_hsync <= (display_state__clocks_since_hsync+11'h1);
             display_state__restart_line <= 1'h0;
             display_state__restart_frame_even_field <= 1'h0;
             display_state__restart_frame_odd_field <= 1'h0;
+            display_state__pixel_x <= (display_state__pixel_x+display_combs__pixels_per_clock);
             if ((display_combs__hsync_detected!=1'h0))
             begin
                 display_state__scanlines_since_vsync <= (display_state__scanlines_since_vsync+11'h1);
                 display_state__clocks_wide <= display_state__clocks_since_hsync;
                 display_state__clocks_since_hsync <= 11'h0;
                 display_state__x_back_porch <= csrs__h_back_porch;
+                display_state__pixel_x <= 11'h400;
             end //if
-            display_state__pixel_x <= (display_state__pixel_x+11'h1);
             if ((display_state__x_back_porch[10:3]==8'hff))
             begin
-                display_state__pixel_x <= 11'h0;
+                display_state__pixel_x <= display_state__x_back_porch;
             end //if
-            if (((display_state__pixel_x+11'h8)==display_state__clocks_wide))
+            if ((display_state__clocks_since_hsync==display_state__clocks_wide))
             begin
                 if ((display_state__interlaced!=1'h0))
                 begin
@@ -323,31 +334,31 @@ module bbc_display_sram
     reg [7:0]display_combs__pixels_valid__var;
     reg [2:0]display_combs__new_pixels__var[7:0];
         case (display_state__pixel_x) //synopsys parallel_case
-        11'hfffffffffffffff9: // req 1
+        11'h7f9: // req 1
             begin
             display_combs__pixels_valid_by_x__var = 8'h1;
             end
-        11'hfffffffffffffffa: // req 1
+        11'h7fa: // req 1
             begin
             display_combs__pixels_valid_by_x__var = 8'h3;
             end
-        11'hfffffffffffffffb: // req 1
+        11'h7fb: // req 1
             begin
             display_combs__pixels_valid_by_x__var = 8'h7;
             end
-        11'hfffffffffffffffc: // req 1
+        11'h7fc: // req 1
             begin
             display_combs__pixels_valid_by_x__var = 8'hf;
             end
-        11'hfffffffffffffffd: // req 1
+        11'h7fd: // req 1
             begin
             display_combs__pixels_valid_by_x__var = 8'h1f;
             end
-        11'hfffffffffffffffe: // req 1
+        11'h7fe: // req 1
             begin
             display_combs__pixels_valid_by_x__var = 8'h3f;
             end
-        11'hffffffffffffffff: // req 1
+        11'h7ff: // req 1
             begin
             display_combs__pixels_valid_by_x__var = 8'h7f;
             end
@@ -712,6 +723,7 @@ module bbc_display_sram
             sram_state__address <= 16'h0;
             sram_state__scanline_writes_left <= 10'h0;
             sram_state__scanlines_left <= 10'h0;
+            sram_state__line_start_address <= 16'h0;
         end
         else if (clk__enable)
         begin
@@ -820,18 +832,23 @@ module bbc_display_sram
             end //if
             if ((display_state__restart_line!=1'h0))
             begin
-                sram_state__scanline_writes_left <= csrs__sram_writes_per_scanline;
+                sram_state__scanline_writes_left <= 10'h0;
                 sram_state__num_pixels_held_valid <= 4'h0;
                 if ((sram_state__scanlines_left!=10'h0))
                 begin
                     sram_state__scanlines_left <= (sram_state__scanlines_left-10'h1);
+                    sram_state__scanline_writes_left <= csrs__sram_writes_per_scanline;
                 end //if
+                sram_state__line_start_address <= (sram_state__line_start_address+{6'h0,csrs__sram_offset_per_scanline});
+                sram_state__address <= (sram_state__line_start_address+{6'h0,csrs__sram_offset_per_scanline});
                 if ((display_state__interlaced!=1'h0))
                 begin
                     if ((csrs__sram_interlace_in_same_buffer!=1'h0))
                     begin
-                        sram_state__address <= (sram_state__address+{6'h0,csrs__sram_writes_per_scanline});
+                        sram_state__line_start_address <= (sram_state__line_start_address+{{5'h0,csrs__sram_offset_per_scanline},1'h0});
+                        sram_state__address <= (sram_state__line_start_address+{{5'h0,csrs__sram_offset_per_scanline},1'h0});
                     end //if
+                    sram_state__scanline_writes_left <= 10'h0;
                     if ((sram_state__scanlines_left==10'h1))
                     begin
                         sram_state__scanlines_left <= 10'h0;
@@ -842,6 +859,7 @@ module bbc_display_sram
                         if ((sram_state__scanlines_left!=10'h0))
                         begin
                             sram_state__scanlines_left <= (sram_state__scanlines_left-10'h2);
+                            sram_state__scanline_writes_left <= csrs__sram_writes_per_scanline;
                         end //if
                     end //else
                 end //if
@@ -852,9 +870,11 @@ module bbc_display_sram
                 sram_state__num_pixels_held_valid <= 4'h0;
                 sram_state__scanlines_left <= csrs__sram_scanlines;
                 sram_state__address <= csrs__sram_base_address;
+                sram_state__line_start_address <= csrs__sram_base_address;
                 if ((display_state__restart_frame_odd_field!=1'h0))
                 begin
                     sram_state__address <= csrs__sram_base_address_odd_fields;
+                    sram_state__line_start_address <= csrs__sram_base_address_odd_fields;
                 end //if
             end //if
         end //if
@@ -881,10 +901,12 @@ module bbc_display_sram
             csrs__sram_base_address_odd_fields <= 16'h8000;
             csrs__sram_writes_per_scanline <= 10'h0;
             csrs__sram_writes_per_scanline <= 10'h28;
-            csrs__sram_interlace_in_same_buffer <= 1'h0;
-            csrs__sram_interlace_in_same_buffer <= 1'h0;
+            csrs__sram_offset_per_scanline <= 10'h0;
+            csrs__sram_offset_per_scanline <= 10'h28;
             csrs__sram_scanlines <= 10'h0;
             csrs__sram_scanlines <= 10'h1f4;
+            csrs__sram_interlace_in_same_buffer <= 1'h0;
+            csrs__sram_interlace_in_same_buffer <= 1'h0;
             csrs__h_back_porch <= 11'h0;
             csrs__h_back_porch <= 11'h6e8;
             csrs__v_back_porch <= 11'h0;
@@ -903,8 +925,9 @@ module bbc_display_sram
                 4'h1: // req 1
                     begin
                     csrs__sram_writes_per_scanline <= csr_access__data[9:0];
-                    csrs__sram_interlace_in_same_buffer <= csr_access__data[15];
-                    csrs__sram_scanlines <= csr_access__data[25:16];
+                    csrs__sram_offset_per_scanline <= csr_access__data[19:10];
+                    csrs__sram_scanlines <= csr_access__data[29:20];
+                    csrs__sram_interlace_in_same_buffer <= csr_access__data[30];
                     end
                 4'h2: // req 1
                     begin

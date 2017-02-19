@@ -344,10 +344,6 @@ module teletext
             if (((timing_state__last_scanline!=1'h0)||(timings__first_scanline_of_row!=1'h0)))
             begin
                 timing_state__scanline <= 5'h0;
-                if ((timing_state__timings__interpolate_vertical==2'h2))
-                begin
-                    timing_state__scanline <= 5'h1;
-                end //if
             end //if
             timing_state__last_scanline <= 1'h0;
             if ((timing_state__scanline==5'h13))
@@ -365,6 +361,14 @@ module teletext
             if (!(timing_state__scanline_displayed!=1'h0))
             begin
                 timing_state__scanline <= timing_state__scanline;
+            end //if
+            if ((timing_state__timings__interpolate_vertical==2'h2))
+            begin
+                timing_state__scanline[0] <= 1'h1;
+            end //if
+            if ((timing_state__timings__interpolate_vertical==2'h1))
+            begin
+                timing_state__scanline[0] <= 1'h0;
             end //if
             if ((timings__end_of_scanline!=1'h0))
             begin

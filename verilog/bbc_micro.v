@@ -48,6 +48,7 @@ module bbc_micro
     clock_control__enable_1MHz_falling,
     clock_control__phi,
     clock_control__reset_cpu,
+    clock_control__debug,
 
     host_sram_response__ack,
     host_sram_response__read_data_valid,
@@ -122,6 +123,7 @@ module bbc_micro
     input clock_control__enable_1MHz_falling;
     input [1:0]clock_control__phi;
     input clock_control__reset_cpu;
+    input [3:0]clock_control__debug;
 
     //b Outputs
     output host_sram_response__ack;

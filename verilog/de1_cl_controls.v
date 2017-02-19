@@ -116,15 +116,9 @@ module de1_cl_controls
     //b Output nets
 
     //b Internal and output registers
-    reg [1:0]rotary_state__d_pin;
-    reg [1:0]rotary_state__d_value;
-    reg [7:0]rotary_state__d_count[1:0];
-    reg [1:0]rotary_state__t_pin;
-    reg [1:0]rotary_state__t_value;
-    reg [7:0]rotary_state__t_count[1:0];
-    reg [1:0]rotary_state__t_toggle;
-    reg [1:0]rotary_state__direction;
+    reg [1:0]rotary_state__t_state;
     reg [1:0]rotary_state__direction_pulse;
+    reg [1:0]rotary_state__direction;
     reg [7:0]sr_state__counter;
     reg [3:0]sr_state__num_bits_valid;
     reg [15:0]sr_state__shift_register;
@@ -169,13 +163,52 @@ module de1_cl_controls
     reg sr_combs__sr_decode__temperature_alarm;
     reg sr_combs__sr_will_be_valid;
     reg sr_combs__counter_expired;
+    reg sr_combs__cycle_completed;
     reg sr_combs__falling_edge;
     reg sr_combs__rising_edge;
 
     //b Internal nets
+    wire [1:0]rotary_debounced__direction_pin;
+    wire [1:0]rotary_debounced__transition_pin;
 
     //b Clock gating module instances
     //b Module instances
+    hysteresis_switch debounce_direction___0(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .filter_level(16'h20),
+        .filter_period(16'h40),
+        .input_value(rotary_inputs__direction_pin[0]),
+        .clk_enable(sr_combs__cycle_completed),
+        .reset_n(reset_n),
+        .output_value(            rotary_debounced__direction_pin[0])         );
+    hysteresis_switch debounce_transition___0(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .filter_level(16'h20),
+        .filter_period(16'h40),
+        .input_value(rotary_inputs__transition_pin[0]),
+        .clk_enable(sr_combs__cycle_completed),
+        .reset_n(reset_n),
+        .output_value(            rotary_debounced__transition_pin[0])         );
+    hysteresis_switch debounce_direction___1(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .filter_level(16'h20),
+        .filter_period(16'h40),
+        .input_value(rotary_inputs__direction_pin[1]),
+        .clk_enable(sr_combs__cycle_completed),
+        .reset_n(reset_n),
+        .output_value(            rotary_debounced__direction_pin[1])         );
+    hysteresis_switch debounce_transition___1(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .filter_level(16'h20),
+        .filter_period(16'h40),
+        .input_value(rotary_inputs__transition_pin[1]),
+        .clk_enable(sr_combs__cycle_completed),
+        .reset_n(reset_n),
+        .output_value(            rotary_debounced__transition_pin[1])         );
     //b inputs_control_logic combinatorial process
         //   
         //       Logic to drive the 'inputs_control' signals
@@ -215,6 +248,7 @@ module de1_cl_controls
         sr_combs__rising_edge = ((sr_combs__counter_expired!=1'h0)&&!(sr_state__sr_clock!=1'h0));
         sr_combs__falling_edge = ((sr_combs__counter_expired!=1'h0)&&(sr_state__sr_clock!=1'h0));
         sr_combs__sr_will_be_valid = ((sr_state__sr_shift!=1'h0)&&(sr_state__num_bits_valid==4'hf));
+        sr_combs__cycle_completed = ((sr_combs__sr_will_be_valid!=1'h0)&&(sr_combs__falling_edge!=1'h0));
         sr_combs__sr_decode__diamond__b = sr_state__shift_register[0];
         sr_combs__sr_decode__diamond__a = sr_state__shift_register[1];
         sr_combs__sr_decode__diamond__y = sr_state__shift_register[2];
@@ -333,122 +367,26 @@ module de1_cl_controls
         begin
             rotary_state__direction_pulse[0] <= 1'h0; // Should this be a bit vector?
             rotary_state__direction_pulse[1] <= 1'h0; // Should this be a bit vector?
-            rotary_state__d_pin[0] <= 1'h0; // Should this be a bit vector?
-            rotary_state__d_pin[1] <= 1'h0; // Should this be a bit vector?
-            rotary_state__d_count[0] <= 8'h0;
-            rotary_state__d_count[1] <= 8'h0;
-            rotary_state__d_value[0] <= 1'h0; // Should this be a bit vector?
-            rotary_state__d_value[1] <= 1'h0; // Should this be a bit vector?
-            rotary_state__t_pin[0] <= 1'h0; // Should this be a bit vector?
-            rotary_state__t_pin[1] <= 1'h0; // Should this be a bit vector?
-            rotary_state__t_toggle[0] <= 1'h0; // Should this be a bit vector?
-            rotary_state__t_toggle[1] <= 1'h0; // Should this be a bit vector?
-            rotary_state__t_count[0] <= 8'h0;
-            rotary_state__t_count[1] <= 8'h0;
-            rotary_state__t_value[0] <= 1'h0; // Should this be a bit vector?
-            rotary_state__t_value[1] <= 1'h0; // Should this be a bit vector?
+            rotary_state__t_state[0] <= 1'h0; // Should this be a bit vector?
+            rotary_state__t_state[1] <= 1'h0; // Should this be a bit vector?
             rotary_state__direction[0] <= 1'h0; // Should this be a bit vector?
             rotary_state__direction[1] <= 1'h0; // Should this be a bit vector?
         end
         else if (clk__enable)
         begin
             rotary_state__direction_pulse[0] <= 1'h0;
-            if (((sr_combs__falling_edge!=1'h0)&&(sr_combs__sr_will_be_valid!=1'h0)))
+            rotary_state__t_state[0] <= rotary_debounced__transition_pin[0];
+            if (((rotary_state__t_state[0]!=1'h0)&&!(rotary_debounced__transition_pin[0]!=1'h0)))
             begin
-                rotary_state__d_pin[0] <= rotary_inputs__direction_pin[0];
-                if ((rotary_state__d_value[0]==rotary_state__d_pin[0]))
-                begin
-                    rotary_state__d_count[0] <= 8'h0;
-                end //if
-                else
-                
-                begin
-                    if ((rotary_state__d_count[0]==8'h5))
-                    begin
-                        rotary_state__d_count[0] <= 8'h0;
-                        rotary_state__d_value[0] <= rotary_state__d_pin[0];
-                    end //if
-                    else
-                    
-                    begin
-                        rotary_state__d_count[0] <= (rotary_state__d_count[0]+8'h1);
-                    end //else
-                end //else
-                rotary_state__t_pin[0] <= rotary_inputs__transition_pin[0];
-                rotary_state__t_toggle[0] <= 1'h0;
-                if ((rotary_state__t_value[0]==rotary_state__t_pin[0]))
-                begin
-                    rotary_state__t_count[0] <= 8'h0;
-                end //if
-                else
-                
-                begin
-                    if ((rotary_state__t_count[0]==8'h5))
-                    begin
-                        rotary_state__t_count[0] <= 8'h0;
-                        rotary_state__t_value[0] <= rotary_state__t_pin[0];
-                        rotary_state__t_toggle[0] <= 1'h1;
-                    end //if
-                    else
-                    
-                    begin
-                        rotary_state__t_count[0] <= (rotary_state__t_count[0]+8'h1);
-                    end //else
-                end //else
-                if (((rotary_state__t_toggle[0]!=1'h0)&&!(rotary_state__t_value[0]!=1'h0)))
-                begin
-                    rotary_state__direction[0] <= !(rotary_state__d_value[0]!=1'h0);
-                    rotary_state__direction_pulse[0] <= 1'h1;
-                end //if
+                rotary_state__direction[0] <= !(rotary_debounced__direction_pin[0]!=1'h0);
+                rotary_state__direction_pulse[0] <= 1'h1;
             end //if
             rotary_state__direction_pulse[1] <= 1'h0;
-            if (((sr_combs__falling_edge!=1'h0)&&(sr_combs__sr_will_be_valid!=1'h0)))
+            rotary_state__t_state[1] <= rotary_debounced__transition_pin[1];
+            if (((rotary_state__t_state[1]!=1'h0)&&!(rotary_debounced__transition_pin[1]!=1'h0)))
             begin
-                rotary_state__d_pin[1] <= rotary_inputs__direction_pin[1];
-                if ((rotary_state__d_value[1]==rotary_state__d_pin[1]))
-                begin
-                    rotary_state__d_count[1] <= 8'h0;
-                end //if
-                else
-                
-                begin
-                    if ((rotary_state__d_count[1]==8'h5))
-                    begin
-                        rotary_state__d_count[1] <= 8'h0;
-                        rotary_state__d_value[1] <= rotary_state__d_pin[1];
-                    end //if
-                    else
-                    
-                    begin
-                        rotary_state__d_count[1] <= (rotary_state__d_count[1]+8'h1);
-                    end //else
-                end //else
-                rotary_state__t_pin[1] <= rotary_inputs__transition_pin[1];
-                rotary_state__t_toggle[1] <= 1'h0;
-                if ((rotary_state__t_value[1]==rotary_state__t_pin[1]))
-                begin
-                    rotary_state__t_count[1] <= 8'h0;
-                end //if
-                else
-                
-                begin
-                    if ((rotary_state__t_count[1]==8'h5))
-                    begin
-                        rotary_state__t_count[1] <= 8'h0;
-                        rotary_state__t_value[1] <= rotary_state__t_pin[1];
-                        rotary_state__t_toggle[1] <= 1'h1;
-                    end //if
-                    else
-                    
-                    begin
-                        rotary_state__t_count[1] <= (rotary_state__t_count[1]+8'h1);
-                    end //else
-                end //else
-                if (((rotary_state__t_toggle[1]!=1'h0)&&!(rotary_state__t_value[1]!=1'h0)))
-                begin
-                    rotary_state__direction[1] <= !(rotary_state__d_value[1]!=1'h0);
-                    rotary_state__direction_pulse[1] <= 1'h1;
-                end //if
+                rotary_state__direction[1] <= !(rotary_debounced__direction_pin[1]!=1'h0);
+                rotary_state__direction_pulse[1] <= 1'h1;
             end //if
         end //if
     end //always
