@@ -13,11 +13,35 @@
 
 //a Module led_ws2812_chain
     //   
-    //   The WS2812 LED chains use a serial data stream with encoded clock to
-    //   provide data to the LEDs.
+    //   A chain of any length of Neopixel LEDs can be driven by this module
+    //   
+    //   The interface is a request/data interface; this module presents a
+    //   @a ready request to the client, which then presents a valid 24-bit
+    //   RGB data value. When the module takes the data it removes its
+    //   @a ready request. The client keeps supplying data in response to the
+    //   @a ready requests.
+    //    
+    //   To terminate the chain the client supplies data with a @a last
+    //   indication asserted.
+    //   
+    //   To ease implementation of the client, the request includes a
+    //   @a first indicator and an @a led_number indicator - effectively a
+    //   client can read a register file based on @a led_number and drive
+    //   @a valid when the data is valid, and @a last if led_number matches
+    //   the end of the register file.
+    //   
+    //   This module copes with all of the requirements of the Neopixel
+    //   chain, and it takes a constant clock input. To provide the correct
+    //   frequency of data pin toggling to the Neopixels a clock divider
+    //   value must be supplied, with the approximate number of clock ticks
+    //   that make up 400ns (ideally 408ns).
+    //   
+    //   The Neopixel WS2812 LED chains use a serial data stream with encoded
+    //   clock to provide data to the LEDs.
     //   
     //   If the LED chain data is held low for >50us then the stream performs a
-    //   'load to LEDs'.
+    //   'load to LEDs' - this transfers the serial data already loaded in to
+    //   the LEDs to the actual LED drivers themselves.
     //   
     //   Before loading the LEDs the chain should be fed data.  The data is fed
     //   using a high/low data pulse per bit. The ratio high/low provides the
@@ -39,7 +63,7 @@
     //   point it requests a valid first LED data. When valid data is received
     //   into a buffer the state machine transitions to the data-in-hand state;
     //   it remains there until the data transmitter takes the data, when it
-    //   either requests more data (as per idle0, or if the last LED data was
+    //   either requests more data (as per idle), or if the last LED data was
     //   provided by the client, it moves to requests an LED load, and it waits
     //   in loading state until that completes. At this point it transitions
     //   back to idle, and the process restarts.
@@ -70,7 +94,7 @@ module led_ws2812_chain
 );
 
     //b Clocks
-        //   system clock - not the pin clock
+        //   System clock - not the pin clock, which is derived from this
     input clk;
     input clk__enable;
 
@@ -83,13 +107,13 @@ module led_ws2812_chain
     input [7:0]led_data__blue;
         //   clock divider value to provide for generating a pulse every 400ns based on clk
     input [7:0]divider_400ns;
-        //   async reset
+        //   Active low reset
     input reset_n;
 
     //b Outputs
-        //   Data in pin for LED chain
+        //   Data pin for LED chain, modulated by this module to drive LED settings
     output led_chain;
-        //   LED data request
+        //   LED data request, to get data from the next LED to light
     output led_request__ready;
     output led_request__first;
     output [7:0]led_request__led_number;
@@ -97,9 +121,9 @@ module led_ws2812_chain
 // output components here
 
     //b Output combinatorials
-        //   Data in pin for LED chain
+        //   Data pin for LED chain, modulated by this module to drive LED settings
     reg led_chain;
-        //   LED data request
+        //   LED data request, to get data from the next LED to light
     reg led_request__ready;
     reg led_request__first;
     reg [7:0]led_request__led_number;
@@ -107,12 +131,14 @@ module led_ws2812_chain
     //b Output nets
 
     //b Internal and output registers
+        //   Modulator (data_chain) state
     reg [7:0]data_chain_state__divider;
     reg data_chain_state__active;
     reg data_chain_state__sr__valid;
     reg [2:0]data_chain_state__sr__value;
     reg [1:0]data_chain_state__value_number;
     reg data_chain_state__output_data;
+        //   Transmitter state, the state of the internal transmit state machine
     reg [2:0]data_transmitter_state__fsm_state;
     reg data_transmitter_state__shift_register__valid;
     reg data_transmitter_state__shift_register__last;
@@ -120,6 +146,7 @@ module led_ws2812_chain
     reg [7:0]data_transmitter_state__shift_register__green;
     reg [7:0]data_transmitter_state__shift_register__blue;
     reg [5:0]data_transmitter_state__counter;
+        //   Data state, the state of the interface to the client
     reg [1:0]data_state__fsm_state;
     reg [7:0]data_state__led_number;
     reg data_state__buffer__valid;
@@ -130,8 +157,10 @@ module led_ws2812_chain
     reg data_state__load_leds;
 
     //b Internal combinatorials
+        //   Combinatorial decode of modulator state
     reg data_chain_combs__clk_enable;
     reg data_chain_combs__taking_transmitter_data;
+        //   Combinatorial decode of the transmitter state
     reg data_transmitter_combs__loading_leds;
     reg data_transmitter_combs__taking_data;
     reg data_transmitter_combs__needs_data;
@@ -148,15 +177,15 @@ module led_ws2812_chain
     //b Module instances
     //b data_state_machine_logic__comb combinatorial process
         //   
-        //       The data state machine is effectively a simple interface to the
-        //       led request and led_data, feeding the data transmitter shift
-        //       register when it can.
+        //       The data state machine is a simple interface to the led request
+        //       and led_data, feeding the data transmitter shift register when it
+        //       can.
         //   
         //       It has a data_buffer that it stores incoming led data in, and it
         //       feeds this to the data transmitter shift register when permitted,
         //       invalidating the data buffer.
         //   
-        //       If the transmitter takes a 'last' data then the state machine will
+        //       If the transmitter takes a @a last data then the state machine will
         //       then request that the transmitter 'load the leds'; this request
         //       will, of course, have to wait for the completion of the current
         //       shift register contents (the last LED), and then the correct 50us
@@ -210,15 +239,15 @@ module led_ws2812_chain
 
     //b data_state_machine_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       The data state machine is effectively a simple interface to the
-        //       led request and led_data, feeding the data transmitter shift
-        //       register when it can.
+        //       The data state machine is a simple interface to the led request
+        //       and led_data, feeding the data transmitter shift register when it
+        //       can.
         //   
         //       It has a data_buffer that it stores incoming led data in, and it
         //       feeds this to the data transmitter shift register when permitted,
         //       invalidating the data buffer.
         //   
-        //       If the transmitter takes a 'last' data then the state machine will
+        //       If the transmitter takes a @a last data then the state machine will
         //       then request that the transmitter 'load the leds'; this request
         //       will, of course, have to wait for the completion of the current
         //       shift register contents (the last LED), and then the correct 50us
@@ -313,16 +342,17 @@ module led_ws2812_chain
     //b data_transmitter_logic__comb combinatorial process
         //   
         //       The data transmitter is responsible for reading data bits to the
-        //       Neopixel data chain driver.
+        //       Neopixel data chain driver (modulator).
         //   
-        //       It maintains a shift register (with separate red, green and blue
-        //       components), with a 'valid' bit.
+        //       It maintains a shift register (with separate @a red, @a green and @a blue
+        //       components), with a @a valid bit.
         //   
         //       Data is loaded into the shift register when it is not valid. The
         //       transmitter then shifts straight in to asking the drive chain to
-        //       output green[7]. It shifts the green bits up every time the drive
-        //       chain takes a bit, and after 8 bits it moves to the red, and then
-        //       the blue. At the end of the blue it invalidates the shift register.
+        //       output @a green[7]. It shifts the @a green bits up every time the
+        //       drive chain takes a bit, and after 8 bits it moves to the @a red,
+        //       and then the @a blue. At the end of the @a blue it invalidates the
+        //       shift register.
         //   
         //       The shift register should be filled quickly enough for the data
         //       chain to not miss a beat, if further LED data is to be driven.
@@ -351,12 +381,12 @@ module led_ws2812_chain
             begin
             data_transmitter_combs__idle_transmitter__var = 1'h1;
             end
-        3'h2: // req 1
+        3'h1: // req 1
             begin
             data_transmitter_combs__idle_transmitter__var = 1'h0;
             data_transmitter_combs__selected_data__var = data_transmitter_state__shift_register__green[7];
             end
-        3'h1: // req 1
+        3'h2: // req 1
             begin
             data_transmitter_combs__idle_transmitter__var = 1'h0;
             data_transmitter_combs__selected_data__var = data_transmitter_state__shift_register__red[7];
@@ -403,10 +433,10 @@ module led_ws2812_chain
         3'h0: // req 1
             begin
             end
-        3'h2: // req 1
+        3'h1: // req 1
             begin
             end
-        3'h1: // req 1
+        3'h2: // req 1
             begin
             end
         3'h3: // req 1
@@ -445,16 +475,17 @@ module led_ws2812_chain
     //b data_transmitter_logic__posedge_clk_active_low_reset_n clock process
         //   
         //       The data transmitter is responsible for reading data bits to the
-        //       Neopixel data chain driver.
+        //       Neopixel data chain driver (modulator).
         //   
-        //       It maintains a shift register (with separate red, green and blue
-        //       components), with a 'valid' bit.
+        //       It maintains a shift register (with separate @a red, @a green and @a blue
+        //       components), with a @a valid bit.
         //   
         //       Data is loaded into the shift register when it is not valid. The
         //       transmitter then shifts straight in to asking the drive chain to
-        //       output green[7]. It shifts the green bits up every time the drive
-        //       chain takes a bit, and after 8 bits it moves to the red, and then
-        //       the blue. At the end of the blue it invalidates the shift register.
+        //       output @a green[7]. It shifts the @a green bits up every time the
+        //       drive chain takes a bit, and after 8 bits it moves to the @a red,
+        //       and then the @a blue. At the end of the @a blue it invalidates the
+        //       shift register.
         //   
         //       The shift register should be filled quickly enough for the data
         //       chain to not miss a beat, if further LED data is to be driven.
@@ -500,12 +531,12 @@ module led_ws2812_chain
                 begin
                     if ((data_transmitter_combs__taking_data!=1'h0))
                     begin
-                        data_transmitter_state__fsm_state <= 3'h2;
+                        data_transmitter_state__fsm_state <= 3'h1;
                         data_transmitter_state__counter <= 6'h7;
                     end //if
                 end //else
                 end
-            3'h2: // req 1
+            3'h1: // req 1
                 begin
                 if ((data_chain_combs__taking_transmitter_data!=1'h0))
                 begin
@@ -513,12 +544,12 @@ module led_ws2812_chain
                     data_transmitter_state__shift_register__green[7:1] <= data_transmitter_state__shift_register__green[6:0];
                     if ((data_transmitter_combs__counter_expired!=1'h0))
                     begin
-                        data_transmitter_state__fsm_state <= 3'h1;
+                        data_transmitter_state__fsm_state <= 3'h2;
                         data_transmitter_state__counter <= 6'h7;
                     end //if
                 end //if
                 end
-            3'h1: // req 1
+            3'h2: // req 1
                 begin
                 if ((data_chain_combs__taking_transmitter_data!=1'h0))
                 begin
@@ -572,14 +603,14 @@ module led_ws2812_chain
 
     //b data_chain_driver_logic__comb combinatorial process
         //   
-        //       The data chain side starts 'inactive' (it is basically active or
+        //       The data chain (modulator) starts 'inactive' (it is basically active or
         //       inactive).  It can enter active ONLY on a 400ns clock boundary,
         //       and then only when there is a valid 3-value in hand.  When it
-        //       enters 'active' it drives the output pin with value[0].
+        //       enters 'active' it drives the output pin with @a value[0].
         //   
         //       The data chain is then active for 2 whole 400ns periods; at the
-        //       end of the first period it drives out value[1], and at the end of
-        //       the second period it drives out value[2] and becomes inactive, and
+        //       end of the first period it drives out @a value[1], and at the end of
+        //       the second period it drives out @a value[2] and becomes inactive, and
         //       invalidates the value-in-hand.
         //   
         //       The value-in-hand can only be loaded if it is invalid - this can
@@ -597,14 +628,14 @@ module led_ws2812_chain
 
     //b data_chain_driver_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       The data chain side starts 'inactive' (it is basically active or
+        //       The data chain (modulator) starts 'inactive' (it is basically active or
         //       inactive).  It can enter active ONLY on a 400ns clock boundary,
         //       and then only when there is a valid 3-value in hand.  When it
-        //       enters 'active' it drives the output pin with value[0].
+        //       enters 'active' it drives the output pin with @a value[0].
         //   
         //       The data chain is then active for 2 whole 400ns periods; at the
-        //       end of the first period it drives out value[1], and at the end of
-        //       the second period it drives out value[2] and becomes inactive, and
+        //       end of the first period it drives out @a value[1], and at the end of
+        //       the second period it drives out @a value[2] and becomes inactive, and
         //       invalidates the value-in-hand.
         //   
         //       The value-in-hand can only be loaded if it is invalid - this can

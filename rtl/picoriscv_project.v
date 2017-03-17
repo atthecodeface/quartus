@@ -98,7 +98,7 @@ module pll_lcd (
 	);
 
 endmodule
-module bbc_project(clk, reset_n, leds, switches, keys,
+module picoriscv_project(clk, reset_n, leds, switches, keys,
                    inputs_status__sr_data,
                    inputs_status__left_rotary__direction_pin, inputs_status__left_rotary__transition_pin,
                    inputs_status__right_rotary__direction_pin, inputs_status__right_rotary__transition_pin,
@@ -193,7 +193,7 @@ module bbc_project(clk, reset_n, leds, switches, keys,
    assign ps2_in__clk = ps2_clk;
    assign ps2_in__data = ps2_dat;
    
-   bbc_micro_de1_cl bbc_micro(.video_clk(video_clk),
+   picoriscv_de1_cl prv_micro(.video_clk(video_clk),
                               .video_clk__enable(1'b1),
                               .clk(clk),
                               .clk__enable(1'b1),

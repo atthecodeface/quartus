@@ -13,93 +13,10 @@
 
 //a Module saa5050
     //   
-    //   Teletext characters are displayed from a 12x20 grid.
-    //   The ROM characters have two background rows, and then are displayed with 2 background pixels on the left, and then 10 pixels from the ROM
-    //   The ROM is actually 5x9, and it is doubled to 10x18
-    //   Doubling without smoothing can be achieved be true doubling
-    //   Doubling with smoothing is done on intervening lines:
-    //   
-    //   The ROM A is:
-    //   ..*..
-    //   .*.*.
-    //   *...*
-    //   *...*
-    //   *****
-    //   *...*
-    //   *...*
-    //   .....
-    //   .....
-    //   
-    //   So a non-smoothed A is
-    //   ....**....
-    //   ....**....
-    //   ..**..**..
-    //   ..**..**..
-    //   **......**
-    //   **......**
-    //   **......**
-    //   **......**
-    //   **********
-    //   **********
-    //   **......**
-    //   **......**
-    //   **......**
-    //   **......**
-    //   ..........
-    //   ..........
-    //   ..........
-    //   ..........
-    //   
-    //   ..*..
-    //   .*.*.
-    //   *...*
-    //   *...*
-    //   *****
-    //   *...*
-    //   *...*
-    //   .....
-    //   .....
-    //   
-    //   The smoothing is only to smoothe diagonals.
-    //   So the centroids are added on diagonals (baseline requirement...)
-    //   In fact, one can add 2x2 blobs on the diagonals:
-    //   
-    //   A smoothed A is then:
-    //   ....**....
-    //   ...****...
-    //   ..******..
-    //   .***..***.
-    //   ***....***
-    //   **......**
-    //   **......**
-    //   **......**
-    //   **********
-    //   **********
-    //   **......**
-    //   **......**
-    //   **......**
-    //   **......**
-    //   ..........
-    //   ..........
-    //   ..........
-    //   ..........
-    //   
-    //   
-    //   Graphics characters are 6 blobs on a 6x10 grid (contiguous, separated):
-    //   000111 .00.11
-    //   000111 .00.11
-    //   000111 ......
-    //   222333 .22.33
-    //   222333 .22.33
-    //   222333 .22.33
-    //   222333 ......
-    //   444555 .44.55
-    //   444555 .44.55
-    //   444555 ......
-    //   
-    //   The BBC micro seems to use 19 rows per character, but in practice (since it is interlaced sync and video) it will use 10 in each field, and CRS will be set for even fields
-    //   
-    //   
+    //   This module instantiates the @a teletext module to provide a teletext
+    //   decoder that is compatible with the SAA5050 as it is used in the BBC
+    //   microcomputer (i.e. some features of the chip are not supported, such
+    //   as superimpose).
     //   
 module saa5050
 (
@@ -160,24 +77,29 @@ module saa5050
     input crs;
         //   Data entry window - used to determine flashing rate and resets the ROM decoders - can be tied to vsync
     input dew;
-        //   General line reset - can be tied to hsync - assert once per line before data comes in
+        //   General line reset, can be tied to hsync - assert once per line before data comes in
     input glr;
-        //   clocks serial data in somehow (datasheet is dreadful...)
+        //   Not implemented, clocks serial data in somehow
     input dlim;
-        //   Parallel data in
+        //   Parallel character data in
     input [6:0]data_in;
         //   Serial data in, not implemented
     input data_n;
         //   Not implemented
     input superimpose_n;
+        //   Active low reset
     input reset_n;
         //   Clock enable high for clk_2MHz when the SAA's 1MHz would normally tick
     input clk_1MHz_enable;
 
     //b Outputs
+        //   Not implemented
     output blan;
+        //   Blue pixels out, 6 per 2MHz clock tick
     output [5:0]blue;
+        //   Green pixels out, 6 per 2MHz clock tick
     output [5:0]green;
+        //   Red pixels out, 6 per 2MHz clock tick
     output [5:0]red;
         //   Asserted (low) when double-height characters occur (?) 
     output tlc_n;
@@ -185,9 +107,13 @@ module saa5050
 // output components here
 
     //b Output combinatorials
+        //   Not implemented
     reg blan;
+        //   Blue pixels out, 6 per 2MHz clock tick
     reg [5:0]blue;
+        //   Green pixels out, 6 per 2MHz clock tick
     reg [5:0]green;
+        //   Red pixels out, 6 per 2MHz clock tick
     reg [5:0]red;
         //   Asserted (low) when double-height characters occur (?) 
     reg tlc_n;
@@ -195,9 +121,9 @@ module saa5050
     //b Output nets
 
     //b Internal and output registers
+        //   Pixel state
     reg pixel_state__last_valid;
-    reg pixel_state__left_pixels;
-    reg load_state__last_lose;
+        //   Load state, enabled by the clk_1MHz_enable
     reg load_state__last_glr;
     reg load_state__end_of_scanline;
     reg load_state__restart_frame;
@@ -210,7 +136,7 @@ module saa5050
     reg tt_timings__first_scanline_of_row;
     reg tt_timings__smoothe;
     reg [1:0]tt_timings__interpolate_vertical;
-        //   Parallel character data in, with valid signal
+        //   Parallel character data in to teletext module, with valid signal
     reg tt_character__valid;
     reg [6:0]tt_character__character;
 
@@ -224,6 +150,7 @@ module saa5050
         //   Teletext ROM access
     wire tt_rom_access__select;
     wire [6:0]tt_rom_access__address;
+        //   Pixel ROM output data
     wire [63:0]pixel_rom_data;
 
     //b Clock gating module instances
@@ -231,7 +158,7 @@ module saa5050
     //b Module instances
     teletext tt(
         .clk(clk_2MHz),
-        .clk__enable(clk_1MHz__enable),
+        .clk__enable(1'b1),
         .rom_data(pixel_rom_data[44:0]),
         .timings__interpolate_vertical(tt_timings__interpolate_vertical),
         .timings__smoothe(tt_timings__smoothe),
@@ -250,43 +177,95 @@ module saa5050
         .rom_access__select(            tt_rom_access__select)         );
     se_sram_srw_128x64 character_rom(
         .sram_clock(clk_2MHz),
-        .sram_clock__enable(clk_1MHz__enable),
+        .sram_clock__enable(1'b1),
         .write_data(host_sram_request__write_data),
         .address((((host_sram_request__valid!=1'h0)&&(host_sram_request__select==8'h14))?host_sram_request__address[6:0]:tt_rom_access__address)),
         .write_enable(((host_sram_request__write_enable!=1'h0)&&(host_sram_request__select==8'h14))),
         .read_not_write(!(host_sram_request__write_enable!=1'h0)),
         .select(1'h1),
         .data_out(            pixel_rom_data)         );
-    //b scanline_and_loading__comb combinatorial process
+    //b implementation__comb combinatorial process
         //   
+        //       Maintain some @a load_state in the 1MHz 'domain', to determine
+        //       when the frame and line complete; also, since the SAA5050 always
+        //       rounds, use CRS to determine which way to interpolate.
+        //   
+        //       The @a load_state feeds the @a teletext module (with its character
+        //       ROM), which does the hard work; it is run at 2MHz but with
+        //       character data on every other clock tick.
+        //   
+        //       The @a teletext module delivers 12 pixels per 1MHz clock, and so 6
+        //       of these are selected per 2MHz clock for the output.
+        //   
+        //       This leads to three 2MHz clock cycles between input data and
+        //       output data.
         //       
-    always @ ( * )//scanline_and_loading__comb
-    begin: scanline_and_loading__comb_code
-        tt_character__valid = lose;
+    always @ ( * )//implementation__comb
+    begin: implementation__comb_code
+    reg [5:0]red__var;
+    reg [5:0]blue__var;
+    reg [5:0]green__var;
+        tt_character__valid = (lose & clk_1MHz_enable);
         tt_character__character = data_in;
         tt_timings__restart_frame = load_state__restart_frame;
         tt_timings__end_of_scanline = load_state__end_of_scanline;
         tt_timings__first_scanline_of_row = 1'h0;
         tt_timings__smoothe = 1'h1;
         tt_timings__interpolate_vertical = load_state__interpolate_vertical;
+        red__var = 6'h0;
+        blue__var = 6'h0;
+        green__var = 6'h0;
+        if ((tt_pixels__valid!=1'h0))
+        begin
+            red__var = tt_pixels__red[11:6];
+            green__var = tt_pixels__green[11:6];
+            blue__var = tt_pixels__blue[11:6];
+        end //if
+        else
+        
+        begin
+            if ((pixel_state__last_valid!=1'h0))
+            begin
+                red__var = tt_pixels__red[5:0];
+                green__var = tt_pixels__green[5:0];
+                blue__var = tt_pixels__blue[5:0];
+            end //if
+        end //else
+        blan = 1'h0;
+        tlc_n = 1'h0;
+        red = red__var;
+        blue = blue__var;
+        green = green__var;
     end //always
 
-    //b scanline_and_loading__posedge_clk_2MHz_active_low_reset_n clock process
+    //b implementation__posedge_clk_2MHz_active_low_reset_n clock process
         //   
+        //       Maintain some @a load_state in the 1MHz 'domain', to determine
+        //       when the frame and line complete; also, since the SAA5050 always
+        //       rounds, use CRS to determine which way to interpolate.
+        //   
+        //       The @a load_state feeds the @a teletext module (with its character
+        //       ROM), which does the hard work; it is run at 2MHz but with
+        //       character data on every other clock tick.
+        //   
+        //       The @a teletext module delivers 12 pixels per 1MHz clock, and so 6
+        //       of these are selected per 2MHz clock for the output.
+        //   
+        //       This leads to three 2MHz clock cycles between input data and
+        //       output data.
         //       
     always @( posedge clk_2MHz or negedge reset_n)
-    begin : scanline_and_loading__posedge_clk_2MHz_active_low_reset_n__code
+    begin : implementation__posedge_clk_2MHz_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
-            load_state__last_lose <= 1'h0;
             load_state__last_glr <= 1'h0;
             load_state__end_of_scanline <= 1'h0;
             load_state__restart_frame <= 1'h0;
             load_state__interpolate_vertical <= 2'h0;
+            pixel_state__last_valid <= 1'h0;
         end
         else if (clk_2MHz__enable)
         begin
-            load_state__last_lose <= lose;
             load_state__last_glr <= glr;
             if ((clk_1MHz_enable!=1'h0))
             begin
@@ -302,68 +281,7 @@ module saa5050
                 load_state__interpolate_vertical <= ((crs!=1'h0)?2'h2:2'h1);
                 load_state__restart_frame <= 1'h1;
             end //if
-        end //if
-    end //always
-
-    //b outputs_from_teletext__comb combinatorial process
-        //   
-        //       
-    always @ ( * )//outputs_from_teletext__comb
-    begin: outputs_from_teletext__comb_code
-    reg [5:0]red__var;
-    reg [5:0]blue__var;
-    reg [5:0]green__var;
-        red__var = 6'h0;
-        blue__var = 6'h0;
-        green__var = 6'h0;
-        if ((tt_pixels__valid!=1'h0))
-        begin
-            if ((pixel_state__left_pixels!=1'h0))
-            begin
-                red__var = tt_pixels__red[11:6];
-                green__var = tt_pixels__green[11:6];
-                blue__var = tt_pixels__blue[11:6];
-            end //if
-            else
-            
-            begin
-                red__var = tt_pixels__red[5:0];
-                green__var = tt_pixels__green[5:0];
-                blue__var = tt_pixels__blue[5:0];
-            end //else
-        end //if
-        blan = 1'h0;
-        tlc_n = 1'h0;
-        red = red__var;
-        blue = blue__var;
-        green = green__var;
-    end //always
-
-    //b outputs_from_teletext__posedge_clk_2MHz_active_low_reset_n clock process
-        //   
-        //       
-    always @( posedge clk_2MHz or negedge reset_n)
-    begin : outputs_from_teletext__posedge_clk_2MHz_active_low_reset_n__code
-        if (reset_n==1'b0)
-        begin
-            pixel_state__last_valid <= 1'h0;
-            pixel_state__left_pixels <= 1'h0;
-        end
-        else if (clk_2MHz__enable)
-        begin
             pixel_state__last_valid <= tt_pixels__valid;
-            if (((tt_pixels__valid!=1'h0)&&!(pixel_state__last_valid!=1'h0)))
-            begin
-                pixel_state__left_pixels <= 1'h0;
-            end //if
-            else
-            
-            begin
-                if ((tt_pixels__valid!=1'h0))
-                begin
-                    pixel_state__left_pixels <= !(pixel_state__left_pixels!=1'h0);
-                end //if
-            end //else
         end //if
     end //always
 

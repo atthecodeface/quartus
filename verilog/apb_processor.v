@@ -13,14 +13,66 @@
 
 //a Module apb_processor
     //   
-    //   The documentation of the CSR interface itself is in other files (at
-    //   this time, csr_target_csr.cdl).
+    //   The module is presented with a request to execute a program from the
+    //   ROM starting at a certain address. It executes the program, and hence
+    //   a set of APB requests, as required.
     //   
-    //   This module drives a CSR target interface in response to an incoming
-    //   APB interface.
+    //   The purpose of the module is to permit programmed sequences of APB
+    //   transactions without a full-fledge microcontroller being needed, even
+    //   for PLL setup or DDR pin DLL scanning, and so on.
     //   
-    //   It therefore permits an extension of an APB bus through a CSR target
-    //   pipelined chain.
+    //   A request to run a program is an @a address with a @a valid bit; if a
+    //   valid request is presented, it should be held until acknowledge. The
+    //   module will acknowledge a request using a single cycle @a acknowledge
+    //   in its @p apb_processor_response. Then the module will start reading
+    //   the ROM at the given address, executing 'APB program instructions'
+    //   from the data returned. The ROM is external to this module, and hence
+    //   the @p rom_request and @p rom_data signals permit a simple synchronous
+    //   memory to be attached with the program data.
+    //   
+    //   A second request to run a program may be presented while the APB
+    //   processor module is busy with the previous program request; this is
+    //   perfectly acceptable, but there will not be an @a acknowledge until
+    //   the APB processor is ready to start the new program; the new request
+    //   should be held stable until that point.
+    //   
+    //   The ROM contains the APB program, which is 40 bits of data per
+    //   instruction - 8 bits of opcode, 32 bits of data, per word. The opcode
+    //   is in [8;32], and the operand data is in [32;0].
+    //    
+    //   The opcodes fall in to 6 different classes: ALU, branch, set
+    //   parameter, APB request, wait, finish.
+    //    
+    //   + ALU
+    //   
+    //     Five ALU ops are supported - OR, BIC, AND, XOR, ADD
+    //    
+    //   + Branch
+    //   
+    //     Four branch types are supported - always, if acc is zero, if acc is
+    //     nonzero, and if repeat count is nonzero (with the side effect of
+    //     decrementing the repeat count)
+    //   
+    //   + Set parameter    
+    //   
+    //     Set parameter can set the APB address, accumulator and repeat count
+    //    
+    //   + Wait
+    //   
+    //     Wait uses the accumulator, decrementing it once per cycle, to wait
+    //     before moving on in the program.
+    //    
+    //   + APB request
+    //   
+    //     APB request can request read, write accumulator, or write using the
+    //     ROM content as data; these can optionally also auto-increment the address
+    //    
+    //   + Finish
+    //   
+    //     Complete the program, and permit a new request to be started
+    //   
+    //   The module presents a registered APB request interface out, and
+    //   accepts an APB response back, including @a pready.
     //   
 module apb_processor
 (
@@ -52,13 +104,16 @@ module apb_processor
     input clk__enable;
 
     //b Inputs
+        //   Read data back from the ROM with the APB program instruction
     input [39:0]rom_data;
         //   Pipelined csr request interface response
     input [31:0]apb_response__prdata;
     input apb_response__pready;
     input apb_response__perr;
+        //   Request from the client to execute from an address in the ROM
     input apb_processor_request__valid;
     input [15:0]apb_processor_request__address;
+        //   Active low reset
     input reset_n;
 
     //b Outputs
@@ -68,27 +123,34 @@ module apb_processor
     output apb_request__psel;
     output apb_request__pwrite;
     output [31:0]apb_request__pwdata;
+        //   Request to the instruction ROM for reading, with address
     output rom_request__enable;
     output [15:0]rom_request__address;
+        //   Response to the client acknowledging a request
     output apb_processor_response__acknowledge;
     output apb_processor_response__rom_busy;
 
 // output components here
 
     //b Output combinatorials
+        //   Request to the instruction ROM for reading, with address
     reg rom_request__enable;
     reg [15:0]rom_request__address;
+        //   Response to the client acknowledging a request
     reg apb_processor_response__acknowledge;
     reg apb_processor_response__rom_busy;
 
     //b Output nets
 
     //b Internal and output registers
+        //   APB state, including FSM
     reg [1:0]apb_state__fsm_state;
+        //   Processor state, including FSM and accumulator
     reg [1:0]processor_state__fsm_state;
     reg [31:0]processor_state__address;
     reg [31:0]processor_state__accumulator;
     reg [31:0]processor_state__repeat_count;
+        //   State of the ROM-side; request and ROM access
     reg rom_state__busy;
     reg rom_state__opcode_valid;
     reg [7:0]rom_state__opcode;
@@ -103,8 +165,10 @@ module apb_processor
     reg [31:0]apb_request__pwdata;
 
     //b Internal combinatorials
+        //   Combinatorial decode of APB state and APB response
     reg [2:0]apb_combs__action;
     reg apb_combs__completing_request;
+        //   Combinatorial decode of the processor state, to determine processor action
     reg processor_combs__apb_req__valid;
     reg processor_combs__apb_req__read_not_write;
     reg [31:0]processor_combs__apb_req__wdata;
@@ -118,6 +182,7 @@ module apb_processor
     reg [2:0]processor_combs__opcode_subclass;
     reg [2:0]processor_combs__opcode_class;
     reg processor_combs__opcode_valid;
+        //   Combinatorial decode of ROM state
     reg rom_combs__request__enable;
     reg [15:0]rom_combs__request__address;
 
@@ -127,7 +192,22 @@ module apb_processor
     //b Module instances
     //b rom_interface_logic__comb combinatorial process
         //   
-        //       ROM interface logic - start program etc.
+        //       Start a program (go @a busy) when a valid request comes in,
+        //       storing the request's @a address as the ROM 'program counter'.
+        //       Complete the program when the processor indicates it is executing
+        //       a @a finish instruction.
+        //   
+        //       Request a read of the ROM if there is not a valid opcode in hand,
+        //       and a request is being processed (@a busy asserted); don't request
+        //       a ROM read if it was requested in the last cycle, as the ROM will
+        //       be presenting the data already.
+        //   
+        //       If reading the ROM, then capture the data from the ROM as a valid
+        //       opcode, and move on the 'program counter' @a address.  If the
+        //       processor, though, has consumed the opcode, then invalidate it
+        //       (these should be mutually exclusive). If the processor indicates a
+        //       branch is to be taken, then change the program counter @a address
+        //       appropriately.
         //       
     always @ ( * )//rom_interface_logic__comb
     begin: rom_interface_logic__comb_code
@@ -147,7 +227,22 @@ module apb_processor
 
     //b rom_interface_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       ROM interface logic - start program etc.
+        //       Start a program (go @a busy) when a valid request comes in,
+        //       storing the request's @a address as the ROM 'program counter'.
+        //       Complete the program when the processor indicates it is executing
+        //       a @a finish instruction.
+        //   
+        //       Request a read of the ROM if there is not a valid opcode in hand,
+        //       and a request is being processed (@a busy asserted); don't request
+        //       a ROM read if it was requested in the last cycle, as the ROM will
+        //       be presenting the data already.
+        //   
+        //       If reading the ROM, then capture the data from the ROM as a valid
+        //       opcode, and move on the 'program counter' @a address.  If the
+        //       processor, though, has consumed the opcode, then invalidate it
+        //       (these should be mutually exclusive). If the processor indicates a
+        //       branch is to be taken, then change the program counter @a address
+        //       appropriately.
         //       
     always @( posedge clk or negedge reset_n)
     begin : rom_interface_logic__posedge_clk_active_low_reset_n__code
@@ -199,7 +294,28 @@ module apb_processor
 
     //b processor_execute_logic__comb combinatorial process
         //   
-        //       The processor executes valid opcodes
+        //       Break out the ROM state data, and determine some simple flags
+        //       (e.g. @a acc_is_zero).
+        //   
+        //       From the processor FSM state, determine the action to take. The
+        //       processor will be in 'idle' if it is ready to start processing of
+        //       the ROM opcode being presented. Hence most actions are just a
+        //       decode, when in idle, of the incoming opcode class. However, if
+        //       the processor FSM is indicating an APB request in process then the
+        //       processor action is pending the APB request; if the processor is
+        //       handling a wait delay then either decrement the accumulator or (if
+        //       it is zero) complete the wait instruction.
+        //   
+        //       Handling the processor action is the essence of executing the
+        //       opcode classes, generally; most will complete the opcode execution
+        //       and return the processor FSM to idle. A pending APB request will
+        //       need to wait for the APB state machine to complete, and it may
+        //       (for APB reads) capture the APB @a prdata in the accumulator. A
+        //       wait start will cause the delay to be written to the accumulator,
+        //       and wait steps are then to decrement the accumulator or simply
+        //       complete (if the accumulator is zero). A branch will complete,
+        //       while indicating to the ROM state machine to take the branch if
+        //       necessary.
         //       
     always @ ( * )//processor_execute_logic__comb
     begin: processor_execute_logic__comb_code
@@ -413,7 +529,28 @@ module apb_processor
 
     //b processor_execute_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       The processor executes valid opcodes
+        //       Break out the ROM state data, and determine some simple flags
+        //       (e.g. @a acc_is_zero).
+        //   
+        //       From the processor FSM state, determine the action to take. The
+        //       processor will be in 'idle' if it is ready to start processing of
+        //       the ROM opcode being presented. Hence most actions are just a
+        //       decode, when in idle, of the incoming opcode class. However, if
+        //       the processor FSM is indicating an APB request in process then the
+        //       processor action is pending the APB request; if the processor is
+        //       handling a wait delay then either decrement the accumulator or (if
+        //       it is zero) complete the wait instruction.
+        //   
+        //       Handling the processor action is the essence of executing the
+        //       opcode classes, generally; most will complete the opcode execution
+        //       and return the processor FSM to idle. A pending APB request will
+        //       need to wait for the APB state machine to complete, and it may
+        //       (for APB reads) capture the APB @a prdata in the accumulator. A
+        //       wait start will cause the delay to be written to the accumulator,
+        //       and wait steps are then to decrement the accumulator or simply
+        //       complete (if the accumulator is zero). A branch will complete,
+        //       while indicating to the ROM state machine to take the branch if
+        //       necessary.
         //       
     always @( posedge clk or negedge reset_n)
     begin : processor_execute_logic__posedge_clk_active_low_reset_n__code
@@ -582,10 +719,22 @@ module apb_processor
 
     //b apb_master_logic__comb combinatorial process
         //   
-        //       The APB master interface accepts a request and drives the signals
-        //       as required by the APB spec, waiting for pready to complete. It
-        //       always has at least one dead cycle between presenting APB
-        //       requests.
+        //       The APB master interface accepts a request from the processor and
+        //       drives the signals as required by the APB spec, waiting for pready
+        //       to complete. It always has at least one dead cycle between
+        //       presenting APB requests, as it will have to transition from idle,
+        //       to the select phase, to the enable phase, then back to idle.
+        //   
+        //       The logic is simple enough - an incoming request (which should
+        //       only be valid when the APB state machine is idle) causes an APB
+        //       read or write to start, to the @a paddr in the processor's APB
+        //       address register, using @a pwdata required by the processor
+        //       (either the accumulator or the ROM data[32;0]). The request out is
+        //       registered, and so when the APB FSM is in its select phase, the
+        //       APB request on the bus has @a psel asserted and @a penable
+        //       deasserted. In the enable phase of the FSM, the APB request out
+        //       will have @a psel asserted and @a penable asserted, and be waiting
+        //       for @a pready to be asserted.
         //       
     always @ ( * )//apb_master_logic__comb
     begin: apb_master_logic__comb_code
@@ -597,18 +746,18 @@ module apb_processor
             begin
             if ((processor_combs__apb_req__valid!=1'h0))
             begin
-                apb_combs__action__var = ((processor_combs__apb_req__read_not_write!=1'h0)?3'h3:3'h2);
+                apb_combs__action__var = ((processor_combs__apb_req__read_not_write!=1'h0)?3'h2:3'h1);
             end //if
             end
         2'h1: // req 1
             begin
-            apb_combs__action__var = 3'h4;
+            apb_combs__action__var = 3'h3;
             end
         2'h2: // req 1
             begin
             if ((apb_response__pready!=1'h0))
             begin
-                apb_combs__action__var = 3'h5;
+                apb_combs__action__var = 3'h4;
             end //if
             end
     //synopsys  translate_off
@@ -625,6 +774,9 @@ module apb_processor
         endcase
         apb_combs__completing_request__var = 1'h0;
         case (apb_combs__action__var) //synopsys parallel_case
+        3'h1: // req 1
+            begin
+            end
         3'h2: // req 1
             begin
             end
@@ -632,9 +784,6 @@ module apb_processor
             begin
             end
         3'h4: // req 1
-            begin
-            end
-        3'h5: // req 1
             begin
             apb_combs__completing_request__var = 1'h1;
             end
@@ -659,10 +808,22 @@ module apb_processor
 
     //b apb_master_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       The APB master interface accepts a request and drives the signals
-        //       as required by the APB spec, waiting for pready to complete. It
-        //       always has at least one dead cycle between presenting APB
-        //       requests.
+        //       The APB master interface accepts a request from the processor and
+        //       drives the signals as required by the APB spec, waiting for pready
+        //       to complete. It always has at least one dead cycle between
+        //       presenting APB requests, as it will have to transition from idle,
+        //       to the select phase, to the enable phase, then back to idle.
+        //   
+        //       The logic is simple enough - an incoming request (which should
+        //       only be valid when the APB state machine is idle) causes an APB
+        //       read or write to start, to the @a paddr in the processor's APB
+        //       address register, using @a pwdata required by the processor
+        //       (either the accumulator or the ROM data[32;0]). The request out is
+        //       registered, and so when the APB FSM is in its select phase, the
+        //       APB request on the bus has @a psel asserted and @a penable
+        //       deasserted. In the enable phase of the FSM, the APB request out
+        //       will have @a psel asserted and @a penable asserted, and be waiting
+        //       for @a pready to be asserted.
         //       
     always @( posedge clk or negedge reset_n)
     begin : apb_master_logic__posedge_clk_active_low_reset_n__code
@@ -679,7 +840,7 @@ module apb_processor
         else if (clk__enable)
         begin
             case (apb_combs__action) //synopsys parallel_case
-            3'h2: // req 1
+            3'h1: // req 1
                 begin
                 apb_state__fsm_state <= 2'h1;
                 apb_request__psel <= 1'h1;
@@ -688,7 +849,7 @@ module apb_processor
                 apb_request__paddr <= processor_state__address;
                 apb_request__pwdata <= processor_combs__apb_req__wdata;
                 end
-            3'h3: // req 1
+            3'h2: // req 1
                 begin
                 apb_state__fsm_state <= 2'h1;
                 apb_request__psel <= 1'h1;
@@ -696,12 +857,12 @@ module apb_processor
                 apb_request__pwrite <= 1'h0;
                 apb_request__paddr <= processor_state__address;
                 end
-            3'h4: // req 1
+            3'h3: // req 1
                 begin
                 apb_request__penable <= 1'h1;
                 apb_state__fsm_state <= 2'h2;
                 end
-            3'h5: // req 1
+            3'h4: // req 1
                 begin
                 apb_request__psel <= 1'h0;
                 apb_request__penable <= 1'h0;

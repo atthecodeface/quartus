@@ -78,8 +78,9 @@ $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/timing.complete
 
 bbc_project_rebuild:
-	(cd ../bbc_cdl; git pull; make clean verilog)
+	(cd ../bbc_cdl; git pull; make clean verilog roms)
 	(cp -r ../bbc_cdl/build/linux/*v verilog)
+	(cp -r ../bbc_cdl/roms/*mif mif)
 
 fpga_update_srams:
 	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(SYNTH_PROJECT))

@@ -16,6 +16,9 @@
     //   Simple module to map a hex value to the LEDs required to make the
     //   appropriate symbol in a 7-segment display.
     //   
+    //   The module combinatorially takes in a hex value, and drives out 7 LED
+    //   values.
+    //   
 module led_seven_segment
 (
 
@@ -45,6 +48,7 @@ module led_seven_segment
     //b Internal and output registers
 
     //b Internal combinatorials
+        //   Array to hold value from constants from leds.h
     reg [15:0]segment_consts[6:0];
 
     //b Internal nets
@@ -54,6 +58,11 @@ module led_seven_segment
     //b decode_logic combinatorial process
         //   
         //       Simply map input through constants provided by leds.h
+        //   
+        //       Segment [0] is taken from bit [hex] of the 16-bit
+        //       led_seven_seg_hex_a constant, similarly for other segment
+        //       bits. This means that there are 7 constants in leds.h which define
+        //       the actual LED segments that light up for each input hex value.
         //       
     always @ ( * )//decode_logic
     begin: decode_logic__comb_code

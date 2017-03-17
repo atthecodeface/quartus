@@ -13,11 +13,21 @@
 
 //a Module csr_target_apb
     //   
-    //   The documentation of the CSR interface itself is in other files (at
+    //   The documentation of the pipelined CSR interface itself is in other files (at
     //   this time, csr_target_csr.cdl).
     //   
-    //   This module provides a CSR target interface to an APB master, hence
-    //   providing the ability to connect an APB slave to the CSR bus.
+    //   This module provides a CSR target interface, and drives out an APB
+    //   master request bus. It can therefore be used at the 'leaf' end of a
+    //   CSR interface tree, to access standard APB peripherals.
+    //   
+    //   The module must be told which @p csr_select it should be listening for
+    //   on the CSR target interface; it converts any read or write to an APB
+    //   master request (with top 16 bits of @a paddr zeroed) to the APB
+    //   request. Hence the APB target attached to this module is accessed by
+    //   CSR requests with the select set to @p csr_select.
+    //   
+    //   The module is lightweight, effectively being a registered end-point on
+    //   the CSR interface and a registered APB request.
     //   
 module csr_target_apb
 (
@@ -40,8 +50,9 @@ module csr_target_apb
     apb_request__psel,
     apb_request__pwrite,
     apb_request__pwdata,
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data
 );
 
@@ -63,6 +74,7 @@ module csr_target_apb
     input [15:0]csr_request__select;
     input [15:0]csr_request__address;
     input [31:0]csr_request__data;
+        //   Active low reset
     input reset_n;
 
     //b Outputs
@@ -73,8 +85,9 @@ module csr_target_apb
     output apb_request__pwrite;
     output [31:0]apb_request__pwdata;
         //   Pipelined csr request interface response
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
 
 // output components here
@@ -84,14 +97,16 @@ module csr_target_apb
     //b Output nets
 
     //b Internal and output registers
+        //   Asserted if a CSR request is in progress
     reg csr_request_in_progress;
     reg [31:0]apb_request__paddr;
     reg apb_request__penable;
     reg apb_request__psel;
     reg apb_request__pwrite;
     reg [31:0]apb_request__pwdata;
-    reg csr_response__ack;
+    reg csr_response__acknowledge;
     reg csr_response__read_data_valid;
+    reg csr_response__read_data_error;
     reg [31:0]csr_response__read_data;
 
     //b Internal combinatorials
@@ -155,7 +170,8 @@ module csr_target_apb
         begin
             csr_response__read_data_valid <= 1'h0;
             csr_response__read_data <= 32'h0;
-            csr_response__ack <= 1'h0;
+            csr_response__acknowledge <= 1'h0;
+            csr_response__read_data_error <= 1'h0;
             csr_request_in_progress <= 1'h0;
         end
         else if (clk__enable)
@@ -167,10 +183,11 @@ module csr_target_apb
             end //if
             if ((apb_access_completing!=1'h0))
             begin
-                csr_response__ack <= 1'h0;
+                csr_response__acknowledge <= 1'h0;
                 if (!(apb_request__pwrite!=1'h0))
                 begin
                     csr_response__read_data_valid <= 1'h1;
+                    csr_response__read_data_error <= 1'h0;
                     csr_response__read_data <= apb_response__prdata;
                 end //if
             end //if
@@ -188,7 +205,7 @@ module csr_target_apb
                 begin
                     if ((csr_request__select==csr_select))
                     begin
-                        csr_response__ack <= 1'h1;
+                        csr_response__acknowledge <= 1'h1;
                         csr_request_in_progress <= 1'h1;
                     end //if
                 end //if
@@ -199,14 +216,14 @@ module csr_target_apb
     //b apb_access_logic__comb combinatorial process
         //   
         //       An APB access starts with a valid request detected, which drives
-        //       out the APB controls with psel high, penable low.
+        //       out the APB controls with @p psel high, @p penable low.
         //   
-        //       If psel is high and penable is low then an access must have
+        //       If @p psel is high and @p penable is low then an access must have
         //       started, and the next clock tick _must_ have penable high.
         //   
-        //       If psel is high and penable is high then the access will continue
-        //       if pready is low, but it will complete (with valid read data, if a
-        //       read) if pready is high.
+        //       If @p psel is high and @p penable is high then the access will continue
+        //       if @p pready is low, but it will complete (with valid read data, if a
+        //       read) if @p pready is high.
         //       
     always @ ( * )//apb_access_logic__comb
     begin: apb_access_logic__comb_code
@@ -232,14 +249,14 @@ module csr_target_apb
     //b apb_access_logic__posedge_clk_active_low_reset_n clock process
         //   
         //       An APB access starts with a valid request detected, which drives
-        //       out the APB controls with psel high, penable low.
+        //       out the APB controls with @p psel high, @p penable low.
         //   
-        //       If psel is high and penable is low then an access must have
+        //       If @p psel is high and @p penable is low then an access must have
         //       started, and the next clock tick _must_ have penable high.
         //   
-        //       If psel is high and penable is high then the access will continue
-        //       if pready is low, but it will complete (with valid read data, if a
-        //       read) if pready is high.
+        //       If @p psel is high and @p penable is high then the access will continue
+        //       if @p pready is low, but it will complete (with valid read data, if a
+        //       read) if @p pready is high.
         //       
     always @( posedge clk or negedge reset_n)
     begin : apb_access_logic__posedge_clk_active_low_reset_n__code

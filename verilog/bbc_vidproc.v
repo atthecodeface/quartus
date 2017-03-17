@@ -100,6 +100,8 @@ module bbc_vidproc
     reg [3:0]cursor_shift_register;
     reg [7:0]pixel_values__flashing;
     reg [2:0]pixel_values__base_color[7:0];
+    reg disen_pv;
+    reg disen_sr;
     reg [7:0]pixel_shift_register;
     reg [2:0]pixels_valid_per_clock;
     reg [7:0]blue;
@@ -225,7 +227,7 @@ module bbc_vidproc
     //pragma coverage on
     //synopsys  translate_on
         endcase
-        if (!(disen!=1'h0))
+        if (!(disen_pv!=1'h0))
         begin
             colors_out__var[0] = 3'h0;
             colors_out__var[1] = 3'h0;
@@ -272,6 +274,7 @@ module bbc_vidproc
             pixel_values__base_color[5] <= 3'h0;
             pixel_values__base_color[6] <= 3'h0;
             pixel_values__base_color[7] <= 3'h0;
+            disen_pv <= 1'h0;
             pixels_valid_per_clock <= 3'h0;
             red <= 8'h0;
             green <= 8'h0;
@@ -297,6 +300,7 @@ module bbc_vidproc
             pixel_values__base_color[6] <= palette__base_color[{pixel_shift_register[1],3'h7}];
             pixel_values__flashing[7] <= palette__flashing[{pixel_shift_register[0],3'h7}];
             pixel_values__base_color[7] <= palette__base_color[{pixel_shift_register[0],3'h7}];
+            disen_pv <= disen_sr;
             case (control__columns) //synopsys parallel_case
             2'h3: // req 1
                 begin
@@ -363,6 +367,7 @@ module bbc_vidproc
         if (reset_n==1'b0)
         begin
             pixel_shift_register <= 8'h0;
+            disen_sr <= 1'h0;
             cursor_shift_register <= 4'h0;
         end
         else if (clk_2MHz_video__enable)
@@ -399,6 +404,7 @@ module bbc_vidproc
             if ((crtc_clock_enable!=1'h0))
             begin
                 pixel_shift_register <= pixel_data_in;
+                disen_sr <= disen;
                 cursor_shift_register <= {cursor_shift_register[2:0],1'h0};
                 if ((cursor!=1'h0))
                 begin

@@ -25,9 +25,9 @@
     //   latency target-to-master. The current design uses a
     //   valid/acknowledgement system to replace the fixed latency.
     //   
-    //   A valid request is received, and if it matches the @csr_select field
+    //   A valid request is received, and if it matches the @a csr_select field
     //   then the request is acknowledged. Since the master is a fair distance
-    //   away, and the @valid signal will not be removed until an @ack is seen,
+    //   away, and the @a valid signal will not be removed until an @a ack is seen,
     //   the handshake is effectively: valid low, ack low; valid high, ack low;
     //   valid high, ack high; valid high, ack low; valid low, ack low.
     //   
@@ -71,8 +71,9 @@ module csr_target_csr
     csr_access__read_not_write,
     csr_access__address,
     csr_access__data,
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data
 );
 
@@ -92,6 +93,7 @@ module csr_target_csr
     input [15:0]csr_request__select;
     input [15:0]csr_request__address;
     input [31:0]csr_request__data;
+        //   Active low reset
     input reset_n;
 
     //b Outputs
@@ -101,8 +103,9 @@ module csr_target_csr
     output [15:0]csr_access__address;
     output [31:0]csr_access__data;
         //   Pipelined csr request interface response
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
 
 // output components here
@@ -112,13 +115,15 @@ module csr_target_csr
     //b Output nets
 
     //b Internal and output registers
+        //   Asserted if a CSR access is in progress
     reg csr_request_in_progress;
     reg csr_access__valid;
     reg csr_access__read_not_write;
     reg [15:0]csr_access__address;
     reg [31:0]csr_access__data;
-    reg csr_response__ack;
+    reg csr_response__acknowledge;
     reg csr_response__read_data_valid;
+    reg csr_response__read_data_error;
     reg [31:0]csr_response__read_data;
 
     //b Internal combinatorials
@@ -127,17 +132,38 @@ module csr_target_csr
 
     //b Clock gating module instances
     //b Module instances
-    //b access clock process
+    //b access_logic clock process
         //   
+        //       If a CSR read transaction is completing (@p read_data_valid is
+        //       asserted), then that indication can be cleared, and the @p
+        //       read_data must be zeroed (to permit a wired-or bus upstream).
+        //   
+        //       If a CSR access is in progress (should be exclusive to the read
+        //       transaction completing), then remove the upstream @a ack and
+        //       remove the downstream @a csr_access; if it is a read, then drive
+        //       the read data valid upstream.
+        //   
+        //       If a CSR request is being handled (i.e. the @p csr_request.valid
+        //       was asserted and targeted at this CSR target), and the @p
+        //       csr_request.valid has been taken away (presumably in response to
+        //       the upstream @p ack being asserted by this module) then the CSR
+        //       access has completed as far as this module is concerned, so kill
+        //       @a csr_request_in_progress.
+        //   
+        //       Finally, if a request does come in (which should be exclusive to
+        //       all the previous cases) and it targets this CSR target - as
+        //       determined by the @p csr_select field matching - then start the
+        //       CSR access downstream, and acknowledge the request upstream.
         //       
     always @( posedge clk or negedge reset_n)
-    begin : access__code
+    begin : access_logic__code
         if (reset_n==1'b0)
         begin
             csr_response__read_data_valid <= 1'h0;
             csr_response__read_data <= 32'h0;
             csr_access__valid <= 1'h0;
-            csr_response__ack <= 1'h0;
+            csr_response__acknowledge <= 1'h0;
+            csr_response__read_data_error <= 1'h0;
             csr_request_in_progress <= 1'h0;
             csr_access__read_not_write <= 1'h0;
             csr_access__address <= 16'h0;
@@ -153,11 +179,12 @@ module csr_target_csr
             if ((csr_access__valid!=1'h0))
             begin
                 csr_access__valid <= 1'h0;
-                csr_response__ack <= 1'h0;
+                csr_response__acknowledge <= 1'h0;
                 if ((csr_access__read_not_write!=1'h0))
                 begin
                     csr_response__read_data_valid <= 1'h1;
                     csr_response__read_data <= csr_access_data;
+                    csr_response__read_data_error <= 1'h0;
                 end //if
             end //if
             if ((csr_request_in_progress!=1'h0))
@@ -179,7 +206,7 @@ module csr_target_csr
                         csr_access__read_not_write <= csr_request__read_not_write;
                         csr_access__address <= csr_request__address;
                         csr_access__data <= csr_request__data;
-                        csr_response__ack <= 1'h1;
+                        csr_response__acknowledge <= 1'h1;
                     end //if
                 end //if
             end //else

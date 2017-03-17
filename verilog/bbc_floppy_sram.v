@@ -45,8 +45,9 @@ module bbc_floppy_sram
     floppy_op__sector_id__deleted_data,
     reset_n,
 
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data,
     floppy_response__sector_id_valid,
     floppy_response__sector_id__track,
@@ -99,8 +100,9 @@ module bbc_floppy_sram
     input reset_n;
 
     //b Outputs
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
     output floppy_response__sector_id_valid;
     output [6:0]floppy_response__sector_id__track;
@@ -186,8 +188,9 @@ module bbc_floppy_sram
     reg [3:0]floppy_disk_state__sector_id__bad_crc;
     reg [3:0]floppy_disk_state__sector_id__bad_data_crc;
     reg [3:0]floppy_disk_state__sector_id__deleted_data;
-    reg csr_response__ack;
+    reg csr_response__acknowledge;
     reg csr_response__read_data_valid;
+    reg csr_response__read_data_error;
     reg [31:0]csr_response__read_data;
     reg floppy_response__sector_id_valid;
     reg [6:0]floppy_response__sector_id__track;
@@ -688,8 +691,9 @@ module bbc_floppy_sram
     begin : csrs_read_write__code
         if (reset_n==1'b0)
         begin
-            csr_response__ack <= 1'h0;
+            csr_response__acknowledge <= 1'h0;
             csr_response__read_data_valid <= 1'h0;
+            csr_response__read_data_error <= 1'h0;
             csr_response__read_data <= 32'h0;
             floppy_disk_state__disk_ready[0] <= 1'h0; // Should this be a bit vector?
             floppy_disk_state__disk_ready[1] <= 1'h0; // Should this be a bit vector?
@@ -722,8 +726,9 @@ module bbc_floppy_sram
         end
         else if (clk__enable)
         begin
-            csr_response__ack <= 1'h0;
+            csr_response__acknowledge <= 1'h0;
             csr_response__read_data_valid <= 1'h0;
+            csr_response__read_data_error <= 1'h0;
             csr_response__read_data <= 32'h0;
             floppy_disk_state__disk_ready[0] <= 1'h1;
             floppy_disk_state__num_tracks[0] <= 8'h50;

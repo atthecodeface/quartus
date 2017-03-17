@@ -13,6 +13,38 @@
 
 //a Module framebuffer
     //   
+    //   This is a module that takes SRAM writes into a
+    //   framebuffer, and includes a mapping to a dual-port SRAM (write on
+    //   one side, read on the other), where the video side drives out
+    //   vsync, hsync, data enable and pixel data.
+    //   
+    //   The video side is asynchronous to the SRAM write side.
+    //   
+    //   The video output side has a programmable horizontal period that
+    //   starts with hsync high for one clock, and then has a programmable
+    //   back porch, followed by a programmable number of pixels (with data
+    //   out enabled only if on the correct vertical portion of the display),
+    //   followed by a programmable front porch, repeating.
+    //   
+    //   The video output side has a programmable vertical period that is in
+    //   units of horizontal period; it starts with vsync high for one
+    //   horizontal period, and then has a programmable front porch,
+    //   followed by a programmable number of displayed lined, followed by a
+    //   programmable front porch, repeating.
+    //   
+    //   The video output start at a programmable base address in SRAM;
+    //   moving down a line adds a programmable amount to the address in
+    //   SRAM.
+    //   
+    //   The framebuffer uses a @a framebuffer_timing module to generate video
+    //   sync signals and other controls.
+    //   
+    //   The module generates output pixel data from a shift register and a
+    //   data buffer that fill from an internal dual-port SRAM, using the video
+    //   timing.
+    //   
+    //   The SRAM is filled with SRAM write requests, using a different clock
+    //   to the video generation.
     //   
 module framebuffer
 (
@@ -23,6 +55,7 @@ module framebuffer
     csr_clk,
     csr_clk__enable,
 
+    csr_select,
     csr_request__valid,
     csr_request__read_not_write,
     csr_request__select,
@@ -33,8 +66,9 @@ module framebuffer
     display_sram_write__address,
     reset_n,
 
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data,
     video_bus__vsync,
     video_bus__hsync,
@@ -56,6 +90,7 @@ module framebuffer
     input csr_clk__enable;
 
     //b Inputs
+    input [15:0]csr_select;
     input csr_request__valid;
     input csr_request__read_not_write;
     input [15:0]csr_request__select;
@@ -67,8 +102,9 @@ module framebuffer
     input reset_n;
 
     //b Outputs
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
     output video_bus__vsync;
     output video_bus__hsync;
@@ -80,6 +116,10 @@ module framebuffer
 // output components here
 
     //b Output combinatorials
+    reg csr_response__acknowledge;
+    reg csr_response__read_data_valid;
+    reg csr_response__read_data_error;
+    reg [31:0]csr_response__read_data;
     reg video_bus__vsync;
     reg video_bus__hsync;
     reg video_bus__display_enable;
@@ -88,11 +128,9 @@ module framebuffer
     reg [7:0]video_bus__blue;
 
     //b Output nets
-    wire csr_response__ack;
-    wire csr_response__read_data_valid;
-    wire [31:0]csr_response__read_data;
 
     //b Internal and output registers
+        //   Pixel state, in the video clock domain, to generate the pixel data out
     reg [4:0]pixel_state__num_valid;
     reg [13:0]pixel_state__sram_address;
     reg [13:0]pixel_state__sram_address_line_start;
@@ -104,30 +142,20 @@ module framebuffer
     reg [15:0]pixel_state__data_buffer__red;
     reg [15:0]pixel_state__data_buffer__green;
     reg [15:0]pixel_state__data_buffer__blue;
-    reg video_state__h_sync;
-    reg video_state__v_sync;
-    reg video_state__display_enable;
-    reg [1:0]video_state__h_state;
-    reg [9:0]video_state__h_pixel;
-    reg [1:0]video_state__v_state;
-    reg [9:0]video_state__v_line;
-    reg video_state__pixel_data_required;
-    reg [7:0]video_state__red;
-    reg [7:0]video_state__green;
-    reg [7:0]video_state__blue;
+    reg [7:0]pixel_state__red;
+    reg [7:0]pixel_state__green;
+    reg [7:0]pixel_state__blue;
+        //   State in the SRAM clock domain - the SRAM write to be performed
     reg sram_state__write_request__enable;
     reg [47:0]sram_state__write_request__data;
     reg [15:0]sram_state__write_request__address;
+        //   Control/status registers local to this module
     reg [15:0]csrs__sram_base_address;
     reg [15:0]csrs__sram_words_per_line;
-    reg [9:0]csrs__video__h_back_porch;
-    reg [9:0]csrs__video__h_display;
-    reg [9:0]csrs__video__h_front_porch;
-    reg [9:0]csrs__video__v_back_porch;
-    reg [9:0]csrs__video__v_display;
-    reg [9:0]csrs__video__v_front_porch;
+    reg csrs__down_sample_x;
 
     //b Internal combinatorials
+        //   Combinatorial decode of the pixel state
     reg [7:0]pixel_combs__red;
     reg [7:0]pixel_combs__green;
     reg [7:0]pixel_combs__blue;
@@ -135,29 +163,61 @@ module framebuffer
     reg [13:0]pixel_combs__sram_address_next_line;
     reg pixel_combs__load_shift_register;
     reg pixel_combs__sram_request;
-    reg video_combs__h_line_start;
-    reg video_combs__h_line_end;
-    reg video_combs__h_back_porch_end;
-    reg video_combs__h_display_end;
-    reg video_combs__h_will_be_displaying;
-    reg video_combs__h_displaying;
-    reg video_combs__v_frame_start;
-    reg video_combs__v_back_porch_last_line;
-    reg video_combs__v_display_last_line;
-    reg video_combs__v_frame_last_line;
-    reg video_combs__v_displaying;
-    reg video_combs__will_display_pixels;
+        //   CSR read data from this module
     reg [31:0]csr_read_data;
 
     //b Internal nets
+        //   Data read from the framebuffer; currently always intepreted as bundle(16 blue, 16 green, 16 red)
     wire [47:0]pixel_read_data;
+        //   Video timing syncs and controls
+    wire video_timing__v_sync;
+    wire video_timing__h_sync;
+    wire video_timing__will_h_sync;
+    wire video_timing__v_displaying;
+    wire video_timing__display_required;
+    wire video_timing__will_display_enable;
+    wire video_timing__display_enable;
+        //   CSR access for this module
     wire csr_access__valid;
     wire csr_access__read_not_write;
     wire [15:0]csr_access__address;
     wire [31:0]csr_access__data;
+        //   Pipelined CSR response interface to control the module
+    wire csr_response_local__acknowledge;
+    wire csr_response_local__read_data_valid;
+    wire csr_response_local__read_data_error;
+    wire [31:0]csr_response_local__read_data;
+        //   Pipelined CSR response interface to control the module
+    wire csr_response_timing__acknowledge;
+    wire csr_response_timing__read_data_valid;
+    wire csr_response_timing__read_data_error;
+    wire [31:0]csr_response_timing__read_data;
 
     //b Clock gating module instances
     //b Module instances
+    framebuffer_timing ftiming(
+        .video_clk(video_clk),
+        .video_clk__enable(1'b1),
+        .csr_clk(csr_clk),
+        .csr_clk__enable(1'b1),
+        .csr_select({csr_select[15:1],1'h0}),
+        .csr_request__data(csr_request__data),
+        .csr_request__address(csr_request__address),
+        .csr_request__select(csr_request__select),
+        .csr_request__read_not_write(csr_request__read_not_write),
+        .csr_request__valid(csr_request__valid),
+        .reset_n(reset_n),
+        .csr_response__read_data(            csr_response_timing__read_data),
+        .csr_response__read_data_error(            csr_response_timing__read_data_error),
+        .csr_response__read_data_valid(            csr_response_timing__read_data_valid),
+        .csr_response__acknowledge(            csr_response_timing__acknowledge),
+        .video_timing__display_enable(            video_timing__display_enable),
+        .video_timing__will_display_enable(            video_timing__will_display_enable),
+        .video_timing__display_required(            video_timing__display_required),
+        .video_timing__v_displaying(            video_timing__v_displaying),
+        .video_timing__will_h_sync(            video_timing__will_h_sync),
+        .video_timing__h_sync(            video_timing__h_sync),
+        .video_timing__v_sync(            video_timing__v_sync)         );
     se_sram_mrw_2_16384x48 display(
         .sram_clock_1(video_clk),
         .sram_clock_1__enable(1'b1),
@@ -175,7 +235,7 @@ module framebuffer
     csr_target_csr csri(
         .clk(csr_clk),
         .clk__enable(1'b1),
-        .csr_select(16'h4),
+        .csr_select({csr_select[15:1],1'h1}),
         .csr_access_data(csr_read_data),
         .csr_request__data(csr_request__data),
         .csr_request__address(csr_request__address),
@@ -187,194 +247,31 @@ module framebuffer
         .csr_access__address(            csr_access__address),
         .csr_access__read_not_write(            csr_access__read_not_write),
         .csr_access__valid(            csr_access__valid),
-        .csr_response__read_data(            csr_response__read_data),
-        .csr_response__read_data_valid(            csr_response__read_data_valid),
-        .csr_response__ack(            csr_response__ack)         );
-    //b video_bus_out combinatorial process
-        //   
-        //       
-    always @ ( * )//video_bus_out
-    begin: video_bus_out__comb_code
-        video_bus__vsync = video_state__v_sync;
-        video_bus__hsync = video_state__h_sync;
-        video_bus__display_enable = video_state__display_enable;
-        video_bus__red = video_state__red;
-        video_bus__green = video_state__green;
-        video_bus__blue = video_state__blue;
-    end //always
-
-    //b video_output_logic__comb combinatorial process
-        //   
-        //       The video output logic operates by first a timing machine that
-        //       generates horizontal and vertical timing. 
-        //   
-        //       The video output pixel data is generated from a shift register;
-        //       the shift register is filled from a pixel data buffer, that in
-        //       turn is filled by reading the SRAM.
-        //   
-        //       At the start of every line a 'data required' signal is set, and
-        //       the pixel data buffer is invalidated.
-        //   
-        //       Whenever the pixel data buffer is going to be invalid and data is
-        //       required the frame buffer SRAM is read from the next appropriate
-        //       location.
-        //       
-    always @ ( * )//video_output_logic__comb
-    begin: video_output_logic__comb_code
-        video_combs__h_line_start = video_state__h_sync;
-        video_combs__h_back_porch_end = ((video_state__h_state==2'h0)&&(video_state__h_pixel==csrs__video__h_back_porch));
-        video_combs__h_display_end = ((video_state__h_state==2'h1)&&(video_state__h_pixel==csrs__video__h_display));
-        video_combs__h_line_end = ((video_state__h_state==2'h2)&&(video_state__h_pixel==csrs__video__h_front_porch));
-        video_combs__h_displaying = (video_state__h_state==2'h1);
-        video_combs__h_will_be_displaying = ((video_combs__h_back_porch_end!=1'h0)||((video_combs__h_displaying!=1'h0)&&!(video_combs__h_display_end!=1'h0)));
-        video_combs__v_frame_start = ((video_state__v_sync!=1'h0)&&(video_state__h_sync!=1'h0));
-        video_combs__v_back_porch_last_line = ((video_state__v_state==2'h0)&&(video_state__v_line==csrs__video__v_back_porch));
-        video_combs__v_display_last_line = ((video_state__v_state==2'h1)&&(video_state__v_line==csrs__video__v_display));
-        video_combs__v_frame_last_line = ((video_state__v_state==2'h2)&&(video_state__v_line==csrs__video__v_front_porch));
-        video_combs__v_displaying = (video_state__v_state==2'h1);
-        video_combs__will_display_pixels = ((video_combs__v_displaying!=1'h0)&&(video_combs__h_will_be_displaying!=1'h0));
-    end //always
-
-    //b video_output_logic__posedge_video_clk_active_low_reset_n clock process
-        //   
-        //       The video output logic operates by first a timing machine that
-        //       generates horizontal and vertical timing. 
-        //   
-        //       The video output pixel data is generated from a shift register;
-        //       the shift register is filled from a pixel data buffer, that in
-        //       turn is filled by reading the SRAM.
-        //   
-        //       At the start of every line a 'data required' signal is set, and
-        //       the pixel data buffer is invalidated.
-        //   
-        //       Whenever the pixel data buffer is going to be invalid and data is
-        //       required the frame buffer SRAM is read from the next appropriate
-        //       location.
-        //       
-    always @( posedge video_clk or negedge reset_n)
-    begin : video_output_logic__posedge_video_clk_active_low_reset_n__code
-        if (reset_n==1'b0)
-        begin
-            video_state__display_enable <= 1'h0;
-            video_state__red <= 8'h0;
-            video_state__green <= 8'h0;
-            video_state__blue <= 8'h0;
-            video_state__h_pixel <= 10'h0;
-            video_state__h_sync <= 1'h0;
-            video_state__h_state <= 2'h0;
-            video_state__pixel_data_required <= 1'h0;
-            video_state__v_line <= 10'h0;
-            video_state__v_sync <= 1'h0;
-            video_state__v_state <= 2'h0;
-        end
-        else if (video_clk__enable)
-        begin
-            video_state__display_enable <= 1'h0;
-            if ((video_combs__will_display_pixels!=1'h0))
-            begin
-                video_state__display_enable <= 1'h1;
-                video_state__red <= pixel_combs__red;
-                video_state__green <= pixel_combs__green;
-                video_state__blue <= pixel_combs__blue;
-            end //if
-            video_state__h_pixel <= (video_state__h_pixel+10'h1);
-            video_state__h_sync <= 1'h0;
-            case (video_state__h_state) //synopsys parallel_case
-            2'h0: // req 1
-                begin
-                if ((video_combs__h_back_porch_end!=1'h0))
-                begin
-                    video_state__h_pixel <= 10'h0;
-                    video_state__h_state <= 2'h1;
-                end //if
-                end
-            2'h1: // req 1
-                begin
-                if ((video_combs__h_display_end!=1'h0))
-                begin
-                    video_state__h_pixel <= 10'h0;
-                    video_state__h_state <= 2'h2;
-                    video_state__pixel_data_required <= 1'h0;
-                end //if
-                end
-            2'h2: // req 1
-                begin
-                if ((video_combs__h_line_end!=1'h0))
-                begin
-                    video_state__h_pixel <= 10'h0;
-                    video_state__h_state <= 2'h0;
-                    video_state__h_sync <= 1'h1;
-                    video_state__pixel_data_required <= ((video_combs__v_back_porch_last_line!=1'h0)||((video_combs__v_displaying!=1'h0)&&!(video_combs__v_display_last_line!=1'h0)));
-                end //if
-                end
-    //synopsys  translate_off
-    //pragma coverage off
-            default:
-                begin
-                    if (1)
-                    begin
-                        $display("%t *********CDL ASSERTION FAILURE:framebuffer:video_output_logic: Full switch statement did not cover all values", $time);
-                    end
-                end
-    //pragma coverage on
-    //synopsys  translate_on
-            endcase
-            video_state__v_line <= (video_state__v_line+10'h1);
-            video_state__v_sync <= 1'h0;
-            case (video_state__v_state) //synopsys parallel_case
-            2'h0: // req 1
-                begin
-                if ((video_combs__v_back_porch_last_line!=1'h0))
-                begin
-                    video_state__v_line <= 10'h0;
-                    video_state__v_state <= 2'h1;
-                end //if
-                end
-            2'h1: // req 1
-                begin
-                if ((video_combs__v_display_last_line!=1'h0))
-                begin
-                    video_state__v_line <= 10'h0;
-                    video_state__v_state <= 2'h2;
-                end //if
-                end
-            2'h2: // req 1
-                begin
-                if ((video_combs__v_frame_last_line!=1'h0))
-                begin
-                    video_state__v_line <= 10'h0;
-                    video_state__v_state <= 2'h0;
-                    video_state__v_sync <= 1'h1;
-                end //if
-                end
-    //synopsys  translate_off
-    //pragma coverage off
-            default:
-                begin
-                    if (1)
-                    begin
-                        $display("%t *********CDL ASSERTION FAILURE:framebuffer:video_output_logic: Full switch statement did not cover all values", $time);
-                    end
-                end
-    //pragma coverage on
-    //synopsys  translate_on
-            endcase
-            if (!(video_combs__h_line_end!=1'h0))
-            begin
-                video_state__v_sync <= video_state__v_sync;
-                video_state__v_line <= video_state__v_line;
-                video_state__v_state <= video_state__v_state;
-            end //if
-        end //if
-    end //always
-
+        .csr_response__read_data(            csr_response_local__read_data),
+        .csr_response__read_data_error(            csr_response_local__read_data_error),
+        .csr_response__read_data_valid(            csr_response_local__read_data_valid),
+        .csr_response__acknowledge(            csr_response_local__acknowledge)         );
     //b pixel_data_logic__comb combinatorial process
         //   
-        //       The pixel data shift register is consumed on
-        //       'video_combs.will_display_pixels' When it becomes empty, it
-        //       attempts to load from the pixel buffer.
+        //       The framebuffer timing is handled by a subomdule; this generates
+        //       sync and other timing signals.
         //   
-        //       The pixel data buffer
+        //       The pixel data buffer is cleared after the display portion of a
+        //       scanline, and loaded for scanlines that are being displayed
+        //       whenever it is empty.
+        //   
+        //       The pixel data shift register is copied from the pixel data buffer
+        //       when it empties, and shifts down when pixels are to be displayed.
+        //   
+        //       The pixel data buffer is loaded from an SRAM, which returns data
+        //       in the cycle after request. Hence the SRAM is read only when the
+        //       pixel data buffer is empty _and_ the SRAM is not being read; this
+        //       requires a minimum back porch time of about 3 clock ticks, and a
+        //       maximum data consumption rate of one SRAM word every 3 clock
+        //       ticks. Faster than this and the mechanism here does not keep
+        //       up. This is not an issue currently as the maximum data consumption
+        //       rate is with down-samping by a factor of 2 - hence 8 ticks between
+        //       shift register emptying.
         //       
     always @ ( * )//pixel_data_logic__comb
     begin: pixel_data_logic__comb_code
@@ -382,18 +279,22 @@ module framebuffer
     reg [7:0]pixel_combs__red__var;
     reg [7:0]pixel_combs__green__var;
     reg [7:0]pixel_combs__blue__var;
-        pixel_combs__next_num_valid__var = (pixel_state__num_valid-5'h2);
+        pixel_combs__next_num_valid__var = (pixel_state__num_valid-5'h1);
+        if ((csrs__down_sample_x!=1'h0))
+        begin
+            pixel_combs__next_num_valid__var = (pixel_state__num_valid-5'h2);
+        end //if
         if ((pixel_state__num_valid==5'h0))
         begin
             pixel_combs__next_num_valid__var = 5'h0;
         end //if
-        if (!(video_combs__will_display_pixels!=1'h0))
+        if (!(video_timing__will_display_enable!=1'h0))
         begin
             pixel_combs__next_num_valid__var = pixel_state__num_valid;
         end //if
         pixel_combs__sram_address_next_line = (pixel_state__sram_address_line_start+csrs__sram_words_per_line[13:0]);
         pixel_combs__load_shift_register = ((pixel_state__data_buffer_full!=1'h0)&&(pixel_combs__next_num_valid__var==5'h0));
-        pixel_combs__sram_request = ((video_combs__v_displaying!=1'h0)&&!((pixel_state__data_buffer_full!=1'h0)||(pixel_state__load_data_buffer!=1'h0)));
+        pixel_combs__sram_request = ((video_timing__v_displaying!=1'h0)&&!((pixel_state__data_buffer_full!=1'h0)||(pixel_state__load_data_buffer!=1'h0)));
         pixel_combs__red__var = 8'h0;
         pixel_combs__green__var = 8'h0;
         pixel_combs__blue__var = 8'h0;
@@ -417,11 +318,25 @@ module framebuffer
 
     //b pixel_data_logic__posedge_video_clk_active_low_reset_n clock process
         //   
-        //       The pixel data shift register is consumed on
-        //       'video_combs.will_display_pixels' When it becomes empty, it
-        //       attempts to load from the pixel buffer.
+        //       The framebuffer timing is handled by a subomdule; this generates
+        //       sync and other timing signals.
         //   
-        //       The pixel data buffer
+        //       The pixel data buffer is cleared after the display portion of a
+        //       scanline, and loaded for scanlines that are being displayed
+        //       whenever it is empty.
+        //   
+        //       The pixel data shift register is copied from the pixel data buffer
+        //       when it empties, and shifts down when pixels are to be displayed.
+        //   
+        //       The pixel data buffer is loaded from an SRAM, which returns data
+        //       in the cycle after request. Hence the SRAM is read only when the
+        //       pixel data buffer is empty _and_ the SRAM is not being read; this
+        //       requires a minimum back porch time of about 3 clock ticks, and a
+        //       maximum data consumption rate of one SRAM word every 3 clock
+        //       ticks. Faster than this and the mechanism here does not keep
+        //       up. This is not an issue currently as the maximum data consumption
+        //       rate is with down-samping by a factor of 2 - hence 8 ticks between
+        //       shift register emptying.
         //       
     always @( posedge video_clk or negedge reset_n)
     begin : pixel_data_logic__posedge_video_clk_active_low_reset_n__code
@@ -432,6 +347,9 @@ module framebuffer
             pixel_state__shift__green <= 16'h0;
             pixel_state__shift__blue <= 16'h0;
             pixel_state__num_valid <= 5'h0;
+            pixel_state__red <= 8'h0;
+            pixel_state__green <= 8'h0;
+            pixel_state__blue <= 8'h0;
             pixel_state__data_buffer_full <= 1'h0;
             pixel_state__data_buffer__red <= 16'h0;
             pixel_state__data_buffer__green <= 16'h0;
@@ -442,12 +360,21 @@ module framebuffer
         else if (video_clk__enable)
         begin
             pixel_state__load_data_buffer <= pixel_combs__sram_request;
-            if ((video_combs__will_display_pixels!=1'h0))
+            if ((video_timing__will_display_enable!=1'h0))
             begin
-                pixel_state__shift__red[15:2] <= pixel_state__shift__red[13:0];
-                pixel_state__shift__green[15:2] <= pixel_state__shift__green[13:0];
-                pixel_state__shift__blue[15:2] <= pixel_state__shift__blue[13:0];
+                pixel_state__shift__red[15:1] <= pixel_state__shift__red[14:0];
+                pixel_state__shift__green[15:1] <= pixel_state__shift__green[14:0];
+                pixel_state__shift__blue[15:1] <= pixel_state__shift__blue[14:0];
+                if ((csrs__down_sample_x!=1'h0))
+                begin
+                    pixel_state__shift__red[15:2] <= pixel_state__shift__red[13:0];
+                    pixel_state__shift__green[15:2] <= pixel_state__shift__green[13:0];
+                    pixel_state__shift__blue[15:2] <= pixel_state__shift__blue[13:0];
+                end //if
                 pixel_state__num_valid <= pixel_combs__next_num_valid;
+                pixel_state__red <= pixel_combs__red;
+                pixel_state__green <= pixel_combs__green;
+                pixel_state__blue <= pixel_combs__blue;
             end //if
             if ((pixel_combs__load_shift_register!=1'h0))
             begin
@@ -465,22 +392,57 @@ module framebuffer
                 pixel_state__data_buffer_full <= 1'h1;
                 pixel_state__sram_address <= (pixel_state__sram_address+14'h1);
             end //if
-            if ((video_combs__h_line_end!=1'h0))
+            if ((video_timing__will_h_sync!=1'h0))
             begin
                 pixel_state__data_buffer_full <= 1'h0;
                 pixel_state__num_valid <= 5'h0;
-                if ((video_combs__v_displaying!=1'h0))
+                if ((video_timing__v_displaying!=1'h0))
                 begin
                     pixel_state__sram_address <= pixel_combs__sram_address_next_line;
                     pixel_state__sram_address_line_start <= pixel_combs__sram_address_next_line;
                 end //if
-                if ((video_combs__v_frame_last_line!=1'h0))
+                if ((video_timing__v_sync!=1'h0))
                 begin
                     pixel_state__sram_address <= csrs__sram_base_address[13:0];
                     pixel_state__sram_address_line_start <= csrs__sram_base_address[13:0];
                 end //if
             end //if
         end //if
+    end //always
+
+    //b video_bus_out combinatorial process
+        //   
+        //       The CSR responses can be combined with wire-OR; since these are
+        //       lightweight modules there is no need to register the response for
+        //       timing purposes.
+        //   
+        //       The video output signals come in part from the pixel state and
+        //       from the framebuffer timing module.
+        //       
+    always @ ( * )//video_bus_out
+    begin: video_bus_out__comb_code
+    reg csr_response__acknowledge__var;
+    reg csr_response__read_data_valid__var;
+    reg csr_response__read_data_error__var;
+    reg [31:0]csr_response__read_data__var;
+        csr_response__acknowledge__var = csr_response_timing__acknowledge;
+        csr_response__read_data_valid__var = csr_response_timing__read_data_valid;
+        csr_response__read_data_error__var = csr_response_timing__read_data_error;
+        csr_response__read_data__var = csr_response_timing__read_data;
+        csr_response__acknowledge__var = csr_response__acknowledge__var | csr_response_local__acknowledge;
+        csr_response__read_data_valid__var = csr_response__read_data_valid__var | csr_response_local__read_data_valid;
+        csr_response__read_data_error__var = csr_response__read_data_error__var | csr_response_local__read_data_error;
+        csr_response__read_data__var = csr_response__read_data__var | csr_response_local__read_data;
+        video_bus__vsync = video_timing__v_sync;
+        video_bus__hsync = video_timing__h_sync;
+        video_bus__display_enable = video_timing__display_enable;
+        video_bus__red = pixel_state__red;
+        video_bus__green = pixel_state__green;
+        video_bus__blue = pixel_state__blue;
+        csr_response__acknowledge = csr_response__acknowledge__var;
+        csr_response__read_data_valid = csr_response__read_data_valid__var;
+        csr_response__read_data_error = csr_response__read_data_error__var;
+        csr_response__read_data = csr_response__read_data__var;
     end //always
 
     //b sram_write_logic clock process
@@ -509,16 +471,40 @@ module framebuffer
 
     //b csr_interface_logic__comb combinatorial process
         //   
-        //       Basic CSRS - it should all be writable...
+        //       Basic read-write control status registers, using a CSR target
+        //       interface and CSR access.
         //       
     always @ ( * )//csr_interface_logic__comb
     begin: csr_interface_logic__comb_code
-        csr_read_data = 32'h0;
+    reg [31:0]csr_read_data__var;
+        csr_read_data__var = 32'h0;
+        case (csr_access__address[3:0]) //synopsys parallel_case
+        4'h0: // req 1
+            begin
+            csr_read_data__var = {16'h0,csrs__sram_base_address};
+            end
+        4'h1: // req 1
+            begin
+            csr_read_data__var = {{15'h0,csrs__down_sample_x},csrs__sram_words_per_line};
+            end
+        //synopsys  translate_off
+        //pragma coverage off
+        //synopsys  translate_on
+        default:
+            begin
+            //Need a default case to make Cadence Lint happy, even though this is not a full case
+            end
+        //synopsys  translate_off
+        //pragma coverage on
+        //synopsys  translate_on
+        endcase
+        csr_read_data = csr_read_data__var;
     end //always
 
     //b csr_interface_logic__posedge_csr_clk_active_low_reset_n clock process
         //   
-        //       Basic CSRS - it should all be writable...
+        //       Basic read-write control status registers, using a CSR target
+        //       interface and CSR access.
         //       
     always @( posedge csr_clk or negedge reset_n)
     begin : csr_interface_logic__posedge_csr_clk_active_low_reset_n__code
@@ -527,52 +513,41 @@ module framebuffer
             csrs__sram_base_address <= 16'h0;
             csrs__sram_words_per_line <= 16'h0;
             csrs__sram_words_per_line <= 16'h28;
-            csrs__video__h_back_porch <= 10'h0;
-            csrs__video__h_back_porch <= 10'h27;
-            csrs__video__h_display <= 10'h0;
-            csrs__video__h_display <= 10'h1df;
-            csrs__video__h_front_porch <= 10'h0;
-            csrs__video__h_front_porch <= 10'h4;
-            csrs__video__v_back_porch <= 10'h0;
-            csrs__video__v_back_porch <= 10'h7;
-            csrs__video__v_display <= 10'h0;
-            csrs__video__v_display <= 10'h10f;
-            csrs__video__v_front_porch <= 10'h0;
-            csrs__video__v_front_porch <= 10'h7;
+            csrs__down_sample_x <= 1'h0;
+            csrs__down_sample_x <= 1'h1;
         end
         else if (csr_clk__enable)
         begin
             csrs__sram_base_address <= csrs__sram_base_address;
             csrs__sram_words_per_line <= csrs__sram_words_per_line;
-            csrs__video__h_back_porch <= csrs__video__h_back_porch;
-            csrs__video__h_display <= csrs__video__h_display;
-            csrs__video__h_front_porch <= csrs__video__h_front_porch;
-            csrs__video__v_back_porch <= csrs__video__v_back_porch;
-            csrs__video__v_display <= csrs__video__v_display;
-            csrs__video__v_front_porch <= csrs__video__v_front_porch;
-            if (((csr_access__valid!=1'h0)&&!(csr_access__read_not_write!=1'h0)))
-            begin
-                case (csr_access__address[3:0]) //synopsys parallel_case
-                4'h0: // req 1
-                    begin
+            csrs__down_sample_x <= csrs__down_sample_x;
+            case (csr_access__address[3:0]) //synopsys parallel_case
+            4'h0: // req 1
+                begin
+                if (((csr_access__valid!=1'h0)&&!(csr_access__read_not_write!=1'h0)))
+                begin
                     csrs__sram_base_address <= csr_access__data[15:0];
-                    end
-                4'h1: // req 1
-                    begin
+                end //if
+                end
+            4'h1: // req 1
+                begin
+                if (((csr_access__valid!=1'h0)&&!(csr_access__read_not_write!=1'h0)))
+                begin
+                    csrs__down_sample_x <= csr_access__data[16];
                     csrs__sram_words_per_line <= csr_access__data[15:0];
-                    end
-                //synopsys  translate_off
-                //pragma coverage off
-                //synopsys  translate_on
-                default:
-                    begin
-                    //Need a default case to make Cadence Lint happy, even though this is not a full case
-                    end
-                //synopsys  translate_off
-                //pragma coverage on
-                //synopsys  translate_on
-                endcase
-            end //if
+                end //if
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
         end //if
     end //always
 

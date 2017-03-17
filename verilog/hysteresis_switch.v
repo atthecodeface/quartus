@@ -13,6 +13,38 @@
 
 //a Module hysteresis_switch
     //   
+    //    * CDL implementation of a module that takes an input signal and
+    //    * notionally keeps a count of cycles that the input is low, and
+    //    * cycles that the input is high; using these counters it makes a
+    //    * decision on the real value of the output, using hysteresis.
+    //    *
+    //    * Since infinite history is not sensible and the counters cannot run
+    //    * indefinitely without overflow anyway, the counters divide by 2 on a
+    //    * configurable divider (effectively filtering the input stream).
+    //    *
+    //    * The two notional counters are @a cycles_low and @a cycles_high.
+    //    *
+    //    * To switch to a 'high' output from a current 'low' output requires
+    //    * the @a cycles_high - @a cycles_low to be greater than half of the
+    //    * filter period.
+    //    *
+    //    * To switch to a 'low' output from a current 'high' output requires
+    //    * the @a cycles_high - @a cycles_low to be less than minus half of the
+    //    * filter period.
+    //    *
+    //    * Hence a n+1 bit difference would need to be maintained for
+    //    * @a cycles_high and @a cycles_low. This difference would increase by 1
+    //    * if the input is high, and decrease by 1 if the input is low.
+    //    *
+    //    * Hence an actual implementation can maintain an up/down counter
+    //    * @a cycles_diff, which is divided by 2 every filter period, and which
+    //    * is incremented on input of 1, and decremented on input of 0.
+    //    *
+    //    * When the output is low and the @a cycles_diff is > half the filter
+    //    * period the output shifts to high.
+    //    *
+    //    * When the output is high and the @a cycles_diff is < -half the filter
+    //    * period the output shifts to low.
     //   
 module hysteresis_switch
 (
@@ -29,6 +61,7 @@ module hysteresis_switch
 );
 
     //b Clocks
+        //   Clock for the module
     input clk;
     input clk__enable;
     wire slow_clk; // Gated version of clock 'clk' enabled by 'clk_enable'
@@ -39,27 +72,33 @@ module hysteresis_switch
     input [15:0]filter_level;
         //   Period over which to filter the input - the larger the value, the longer it takes to switch, but the more glitches are removed
     input [15:0]filter_period;
+        //   Input pin level, to apply hysteresis to
     input input_value;
         //   Assert to enable the internal clock; this permits I/O switches to easily use a slower clock
     input clk_enable;
+        //   Active low reset
     input reset_n;
 
     //b Outputs
+        //   Output level, after hysteresis
     output output_value;
 
 // output components here
 
     //b Output combinatorials
+        //   Output level, after hysteresis
     reg output_value;
 
     //b Output nets
 
     //b Internal and output registers
+        //   Hysteresis state
     reg hysteresis_state__output_level;
     reg [15:0]hysteresis_state__cycles_diff;
     reg [15:0]hysteresis_state__period_counter;
 
     //b Internal combinatorials
+        //   Combinatorial decode of the hysteresis state
     reg hysteresis_combs__period_expired;
     reg [15:0]hysteresis_combs__cycles_diff_div_two;
     reg [15:0]hysteresis_combs__next_cycles_diff;
@@ -74,7 +113,14 @@ module hysteresis_switch
     //b Module instances
     //b hysteresis_logic__comb combinatorial process
         //   
-        //       Count the filter period and implement the up/down counter with filter period
+        //       Count the filter period and divide the adder by 2 (signed
+        //       division) every time it expires, incrementing it if the input is
+        //       high, decrementing it if the input is low.
+        //   
+        //       Compare the adder to filter_level (appropriately +/-, based on
+        //       the output level). If the adder has gone beyond the hysteresis
+        //       level (e.g. output_level low, and adder > filter_level ), then
+        //       toggle the output_level.
         //       
     always @ ( * )//hysteresis_logic__comb
     begin: hysteresis_logic__comb_code
@@ -111,7 +157,14 @@ module hysteresis_switch
 
     //b hysteresis_logic__posedge_slow_clk_active_low_reset_n clock process
         //   
-        //       Count the filter period and implement the up/down counter with filter period
+        //       Count the filter period and divide the adder by 2 (signed
+        //       division) every time it expires, incrementing it if the input is
+        //       high, decrementing it if the input is low.
+        //   
+        //       Compare the adder to filter_level (appropriately +/-, based on
+        //       the output level). If the adder has gone beyond the hysteresis
+        //       level (e.g. output_level low, and adder > filter_level ), then
+        //       toggle the output_level.
         //       
     always @( posedge clk or negedge reset_n)
     begin : hysteresis_logic__posedge_slow_clk_active_low_reset_n__code

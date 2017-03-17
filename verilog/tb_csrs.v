@@ -42,15 +42,17 @@ module tb_csrs
     reg [31:0]timer_clk_state__counter;
     reg [31:0]timer_clk_state__divider;
     reg timer_clk_state__enable;
-    reg master_csr_response_r__ack;
+    reg master_csr_response_r__acknowledge;
     reg master_csr_response_r__read_data_valid;
+    reg master_csr_response_r__read_data_error;
     reg [31:0]master_csr_response_r__read_data;
 
     //b Internal combinatorials
     reg timer_clk_enable;
     reg [31:0]tgt0_csr_access_data;
-    reg master_csr_response__ack;
+    reg master_csr_response__acknowledge;
     reg master_csr_response__read_data_valid;
+    reg master_csr_response__read_data_error;
     reg [31:0]master_csr_response__read_data;
 
     //b Internal nets
@@ -67,11 +69,13 @@ module tb_csrs
     wire tgt0_csr_access__read_not_write;
     wire [15:0]tgt0_csr_access__address;
     wire [31:0]tgt0_csr_access__data;
-    wire tgt1_csr_response__ack;
+    wire tgt1_csr_response__acknowledge;
     wire tgt1_csr_response__read_data_valid;
+    wire tgt1_csr_response__read_data_error;
     wire [31:0]tgt1_csr_response__read_data;
-    wire tgt0_csr_response__ack;
+    wire tgt0_csr_response__acknowledge;
     wire tgt0_csr_response__read_data_valid;
+    wire tgt0_csr_response__read_data_error;
     wire [31:0]tgt0_csr_response__read_data;
     wire master_csr_request__valid;
     wire master_csr_request__read_not_write;
@@ -105,8 +109,9 @@ module tb_csrs
         .clk(clk),
         .clk__enable(1'b1),
         .csr_response__read_data(master_csr_response_r__read_data),
+        .csr_response__read_data_error(master_csr_response_r__read_data_error),
         .csr_response__read_data_valid(master_csr_response_r__read_data_valid),
-        .csr_response__ack(master_csr_response_r__ack),
+        .csr_response__acknowledge(master_csr_response_r__acknowledge),
         .apb_request__pwdata(th_apb_request__pwdata),
         .apb_request__pwrite(th_apb_request__pwrite),
         .apb_request__psel(th_apb_request__psel),
@@ -137,8 +142,9 @@ module tb_csrs
         .csr_access__read_not_write(            tgt0_csr_access__read_not_write),
         .csr_access__valid(            tgt0_csr_access__valid),
         .csr_response__read_data(            tgt0_csr_response__read_data),
+        .csr_response__read_data_error(            tgt0_csr_response__read_data_error),
         .csr_response__read_data_valid(            tgt0_csr_response__read_data_valid),
-        .csr_response__ack(            tgt0_csr_response__ack)         );
+        .csr_response__acknowledge(            tgt0_csr_response__acknowledge)         );
     csr_target_apb tgt1(
         .clk(clk),
         .clk__enable(timer_clk__enable),
@@ -158,8 +164,9 @@ module tb_csrs
         .apb_request__penable(            tgt1_apb_request__penable),
         .apb_request__paddr(            tgt1_apb_request__paddr),
         .csr_response__read_data(            tgt1_csr_response__read_data),
+        .csr_response__read_data_error(            tgt1_csr_response__read_data_error),
         .csr_response__read_data_valid(            tgt1_csr_response__read_data_valid),
-        .csr_response__ack(            tgt1_csr_response__ack)         );
+        .csr_response__acknowledge(            tgt1_csr_response__acknowledge)         );
     apb_target_timer timer(
         .clk(clk),
         .clk__enable(timer_clk__enable),
@@ -176,19 +183,23 @@ module tb_csrs
     //b instantiations__comb combinatorial process
     always @ ( * )//instantiations__comb
     begin: instantiations__comb_code
-    reg master_csr_response__ack__var;
+    reg master_csr_response__acknowledge__var;
     reg master_csr_response__read_data_valid__var;
+    reg master_csr_response__read_data_error__var;
     reg [31:0]master_csr_response__read_data__var;
         tgt0_csr_access_data = timer_clk_state__counter;
         timer_clk_enable = timer_clk_state__enable;
-        master_csr_response__ack__var = tgt0_csr_response__ack;
+        master_csr_response__acknowledge__var = tgt0_csr_response__acknowledge;
         master_csr_response__read_data_valid__var = tgt0_csr_response__read_data_valid;
+        master_csr_response__read_data_error__var = tgt0_csr_response__read_data_error;
         master_csr_response__read_data__var = tgt0_csr_response__read_data;
-        master_csr_response__ack__var = master_csr_response__ack__var | tgt1_csr_response__ack;
+        master_csr_response__acknowledge__var = master_csr_response__acknowledge__var | tgt1_csr_response__acknowledge;
         master_csr_response__read_data_valid__var = master_csr_response__read_data_valid__var | tgt1_csr_response__read_data_valid;
+        master_csr_response__read_data_error__var = master_csr_response__read_data_error__var | tgt1_csr_response__read_data_error;
         master_csr_response__read_data__var = master_csr_response__read_data__var | tgt1_csr_response__read_data;
-        master_csr_response__ack = master_csr_response__ack__var;
+        master_csr_response__acknowledge = master_csr_response__acknowledge__var;
         master_csr_response__read_data_valid = master_csr_response__read_data_valid__var;
+        master_csr_response__read_data_error = master_csr_response__read_data_error__var;
         master_csr_response__read_data = master_csr_response__read_data__var;
     end //always
 
@@ -200,8 +211,9 @@ module tb_csrs
             timer_clk_state__enable <= 1'h0;
             timer_clk_state__counter <= 32'h0;
             timer_clk_state__divider <= 32'h0;
-            master_csr_response_r__ack <= 1'h0;
+            master_csr_response_r__acknowledge <= 1'h0;
             master_csr_response_r__read_data_valid <= 1'h0;
+            master_csr_response_r__read_data_error <= 1'h0;
             master_csr_response_r__read_data <= 32'h0;
         end
         else if (clk__enable)
@@ -217,8 +229,9 @@ module tb_csrs
             begin
                 timer_clk_state__divider <= tgt0_csr_access__data;
             end //if
-            master_csr_response_r__ack <= master_csr_response__ack;
+            master_csr_response_r__acknowledge <= master_csr_response__acknowledge;
             master_csr_response_r__read_data_valid <= master_csr_response__read_data_valid;
+            master_csr_response_r__read_data_error <= master_csr_response__read_data_error;
             master_csr_response_r__read_data <= master_csr_response__read_data;
         end //if
     end //always

@@ -387,14 +387,14 @@ module fdc8271
     reg drive_operation__direction_value;
     reg drive_operation__step_start;
     reg drive_operation__load_head;
-    reg drive_operation__starting_op;
-    reg drive_operation__completing_op;
     reg drive_operation__read_id;
     reg drive_operation__read_data;
     reg drive_operation__capture_id;
     reg drive_operation__capture_data;
     reg drive_operation__read_data_capture_id;
     reg drive_operation__read_data_capture_data;
+    reg drive_operation__starting_op;
+    reg drive_operation__completing_op;
     reg drive_execution__direction_set;
     reg drive_execution__direction_value;
     reg drive_execution__result__valid;
@@ -2012,26 +2012,26 @@ module fdc8271
     reg drive_operation__direction_value__var;
     reg drive_operation__step_start__var;
     reg drive_operation__load_head__var;
-    reg drive_operation__starting_op__var;
-    reg drive_operation__completing_op__var;
     reg drive_operation__read_id__var;
     reg drive_operation__read_data__var;
     reg drive_operation__capture_id__var;
     reg drive_operation__capture_data__var;
     reg drive_operation__read_data_capture_id__var;
     reg drive_operation__read_data_capture_data__var;
+    reg drive_operation__starting_op__var;
+    reg drive_operation__completing_op__var;
         drive_operation__direction_set__var = 1'h0;
         drive_operation__direction_value__var = 1'h0;
         drive_operation__step_start__var = 1'h0;
         drive_operation__load_head__var = 1'h0;
-        drive_operation__starting_op__var = 1'h0;
-        drive_operation__completing_op__var = 1'h0;
         drive_operation__read_id__var = 1'h0;
         drive_operation__read_data__var = 1'h0;
         drive_operation__capture_id__var = 1'h0;
         drive_operation__capture_data__var = 1'h0;
         drive_operation__read_data_capture_id__var = 1'h0;
         drive_operation__read_data_capture_data__var = 1'h0;
+        drive_operation__starting_op__var = 1'h0;
+        drive_operation__completing_op__var = 1'h0;
         case (drive_operation_state__fsm_state) //synopsys parallel_case
         5'h0: // req 1
             begin
@@ -2215,14 +2215,14 @@ module fdc8271
         drive_operation__direction_value = drive_operation__direction_value__var;
         drive_operation__step_start = drive_operation__step_start__var;
         drive_operation__load_head = drive_operation__load_head__var;
-        drive_operation__starting_op = drive_operation__starting_op__var;
-        drive_operation__completing_op = drive_operation__completing_op__var;
         drive_operation__read_id = drive_operation__read_id__var;
         drive_operation__read_data = drive_operation__read_data__var;
         drive_operation__capture_id = drive_operation__capture_id__var;
         drive_operation__capture_data = drive_operation__capture_data__var;
         drive_operation__read_data_capture_id = drive_operation__read_data_capture_id__var;
         drive_operation__read_data_capture_data = drive_operation__read_data_capture_data__var;
+        drive_operation__starting_op = drive_operation__starting_op__var;
+        drive_operation__completing_op = drive_operation__completing_op__var;
     end //always
 
     //b drive_operation_controller__posedge_clk_active_low_reset_n clock process
@@ -2625,15 +2625,21 @@ module fdc8271
 
     //b drive_control_timings__comb combinatorial process
         //   
-        //       The drive controls have specific timing constraints, and this logic manages that.
+        //       The drive controls have specific timing constraints, and this
+        //       logic manages that.
         //   
-        //       The direction pin has 10us setup to 'step' rising and 10us hold on 'step' falling
+        //       The direction pin has 10us setup to 'step' rising and 10us hold on
+        //       'step' falling. It utilizes a 10us timer to achieve this.
         //   
         //       The step pin (in pulse mode) has a 10us high period, and the step
-        //       has a configurable settling time (in 1ms increments)
+        //       has a configurable settling time (in 1ms increments). Hence there
+        //       is a step_counter that decrements every 1ms, using a 1ms timer. A
+        //       10us high period uses the 10us timer.
         //   
         //       The head may not be used (for reading or writing) until a
-        //       configurable number of 4ms ticks after the step settling time.
+        //       configurable number of 4ms ticks after the step settling
+        //       time. This is again performed with the 1ms timer, using a
+        //       down-counter set to 4 times the configured head timer.
         //       
     always @ ( * )//drive_control_timings__comb
     begin: drive_control_timings__comb_code
@@ -2696,15 +2702,21 @@ module fdc8271
 
     //b drive_control_timings__posedge_clk_active_low_reset_n clock process
         //   
-        //       The drive controls have specific timing constraints, and this logic manages that.
+        //       The drive controls have specific timing constraints, and this
+        //       logic manages that.
         //   
-        //       The direction pin has 10us setup to 'step' rising and 10us hold on 'step' falling
+        //       The direction pin has 10us setup to 'step' rising and 10us hold on
+        //       'step' falling. It utilizes a 10us timer to achieve this.
         //   
         //       The step pin (in pulse mode) has a 10us high period, and the step
-        //       has a configurable settling time (in 1ms increments)
+        //       has a configurable settling time (in 1ms increments). Hence there
+        //       is a step_counter that decrements every 1ms, using a 1ms timer. A
+        //       10us high period uses the 10us timer.
         //   
         //       The head may not be used (for reading or writing) until a
-        //       configurable number of 4ms ticks after the step settling time.
+        //       configurable number of 4ms ticks after the step settling
+        //       time. This is again performed with the 1ms timer, using a
+        //       down-counter set to 4 times the configured head timer.
         //       
     always @( posedge clk or negedge reset_n)
     begin : drive_control_timings__posedge_clk_active_low_reset_n__code
@@ -2841,6 +2853,11 @@ module fdc8271
 
     //b bbc_drive_interface__comb combinatorial process
         //   
+        //       The @a bbc_floppy_op is a registered output, dependent on the
+        //       drive_outputs and drive_operation.
+        //   
+        //       The @bbc_floppy_response inputs are mapped combinatorially to
+        //       internal signals
         //       
     always @ ( * )//bbc_drive_interface__comb
     begin: bbc_drive_interface__comb_code
@@ -2853,6 +2870,11 @@ module fdc8271
 
     //b bbc_drive_interface__posedge_clk_active_low_reset_n clock process
         //   
+        //       The @a bbc_floppy_op is a registered output, dependent on the
+        //       drive_outputs and drive_operation.
+        //   
+        //       The @bbc_floppy_response inputs are mapped combinatorially to
+        //       internal signals
         //       
     always @( posedge clk or negedge reset_n)
     begin : bbc_drive_interface__posedge_clk_active_low_reset_n__code

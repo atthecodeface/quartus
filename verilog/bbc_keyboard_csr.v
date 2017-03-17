@@ -31,8 +31,9 @@ module bbc_keyboard_csr
     keyboard__reset_pressed,
     keyboard__keys_down_cols_0_to_7,
     keyboard__keys_down_cols_8_to_9,
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data
 );
 
@@ -54,8 +55,9 @@ module bbc_keyboard_csr
     output keyboard__reset_pressed;
     output [63:0]keyboard__keys_down_cols_0_to_7;
     output [15:0]keyboard__keys_down_cols_8_to_9;
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
 
 // output components here
@@ -63,8 +65,9 @@ module bbc_keyboard_csr
     //b Output combinatorials
 
     //b Output nets
-    wire csr_response__ack;
+    wire csr_response__acknowledge;
     wire csr_response__read_data_valid;
+    wire csr_response__read_data_error;
     wire [31:0]csr_response__read_data;
 
     //b Internal and output registers
@@ -105,8 +108,9 @@ module bbc_keyboard_csr
         .csr_access__read_not_write(            csr_access__read_not_write),
         .csr_access__valid(            csr_access__valid),
         .csr_response__read_data(            csr_response__read_data),
+        .csr_response__read_data_error(            csr_response__read_data_error),
         .csr_response__read_data_valid(            csr_response__read_data_valid),
-        .csr_response__ack(            csr_response__ack)         );
+        .csr_response__acknowledge(            csr_response__acknowledge)         );
     //b control_logic__comb combinatorial process
         //   
         //       

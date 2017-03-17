@@ -33,8 +33,9 @@ module framebuffer_teletext
     display_sram_write__address,
     reset_n,
 
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data,
     video_bus__vsync,
     video_bus__hsync,
@@ -67,8 +68,9 @@ module framebuffer_teletext
     input reset_n;
 
     //b Outputs
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
     output video_bus__vsync;
     output video_bus__hsync;
@@ -88,8 +90,9 @@ module framebuffer_teletext
     reg [7:0]video_bus__blue;
 
     //b Output nets
-    wire csr_response__ack;
+    wire csr_response__acknowledge;
     wire csr_response__read_data_valid;
+    wire csr_response__read_data_error;
     wire [31:0]csr_response__read_data;
 
     //b Internal and output registers
@@ -231,8 +234,9 @@ module framebuffer_teletext
         .csr_access__read_not_write(            csr_access__read_not_write),
         .csr_access__valid(            csr_access__valid),
         .csr_response__read_data(            csr_response__read_data),
+        .csr_response__read_data_error(            csr_response__read_data_error),
         .csr_response__read_data_valid(            csr_response__read_data_valid),
-        .csr_response__ack(            csr_response__ack)         );
+        .csr_response__acknowledge(            csr_response__acknowledge)         );
     //b video_bus_out combinatorial process
         //   
         //       

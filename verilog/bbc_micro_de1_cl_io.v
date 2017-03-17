@@ -26,8 +26,9 @@ module bbc_micro_de1_cl_io
     inputs_status__right_rotary__transition_pin,
     ps2_in__data,
     ps2_in__clk,
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data,
     clock_control__enable_cpu,
     clock_control__will_enable_2MHz_video,
@@ -84,8 +85,9 @@ module bbc_micro_de1_cl_io
         //   PS2 input pins
     input ps2_in__data;
     input ps2_in__clk;
-    input csr_response__ack;
+    input csr_response__acknowledge;
     input csr_response__read_data_valid;
+    input csr_response__read_data_error;
     input [31:0]csr_response__read_data;
     input clock_control__enable_cpu;
     input clock_control__will_enable_2MHz_video;
@@ -160,8 +162,10 @@ module bbc_micro_de1_cl_io
     reg [3:0]keys_r;
     reg [9:0]key_state__fn_keys_down;
     reg [3:0]key_state__last_fn_key;
+    reg key_state__speed_selection_changed;
+    reg key_state__video_selection_changed;
     reg [3:0]key_state__speed_selection;
-    reg key_state__left_dial_was_pressed;
+    reg [3:0]key_state__video_selection;
     reg [31:0]debug_state__cpu_ticks;
     reg [31:0]debug_state__video_2MHz_ticks;
     reg [31:0]debug_state__falling_1MHz_ticks;
@@ -169,12 +173,20 @@ module bbc_micro_de1_cl_io
     reg [31:0]debug_state__counter_0;
     reg [31:0]debug_state__counter_1;
     reg [31:0]debug_state__update;
-    reg [8:0]dprintf_req__valid;
-    reg [15:0]dprintf_req__address[8:0];
-    reg [63:0]dprintf_req__data_0[8:0];
-    reg [63:0]dprintf_req__data_1[8:0];
-    reg csr_response_r__ack;
+    reg [11:0]dprintf_req__valid;
+    reg [15:0]dprintf_req__address[11:0];
+    reg [63:0]dprintf_req__data_0[11:0];
+    reg [63:0]dprintf_req__data_1[11:0];
+    reg [63:0]dprintf_req__data_2[11:0];
+    reg [63:0]dprintf_req__data_3[11:0];
+    reg [11:0]led_state__valid;
+    reg [11:0]led_state__last;
+    reg [7:0]led_state__red[11:0];
+    reg [7:0]led_state__green[11:0];
+    reg [7:0]led_state__blue[11:0];
+    reg csr_response_r__acknowledge;
     reg csr_response_r__read_data_valid;
+    reg csr_response_r__read_data_error;
     reg [31:0]csr_response_r__read_data;
 
     //b Internal combinatorials
@@ -182,13 +194,17 @@ module bbc_micro_de1_cl_io
     reg [15:0]apb_processor_request__address;
     reg debug_combs__selected_data;
     reg debug_combs__timer_10ms;
+    reg tt_display_sram_write__enable;
+    reg [47:0]tt_display_sram_write__data;
+    reg [15:0]tt_display_sram_write__address;
     reg led_data__valid;
     reg led_data__last;
     reg [7:0]led_data__red;
     reg [7:0]led_data__green;
     reg [7:0]led_data__blue;
-    reg combined_csr_response__ack;
+    reg combined_csr_response__acknowledge;
     reg combined_csr_response__read_data_valid;
+    reg combined_csr_response__read_data_error;
     reg [31:0]combined_csr_response__read_data;
 
     //b Internal nets
@@ -208,15 +224,17 @@ module bbc_micro_de1_cl_io
     wire bbc_ps2_keyboard__reset_pressed;
     wire [63:0]bbc_ps2_keyboard__keys_down_cols_0_to_7;
     wire [15:0]bbc_ps2_keyboard__keys_down_cols_8_to_9;
-    wire [7:0]dprintf_mux_req__valid;
-    wire [15:0]dprintf_mux_req__address[7:0];
-    wire [63:0]dprintf_mux_req__data_0[7:0];
-    wire [63:0]dprintf_mux_req__data_1[7:0];
-    wire [7:0]dprintf_mux_ack;
-    wire [8:0]dprintf_ack;
-    wire tt_display_sram_write__enable;
-    wire [47:0]tt_display_sram_write__data;
-    wire [15:0]tt_display_sram_write__address;
+    wire dprintf_byte__valid;
+    wire [7:0]dprintf_byte__data;
+    wire [15:0]dprintf_byte__address;
+    wire [10:0]dprintf_mux_req__valid;
+    wire [15:0]dprintf_mux_req__address[10:0];
+    wire [63:0]dprintf_mux_req__data_0[10:0];
+    wire [63:0]dprintf_mux_req__data_1[10:0];
+    wire [63:0]dprintf_mux_req__data_2[10:0];
+    wire [63:0]dprintf_mux_req__data_3[10:0];
+    wire [10:0]dprintf_mux_ack;
+    wire [11:0]dprintf_ack;
     wire user_inputs__updated_switches;
     wire user_inputs__diamond__a;
     wire user_inputs__diamond__b;
@@ -238,8 +256,9 @@ module bbc_micro_de1_cl_io
     wire led_request__ready;
     wire led_request__first;
     wire [7:0]led_request__led_number;
-    wire tt_framebuffer_csr_response__ack;
+    wire tt_framebuffer_csr_response__acknowledge;
     wire tt_framebuffer_csr_response__read_data_valid;
+    wire tt_framebuffer_csr_response__read_data_error;
     wire [31:0]tt_framebuffer_csr_response__read_data;
     wire ps2_key__valid;
     wire ps2_key__extended;
@@ -335,170 +354,295 @@ module bbc_micro_de1_cl_io
         .user_inputs__updated_switches(            user_inputs__updated_switches),
         .inputs_control__sr_shift(            inputs_control__sr_shift),
         .inputs_control__sr_clock(            inputs_control__sr_clock)         );
-    teletext_dprintf_mux tdm01(
+    dprintf_4_mux tdm01(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[0]),
+        .req_b__data_3(dprintf_req__data_3[1]),
+        .req_b__data_2(dprintf_req__data_2[1]),
         .req_b__data_1(dprintf_req__data_1[1]),
         .req_b__data_0(dprintf_req__data_0[1]),
         .req_b__address(dprintf_req__address[1]),
         .req_b__valid(dprintf_req__valid[1]),
+        .req_a__data_3(dprintf_req__data_3[0]),
+        .req_a__data_2(dprintf_req__data_2[0]),
         .req_a__data_1(dprintf_req__data_1[0]),
         .req_a__data_0(dprintf_req__data_0[0]),
         .req_a__address(dprintf_req__address[0]),
         .req_a__valid(dprintf_req__valid[0]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[0]),
+        .req__data_2(            dprintf_mux_req__data_2[0]),
         .req__data_1(            dprintf_mux_req__data_1[0]),
         .req__data_0(            dprintf_mux_req__data_0[0]),
         .req__address(            dprintf_mux_req__address[0]),
         .req__valid(            dprintf_mux_req__valid[0]),
         .ack_b(            dprintf_ack[1]),
         .ack_a(            dprintf_ack[0])         );
-    teletext_dprintf_mux tdm___0(
+    dprintf_4_mux tdm___0(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[1]),
+        .req_b__data_3(dprintf_mux_req__data_3[0]),
+        .req_b__data_2(dprintf_mux_req__data_2[0]),
         .req_b__data_1(dprintf_mux_req__data_1[0]),
         .req_b__data_0(dprintf_mux_req__data_0[0]),
         .req_b__address(dprintf_mux_req__address[0]),
         .req_b__valid(dprintf_mux_req__valid[0]),
+        .req_a__data_3(dprintf_req__data_3[2]),
+        .req_a__data_2(dprintf_req__data_2[2]),
         .req_a__data_1(dprintf_req__data_1[2]),
         .req_a__data_0(dprintf_req__data_0[2]),
         .req_a__address(dprintf_req__address[2]),
         .req_a__valid(dprintf_req__valid[2]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[1]),
+        .req__data_2(            dprintf_mux_req__data_2[1]),
         .req__data_1(            dprintf_mux_req__data_1[1]),
         .req__data_0(            dprintf_mux_req__data_0[1]),
         .req__address(            dprintf_mux_req__address[1]),
         .req__valid(            dprintf_mux_req__valid[1]),
         .ack_b(            dprintf_mux_ack[0]),
         .ack_a(            dprintf_ack[2])         );
-    teletext_dprintf_mux tdm___1(
+    dprintf_4_mux tdm___1(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[2]),
+        .req_b__data_3(dprintf_mux_req__data_3[1]),
+        .req_b__data_2(dprintf_mux_req__data_2[1]),
         .req_b__data_1(dprintf_mux_req__data_1[1]),
         .req_b__data_0(dprintf_mux_req__data_0[1]),
         .req_b__address(dprintf_mux_req__address[1]),
         .req_b__valid(dprintf_mux_req__valid[1]),
+        .req_a__data_3(dprintf_req__data_3[3]),
+        .req_a__data_2(dprintf_req__data_2[3]),
         .req_a__data_1(dprintf_req__data_1[3]),
         .req_a__data_0(dprintf_req__data_0[3]),
         .req_a__address(dprintf_req__address[3]),
         .req_a__valid(dprintf_req__valid[3]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[2]),
+        .req__data_2(            dprintf_mux_req__data_2[2]),
         .req__data_1(            dprintf_mux_req__data_1[2]),
         .req__data_0(            dprintf_mux_req__data_0[2]),
         .req__address(            dprintf_mux_req__address[2]),
         .req__valid(            dprintf_mux_req__valid[2]),
         .ack_b(            dprintf_mux_ack[1]),
         .ack_a(            dprintf_ack[3])         );
-    teletext_dprintf_mux tdm___2(
+    dprintf_4_mux tdm___2(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[3]),
+        .req_b__data_3(dprintf_mux_req__data_3[2]),
+        .req_b__data_2(dprintf_mux_req__data_2[2]),
         .req_b__data_1(dprintf_mux_req__data_1[2]),
         .req_b__data_0(dprintf_mux_req__data_0[2]),
         .req_b__address(dprintf_mux_req__address[2]),
         .req_b__valid(dprintf_mux_req__valid[2]),
+        .req_a__data_3(dprintf_req__data_3[4]),
+        .req_a__data_2(dprintf_req__data_2[4]),
         .req_a__data_1(dprintf_req__data_1[4]),
         .req_a__data_0(dprintf_req__data_0[4]),
         .req_a__address(dprintf_req__address[4]),
         .req_a__valid(dprintf_req__valid[4]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[3]),
+        .req__data_2(            dprintf_mux_req__data_2[3]),
         .req__data_1(            dprintf_mux_req__data_1[3]),
         .req__data_0(            dprintf_mux_req__data_0[3]),
         .req__address(            dprintf_mux_req__address[3]),
         .req__valid(            dprintf_mux_req__valid[3]),
         .ack_b(            dprintf_mux_ack[2]),
         .ack_a(            dprintf_ack[4])         );
-    teletext_dprintf_mux tdm___3(
+    dprintf_4_mux tdm___3(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[4]),
+        .req_b__data_3(dprintf_mux_req__data_3[3]),
+        .req_b__data_2(dprintf_mux_req__data_2[3]),
         .req_b__data_1(dprintf_mux_req__data_1[3]),
         .req_b__data_0(dprintf_mux_req__data_0[3]),
         .req_b__address(dprintf_mux_req__address[3]),
         .req_b__valid(dprintf_mux_req__valid[3]),
+        .req_a__data_3(dprintf_req__data_3[5]),
+        .req_a__data_2(dprintf_req__data_2[5]),
         .req_a__data_1(dprintf_req__data_1[5]),
         .req_a__data_0(dprintf_req__data_0[5]),
         .req_a__address(dprintf_req__address[5]),
         .req_a__valid(dprintf_req__valid[5]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[4]),
+        .req__data_2(            dprintf_mux_req__data_2[4]),
         .req__data_1(            dprintf_mux_req__data_1[4]),
         .req__data_0(            dprintf_mux_req__data_0[4]),
         .req__address(            dprintf_mux_req__address[4]),
         .req__valid(            dprintf_mux_req__valid[4]),
         .ack_b(            dprintf_mux_ack[3]),
         .ack_a(            dprintf_ack[5])         );
-    teletext_dprintf_mux tdm___4(
+    dprintf_4_mux tdm___4(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[5]),
+        .req_b__data_3(dprintf_mux_req__data_3[4]),
+        .req_b__data_2(dprintf_mux_req__data_2[4]),
         .req_b__data_1(dprintf_mux_req__data_1[4]),
         .req_b__data_0(dprintf_mux_req__data_0[4]),
         .req_b__address(dprintf_mux_req__address[4]),
         .req_b__valid(dprintf_mux_req__valid[4]),
+        .req_a__data_3(dprintf_req__data_3[6]),
+        .req_a__data_2(dprintf_req__data_2[6]),
         .req_a__data_1(dprintf_req__data_1[6]),
         .req_a__data_0(dprintf_req__data_0[6]),
         .req_a__address(dprintf_req__address[6]),
         .req_a__valid(dprintf_req__valid[6]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[5]),
+        .req__data_2(            dprintf_mux_req__data_2[5]),
         .req__data_1(            dprintf_mux_req__data_1[5]),
         .req__data_0(            dprintf_mux_req__data_0[5]),
         .req__address(            dprintf_mux_req__address[5]),
         .req__valid(            dprintf_mux_req__valid[5]),
         .ack_b(            dprintf_mux_ack[4]),
         .ack_a(            dprintf_ack[6])         );
-    teletext_dprintf_mux tdm___5(
+    dprintf_4_mux tdm___5(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[6]),
+        .req_b__data_3(dprintf_mux_req__data_3[5]),
+        .req_b__data_2(dprintf_mux_req__data_2[5]),
         .req_b__data_1(dprintf_mux_req__data_1[5]),
         .req_b__data_0(dprintf_mux_req__data_0[5]),
         .req_b__address(dprintf_mux_req__address[5]),
         .req_b__valid(dprintf_mux_req__valid[5]),
+        .req_a__data_3(dprintf_req__data_3[7]),
+        .req_a__data_2(dprintf_req__data_2[7]),
         .req_a__data_1(dprintf_req__data_1[7]),
         .req_a__data_0(dprintf_req__data_0[7]),
         .req_a__address(dprintf_req__address[7]),
         .req_a__valid(dprintf_req__valid[7]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[6]),
+        .req__data_2(            dprintf_mux_req__data_2[6]),
         .req__data_1(            dprintf_mux_req__data_1[6]),
         .req__data_0(            dprintf_mux_req__data_0[6]),
         .req__address(            dprintf_mux_req__address[6]),
         .req__valid(            dprintf_mux_req__valid[6]),
         .ack_b(            dprintf_mux_ack[5]),
         .ack_a(            dprintf_ack[7])         );
-    teletext_dprintf_mux tdm___6(
+    dprintf_4_mux tdm___6(
         .clk(clk),
         .clk__enable(1'b1),
         .ack(dprintf_mux_ack[7]),
+        .req_b__data_3(dprintf_mux_req__data_3[6]),
+        .req_b__data_2(dprintf_mux_req__data_2[6]),
         .req_b__data_1(dprintf_mux_req__data_1[6]),
         .req_b__data_0(dprintf_mux_req__data_0[6]),
         .req_b__address(dprintf_mux_req__address[6]),
         .req_b__valid(dprintf_mux_req__valid[6]),
+        .req_a__data_3(dprintf_req__data_3[8]),
+        .req_a__data_2(dprintf_req__data_2[8]),
         .req_a__data_1(dprintf_req__data_1[8]),
         .req_a__data_0(dprintf_req__data_0[8]),
         .req_a__address(dprintf_req__address[8]),
         .req_a__valid(dprintf_req__valid[8]),
         .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[7]),
+        .req__data_2(            dprintf_mux_req__data_2[7]),
         .req__data_1(            dprintf_mux_req__data_1[7]),
         .req__data_0(            dprintf_mux_req__data_0[7]),
         .req__address(            dprintf_mux_req__address[7]),
         .req__valid(            dprintf_mux_req__valid[7]),
         .ack_b(            dprintf_mux_ack[6]),
         .ack_a(            dprintf_ack[8])         );
-    teletext_dprintf dprintf(
+    dprintf_4_mux tdm___7(
         .clk(clk),
         .clk__enable(1'b1),
-        .dprintf_req__data_1(dprintf_mux_req__data_1[7]),
-        .dprintf_req__data_0(dprintf_mux_req__data_0[7]),
-        .dprintf_req__address(dprintf_mux_req__address[7]),
-        .dprintf_req__valid(dprintf_mux_req__valid[7]),
+        .ack(dprintf_mux_ack[8]),
+        .req_b__data_3(dprintf_mux_req__data_3[7]),
+        .req_b__data_2(dprintf_mux_req__data_2[7]),
+        .req_b__data_1(dprintf_mux_req__data_1[7]),
+        .req_b__data_0(dprintf_mux_req__data_0[7]),
+        .req_b__address(dprintf_mux_req__address[7]),
+        .req_b__valid(dprintf_mux_req__valid[7]),
+        .req_a__data_3(dprintf_req__data_3[9]),
+        .req_a__data_2(dprintf_req__data_2[9]),
+        .req_a__data_1(dprintf_req__data_1[9]),
+        .req_a__data_0(dprintf_req__data_0[9]),
+        .req_a__address(dprintf_req__address[9]),
+        .req_a__valid(dprintf_req__valid[9]),
         .reset_n(reset_n),
-        .display_sram_write__address(            tt_display_sram_write__address),
-        .display_sram_write__data(            tt_display_sram_write__data),
-        .display_sram_write__enable(            tt_display_sram_write__enable),
-        .dprintf_ack(            dprintf_mux_ack[7])         );
+        .req__data_3(            dprintf_mux_req__data_3[8]),
+        .req__data_2(            dprintf_mux_req__data_2[8]),
+        .req__data_1(            dprintf_mux_req__data_1[8]),
+        .req__data_0(            dprintf_mux_req__data_0[8]),
+        .req__address(            dprintf_mux_req__address[8]),
+        .req__valid(            dprintf_mux_req__valid[8]),
+        .ack_b(            dprintf_mux_ack[7]),
+        .ack_a(            dprintf_ack[9])         );
+    dprintf_4_mux tdm___8(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .ack(dprintf_mux_ack[9]),
+        .req_b__data_3(dprintf_mux_req__data_3[8]),
+        .req_b__data_2(dprintf_mux_req__data_2[8]),
+        .req_b__data_1(dprintf_mux_req__data_1[8]),
+        .req_b__data_0(dprintf_mux_req__data_0[8]),
+        .req_b__address(dprintf_mux_req__address[8]),
+        .req_b__valid(dprintf_mux_req__valid[8]),
+        .req_a__data_3(dprintf_req__data_3[10]),
+        .req_a__data_2(dprintf_req__data_2[10]),
+        .req_a__data_1(dprintf_req__data_1[10]),
+        .req_a__data_0(dprintf_req__data_0[10]),
+        .req_a__address(dprintf_req__address[10]),
+        .req_a__valid(dprintf_req__valid[10]),
+        .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[9]),
+        .req__data_2(            dprintf_mux_req__data_2[9]),
+        .req__data_1(            dprintf_mux_req__data_1[9]),
+        .req__data_0(            dprintf_mux_req__data_0[9]),
+        .req__address(            dprintf_mux_req__address[9]),
+        .req__valid(            dprintf_mux_req__valid[9]),
+        .ack_b(            dprintf_mux_ack[8]),
+        .ack_a(            dprintf_ack[10])         );
+    dprintf_4_mux tdm___9(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .ack(dprintf_mux_ack[10]),
+        .req_b__data_3(dprintf_mux_req__data_3[9]),
+        .req_b__data_2(dprintf_mux_req__data_2[9]),
+        .req_b__data_1(dprintf_mux_req__data_1[9]),
+        .req_b__data_0(dprintf_mux_req__data_0[9]),
+        .req_b__address(dprintf_mux_req__address[9]),
+        .req_b__valid(dprintf_mux_req__valid[9]),
+        .req_a__data_3(dprintf_req__data_3[11]),
+        .req_a__data_2(dprintf_req__data_2[11]),
+        .req_a__data_1(dprintf_req__data_1[11]),
+        .req_a__data_0(dprintf_req__data_0[11]),
+        .req_a__address(dprintf_req__address[11]),
+        .req_a__valid(dprintf_req__valid[11]),
+        .reset_n(reset_n),
+        .req__data_3(            dprintf_mux_req__data_3[10]),
+        .req__data_2(            dprintf_mux_req__data_2[10]),
+        .req__data_1(            dprintf_mux_req__data_1[10]),
+        .req__data_0(            dprintf_mux_req__data_0[10]),
+        .req__address(            dprintf_mux_req__address[10]),
+        .req__valid(            dprintf_mux_req__valid[10]),
+        .ack_b(            dprintf_mux_ack[9]),
+        .ack_a(            dprintf_ack[11])         );
+    dprintf dprintf(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .dprintf_req__data_3(dprintf_mux_req__data_3[10]),
+        .dprintf_req__data_2(dprintf_mux_req__data_2[10]),
+        .dprintf_req__data_1(dprintf_mux_req__data_1[10]),
+        .dprintf_req__data_0(dprintf_mux_req__data_0[10]),
+        .dprintf_req__address(dprintf_mux_req__address[10]),
+        .dprintf_req__valid(dprintf_mux_req__valid[10]),
+        .reset_n(reset_n),
+        .dprintf_byte__address(            dprintf_byte__address),
+        .dprintf_byte__data(            dprintf_byte__data),
+        .dprintf_byte__valid(            dprintf_byte__valid),
+        .dprintf_ack(            dprintf_mux_ack[10])         );
     framebuffer_teletext ftb(
         .video_clk(video_clk),
         .video_clk__enable(1'b1),
@@ -516,8 +660,9 @@ module bbc_micro_de1_cl_io
         .display_sram_write__enable(tt_display_sram_write__enable),
         .reset_n(framebuffer_reset_n),
         .csr_response__read_data(            tt_framebuffer_csr_response__read_data),
+        .csr_response__read_data_error(            tt_framebuffer_csr_response__read_data_error),
         .csr_response__read_data_valid(            tt_framebuffer_csr_response__read_data_valid),
-        .csr_response__ack(            tt_framebuffer_csr_response__ack),
+        .csr_response__acknowledge(            tt_framebuffer_csr_response__acknowledge),
         .video_bus__blue(            video_bus__blue),
         .video_bus__green(            video_bus__green),
         .video_bus__red(            video_bus__red),
@@ -555,8 +700,9 @@ module bbc_micro_de1_cl_io
         .clk(clk),
         .clk__enable(1'b1),
         .csr_response__read_data(csr_response_r__read_data),
+        .csr_response__read_data_error(csr_response_r__read_data_error),
         .csr_response__read_data_valid(csr_response_r__read_data_valid),
-        .csr_response__ack(csr_response_r__ack),
+        .csr_response__acknowledge(csr_response_r__acknowledge),
         .apb_request__pwdata(apb_request__pwdata),
         .apb_request__pwrite(apb_request__pwrite),
         .apb_request__psel(apb_request__psel),
@@ -605,16 +751,6 @@ module bbc_micro_de1_cl_io
         else if (clk__enable)
         begin
             debug_state__update <= (debug_state__update+32'h1);
-            if ((debug_combs__timer_10ms!=1'h0))
-            begin
-                debug_state__update <= 32'h0;
-                debug_state__cpu_ticks <= 32'h0;
-                debug_state__video_2MHz_ticks <= 32'h0;
-                debug_state__rising_1MHz_ticks <= 32'h0;
-                debug_state__falling_1MHz_ticks <= 32'h0;
-                debug_state__counter_0 <= 32'h0;
-                debug_state__counter_1 <= 32'h0;
-            end //if
             if ((clock_control__enable_cpu!=1'h0))
             begin
                 debug_state__cpu_ticks <= (debug_state__cpu_ticks+32'h1);
@@ -647,6 +783,16 @@ module bbc_micro_de1_cl_io
             begin
                 debug_state__counter_1 <= (debug_state__counter_1+32'h1);
             end //if
+            if ((debug_combs__timer_10ms!=1'h0))
+            begin
+                debug_state__update <= 32'h0;
+                debug_state__cpu_ticks <= 32'h0;
+                debug_state__video_2MHz_ticks <= 32'h0;
+                debug_state__rising_1MHz_ticks <= 32'h0;
+                debug_state__falling_1MHz_ticks <= 32'h0;
+                debug_state__counter_0 <= 32'h0;
+                debug_state__counter_1 <= 32'h0;
+            end //if
         end //if
     end //always
 
@@ -665,13 +811,17 @@ module bbc_micro_de1_cl_io
     begin : misc_logic__posedge_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
+            key_state__speed_selection_changed <= 1'h0;
+            key_state__video_selection_changed <= 1'h0;
             key_state__fn_keys_down <= 10'h0;
             key_state__last_fn_key <= 4'h0;
+            key_state__video_selection <= 4'h0;
             key_state__speed_selection <= 4'h0;
-            key_state__left_dial_was_pressed <= 1'h0;
         end
         else if (clk__enable)
         begin
+            key_state__speed_selection_changed <= 1'h0;
+            key_state__video_selection_changed <= 1'h0;
             if ((user_inputs__right_dial__direction_pulse!=1'h0))
             begin
                 key_state__fn_keys_down <= 10'h0;
@@ -695,22 +845,48 @@ module bbc_micro_de1_cl_io
             end //if
             if ((user_inputs__left_dial__direction_pulse!=1'h0))
             begin
-                if ((user_inputs__left_dial__direction!=1'h0))
+                if ((user_inputs__left_dial__pressed!=1'h0))
                 begin
-                    key_state__speed_selection <= (key_state__speed_selection+4'h1);
-                    if ((key_state__speed_selection==4'hb))
+                    key_state__video_selection_changed <= 1'h1;
+                    if ((user_inputs__left_dial__direction!=1'h0))
                     begin
-                        key_state__speed_selection <= 4'h0;
+                        key_state__video_selection <= (key_state__video_selection+4'h1);
+                        if ((key_state__video_selection==4'hb))
+                        begin
+                            key_state__video_selection <= 4'h0;
+                        end //if
                     end //if
+                    else
+                    
+                    begin
+                        key_state__video_selection <= (key_state__video_selection-4'h1);
+                        if ((key_state__video_selection==4'h0))
+                        begin
+                            key_state__video_selection <= 4'hb;
+                        end //if
+                    end //else
                 end //if
                 else
                 
                 begin
-                    key_state__speed_selection <= (key_state__speed_selection-4'h1);
-                    if ((key_state__speed_selection==4'h0))
+                    key_state__speed_selection_changed <= 1'h1;
+                    if ((user_inputs__left_dial__direction!=1'h0))
                     begin
-                        key_state__speed_selection <= 4'hb;
+                        key_state__speed_selection <= (key_state__speed_selection+4'h1);
+                        if ((key_state__speed_selection==4'hb))
+                        begin
+                            key_state__speed_selection <= 4'h0;
+                        end //if
                     end //if
+                    else
+                    
+                    begin
+                        key_state__speed_selection <= (key_state__speed_selection-4'h1);
+                        if ((key_state__speed_selection==4'h0))
+                        begin
+                            key_state__speed_selection <= 4'hb;
+                        end //if
+                    end //else
                 end //else
             end //if
             if ((user_inputs__right_dial__pressed!=1'h0))
@@ -723,127 +899,122 @@ module bbc_micro_de1_cl_io
             begin
                 key_state__fn_keys_down <= 10'h0;
             end //else
-            key_state__left_dial_was_pressed <= user_inputs__left_dial__pressed;
         end //if
     end //always
 
-    //b led_chain_logic combinatorial process
+    //b led_chain_logic__comb combinatorial process
         //   
         //       
-    always @ ( * )//led_chain_logic
+    always @ ( * )//led_chain_logic__comb
     begin: led_chain_logic__comb_code
     reg led_data__valid__var;
     reg led_data__last__var;
     reg [7:0]led_data__red__var;
+    reg [7:0]led_data__green__var;
     reg [7:0]led_data__blue__var;
         led_data__valid__var = 1'h0;
         led_data__last__var = 1'h0;
         led_data__red__var = 8'h0;
-        led_data__green = 8'h0;
+        led_data__green__var = 8'h0;
         led_data__blue__var = 8'h0;
         if ((led_request__ready!=1'h0))
         begin
-            led_data__valid__var = 1'h1;
             case (led_request__led_number) //synopsys parallel_case
             8'h0: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h0)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[0];
+                led_data__last__var = led_state__last[0];
+                led_data__red__var = led_state__red[0];
+                led_data__green__var = led_state__green[0];
+                led_data__blue__var = led_state__blue[0];
                 end
             8'h1: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h1)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[1];
+                led_data__last__var = led_state__last[1];
+                led_data__red__var = led_state__red[1];
+                led_data__green__var = led_state__green[1];
+                led_data__blue__var = led_state__blue[1];
                 end
             8'h2: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h2)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[2];
+                led_data__last__var = led_state__last[2];
+                led_data__red__var = led_state__red[2];
+                led_data__green__var = led_state__green[2];
+                led_data__blue__var = led_state__blue[2];
                 end
             8'h3: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h3)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[3];
+                led_data__last__var = led_state__last[3];
+                led_data__red__var = led_state__red[3];
+                led_data__green__var = led_state__green[3];
+                led_data__blue__var = led_state__blue[3];
                 end
             8'h4: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h4)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[4];
+                led_data__last__var = led_state__last[4];
+                led_data__red__var = led_state__red[4];
+                led_data__green__var = led_state__green[4];
+                led_data__blue__var = led_state__blue[4];
                 end
             8'h5: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h5)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[5];
+                led_data__last__var = led_state__last[5];
+                led_data__red__var = led_state__red[5];
+                led_data__green__var = led_state__green[5];
+                led_data__blue__var = led_state__blue[5];
                 end
             8'h6: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h6)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[6];
+                led_data__last__var = led_state__last[6];
+                led_data__red__var = led_state__red[6];
+                led_data__green__var = led_state__green[6];
+                led_data__blue__var = led_state__blue[6];
                 end
             8'h7: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h7)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[7];
+                led_data__last__var = led_state__last[7];
+                led_data__red__var = led_state__red[7];
+                led_data__green__var = led_state__green[7];
+                led_data__blue__var = led_state__blue[7];
                 end
             8'h8: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h8)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[8];
+                led_data__last__var = led_state__last[8];
+                led_data__red__var = led_state__red[8];
+                led_data__green__var = led_state__green[8];
+                led_data__blue__var = led_state__blue[8];
                 end
             8'h9: // req 1
                 begin
-                led_data__red__var = ((key_state__last_fn_key==4'h9)?8'h3f:8'h0);
-                end
-            //synopsys  translate_off
-            //pragma coverage off
-            //synopsys  translate_on
-            default:
-                begin
-                //Need a default case to make Cadence Lint happy, even though this is not a full case
-                end
-            //synopsys  translate_off
-            //pragma coverage on
-            //synopsys  translate_on
-            endcase
-            case (led_request__led_number) //synopsys parallel_case
-            8'h0: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h0)?8'h3f:8'h0);
-                end
-            8'h1: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h1)?8'h3f:8'h0);
-                end
-            8'h2: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h2)?8'h3f:8'h0);
-                end
-            8'h3: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h3)?8'h3f:8'h0);
-                end
-            8'h4: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h4)?8'h3f:8'h0);
-                end
-            8'h5: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h5)?8'h3f:8'h0);
-                end
-            8'h6: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h6)?8'h3f:8'h0);
-                end
-            8'h7: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h7)?8'h3f:8'h0);
-                end
-            8'h8: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h8)?8'h3f:8'h0);
-                end
-            8'h9: // req 1
-                begin
-                led_data__blue__var = ((key_state__speed_selection==4'h9)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[9];
+                led_data__last__var = led_state__last[9];
+                led_data__red__var = led_state__red[9];
+                led_data__green__var = led_state__green[9];
+                led_data__blue__var = led_state__blue[9];
                 end
             8'ha: // req 1
                 begin
-                led_data__blue__var = ((key_state__speed_selection==4'ha)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[10];
+                led_data__last__var = led_state__last[10];
+                led_data__red__var = led_state__red[10];
+                led_data__green__var = led_state__green[10];
+                led_data__blue__var = led_state__blue[10];
                 end
             8'hb: // req 1
                 begin
-                led_data__blue__var = ((key_state__speed_selection==4'hb)?8'h3f:8'h0);
+                led_data__valid__var = led_state__valid[11];
+                led_data__last__var = led_state__last[11];
+                led_data__red__var = led_state__red[11];
+                led_data__green__var = led_state__green[11];
+                led_data__blue__var = led_state__blue[11];
                 end
             //synopsys  translate_off
             //pragma coverage off
@@ -856,6 +1027,7 @@ module bbc_micro_de1_cl_io
             //pragma coverage on
             //synopsys  translate_on
             endcase
+            led_data__valid__var = 1'h1;
             if ((led_request__led_number==8'hb))
             begin
                 led_data__last__var = 1'h1;
@@ -864,7 +1036,321 @@ module bbc_micro_de1_cl_io
         led_data__valid = led_data__valid__var;
         led_data__last = led_data__last__var;
         led_data__red = led_data__red__var;
+        led_data__green = led_data__green__var;
         led_data__blue = led_data__blue__var;
+    end //always
+
+    //b led_chain_logic__posedge_clk_active_low_reset_n clock process
+        //   
+        //       
+    always @( posedge clk or negedge reset_n)
+    begin : led_chain_logic__posedge_clk_active_low_reset_n__code
+        if (reset_n==1'b0)
+        begin
+            led_state__valid[0] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[1] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[2] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[3] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[4] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[5] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[6] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[7] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[8] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[9] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[10] <= 1'h0; // Should this be a bit vector?
+            led_state__valid[11] <= 1'h0; // Should this be a bit vector?
+            led_state__last[0] <= 1'h0; // Should this be a bit vector?
+            led_state__last[1] <= 1'h0; // Should this be a bit vector?
+            led_state__last[2] <= 1'h0; // Should this be a bit vector?
+            led_state__last[3] <= 1'h0; // Should this be a bit vector?
+            led_state__last[4] <= 1'h0; // Should this be a bit vector?
+            led_state__last[5] <= 1'h0; // Should this be a bit vector?
+            led_state__last[6] <= 1'h0; // Should this be a bit vector?
+            led_state__last[7] <= 1'h0; // Should this be a bit vector?
+            led_state__last[8] <= 1'h0; // Should this be a bit vector?
+            led_state__last[9] <= 1'h0; // Should this be a bit vector?
+            led_state__last[10] <= 1'h0; // Should this be a bit vector?
+            led_state__last[11] <= 1'h0; // Should this be a bit vector?
+            led_state__red[0] <= 8'h0;
+            led_state__red[1] <= 8'h0;
+            led_state__red[2] <= 8'h0;
+            led_state__red[3] <= 8'h0;
+            led_state__red[4] <= 8'h0;
+            led_state__red[5] <= 8'h0;
+            led_state__red[6] <= 8'h0;
+            led_state__red[7] <= 8'h0;
+            led_state__red[8] <= 8'h0;
+            led_state__red[9] <= 8'h0;
+            led_state__red[10] <= 8'h0;
+            led_state__red[11] <= 8'h0;
+            led_state__green[0] <= 8'h0;
+            led_state__green[1] <= 8'h0;
+            led_state__green[2] <= 8'h0;
+            led_state__green[3] <= 8'h0;
+            led_state__green[4] <= 8'h0;
+            led_state__green[5] <= 8'h0;
+            led_state__green[6] <= 8'h0;
+            led_state__green[7] <= 8'h0;
+            led_state__green[8] <= 8'h0;
+            led_state__green[9] <= 8'h0;
+            led_state__green[10] <= 8'h0;
+            led_state__green[11] <= 8'h0;
+            led_state__blue[0] <= 8'h0;
+            led_state__blue[1] <= 8'h0;
+            led_state__blue[2] <= 8'h0;
+            led_state__blue[3] <= 8'h0;
+            led_state__blue[4] <= 8'h0;
+            led_state__blue[5] <= 8'h0;
+            led_state__blue[6] <= 8'h0;
+            led_state__blue[7] <= 8'h0;
+            led_state__blue[8] <= 8'h0;
+            led_state__blue[9] <= 8'h0;
+            led_state__blue[10] <= 8'h0;
+            led_state__blue[11] <= 8'h0;
+        end
+        else if (clk__enable)
+        begin
+            led_state__valid[0] <= 1'h0;
+            led_state__last[0] <= 1'h0;
+            led_state__red[0] <= 8'h0;
+            led_state__green[0] <= 8'h0;
+            led_state__blue[0] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h0))
+                begin
+                    led_state__blue[0] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h0))
+                begin
+                    led_state__red[0] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[1] <= 1'h0;
+            led_state__last[1] <= 1'h0;
+            led_state__red[1] <= 8'h0;
+            led_state__green[1] <= 8'h0;
+            led_state__blue[1] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h1))
+                begin
+                    led_state__blue[1] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h1))
+                begin
+                    led_state__red[1] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[2] <= 1'h0;
+            led_state__last[2] <= 1'h0;
+            led_state__red[2] <= 8'h0;
+            led_state__green[2] <= 8'h0;
+            led_state__blue[2] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h2))
+                begin
+                    led_state__blue[2] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h2))
+                begin
+                    led_state__red[2] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[3] <= 1'h0;
+            led_state__last[3] <= 1'h0;
+            led_state__red[3] <= 8'h0;
+            led_state__green[3] <= 8'h0;
+            led_state__blue[3] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h3))
+                begin
+                    led_state__blue[3] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h3))
+                begin
+                    led_state__red[3] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[4] <= 1'h0;
+            led_state__last[4] <= 1'h0;
+            led_state__red[4] <= 8'h0;
+            led_state__green[4] <= 8'h0;
+            led_state__blue[4] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h4))
+                begin
+                    led_state__blue[4] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h4))
+                begin
+                    led_state__red[4] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[5] <= 1'h0;
+            led_state__last[5] <= 1'h0;
+            led_state__red[5] <= 8'h0;
+            led_state__green[5] <= 8'h0;
+            led_state__blue[5] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h5))
+                begin
+                    led_state__blue[5] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h5))
+                begin
+                    led_state__red[5] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[6] <= 1'h0;
+            led_state__last[6] <= 1'h0;
+            led_state__red[6] <= 8'h0;
+            led_state__green[6] <= 8'h0;
+            led_state__blue[6] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h6))
+                begin
+                    led_state__blue[6] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h6))
+                begin
+                    led_state__red[6] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[7] <= 1'h0;
+            led_state__last[7] <= 1'h0;
+            led_state__red[7] <= 8'h0;
+            led_state__green[7] <= 8'h0;
+            led_state__blue[7] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h7))
+                begin
+                    led_state__blue[7] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h7))
+                begin
+                    led_state__red[7] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[8] <= 1'h0;
+            led_state__last[8] <= 1'h0;
+            led_state__red[8] <= 8'h0;
+            led_state__green[8] <= 8'h0;
+            led_state__blue[8] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h8))
+                begin
+                    led_state__blue[8] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h8))
+                begin
+                    led_state__red[8] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[9] <= 1'h0;
+            led_state__last[9] <= 1'h0;
+            led_state__red[9] <= 8'h0;
+            led_state__green[9] <= 8'h0;
+            led_state__blue[9] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'h9))
+                begin
+                    led_state__blue[9] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'h9))
+                begin
+                    led_state__red[9] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[10] <= 1'h0;
+            led_state__last[10] <= 1'h0;
+            led_state__red[10] <= 8'h0;
+            led_state__green[10] <= 8'h0;
+            led_state__blue[10] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'ha))
+                begin
+                    led_state__blue[10] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'ha))
+                begin
+                    led_state__red[10] <= 8'h3f;
+                end //if
+            end //else
+            led_state__valid[11] <= 1'h0;
+            led_state__last[11] <= 1'h0;
+            led_state__red[11] <= 8'h0;
+            led_state__green[11] <= 8'h0;
+            led_state__blue[11] <= 8'h0;
+            if ((user_inputs__left_dial__pressed!=1'h0))
+            begin
+                if ((key_state__video_selection>=4'hb))
+                begin
+                    led_state__blue[11] <= 8'h3f;
+                end //if
+            end //if
+            else
+            
+            begin
+                if ((key_state__speed_selection>=4'hb))
+                begin
+                    led_state__red[11] <= 8'h3f;
+                end //if
+            end //else
+        end //if
     end //always
 
     //b keyboard_input__comb combinatorial process
@@ -914,9 +1400,17 @@ module bbc_micro_de1_cl_io
         end //if
     end //always
 
-    //b tt_framebuffer clock process
+    //b tt_framebuffer__comb combinatorial process
+    always @ ( * )//tt_framebuffer__comb
+    begin: tt_framebuffer__comb_code
+        tt_display_sram_write__enable = dprintf_byte__valid;
+        tt_display_sram_write__address = dprintf_byte__address;
+        tt_display_sram_write__data = {40'h0,dprintf_byte__data};
+    end //always
+
+    //b tt_framebuffer__posedge_clk_active_low_reset_n clock process
     always @( posedge clk or negedge reset_n)
-    begin : tt_framebuffer__code
+    begin : tt_framebuffer__posedge_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             dprintf_req__valid[0] <= 1'h0; // Should this be a bit vector?
@@ -928,6 +1422,9 @@ module bbc_micro_de1_cl_io
             dprintf_req__valid[6] <= 1'h0; // Should this be a bit vector?
             dprintf_req__valid[7] <= 1'h0; // Should this be a bit vector?
             dprintf_req__valid[8] <= 1'h0; // Should this be a bit vector?
+            dprintf_req__valid[9] <= 1'h0; // Should this be a bit vector?
+            dprintf_req__valid[10] <= 1'h0; // Should this be a bit vector?
+            dprintf_req__valid[11] <= 1'h0; // Should this be a bit vector?
             dprintf_req__address[0] <= 16'h0;
             dprintf_req__address[1] <= 16'h0;
             dprintf_req__address[2] <= 16'h0;
@@ -937,6 +1434,9 @@ module bbc_micro_de1_cl_io
             dprintf_req__address[6] <= 16'h0;
             dprintf_req__address[7] <= 16'h0;
             dprintf_req__address[8] <= 16'h0;
+            dprintf_req__address[9] <= 16'h0;
+            dprintf_req__address[10] <= 16'h0;
+            dprintf_req__address[11] <= 16'h0;
             dprintf_req__data_0[0] <= 64'h0;
             dprintf_req__data_0[1] <= 64'h0;
             dprintf_req__data_0[2] <= 64'h0;
@@ -946,6 +1446,9 @@ module bbc_micro_de1_cl_io
             dprintf_req__data_0[6] <= 64'h0;
             dprintf_req__data_0[7] <= 64'h0;
             dprintf_req__data_0[8] <= 64'h0;
+            dprintf_req__data_0[9] <= 64'h0;
+            dprintf_req__data_0[10] <= 64'h0;
+            dprintf_req__data_0[11] <= 64'h0;
             dprintf_req__data_1[0] <= 64'h0;
             dprintf_req__data_1[1] <= 64'h0;
             dprintf_req__data_1[2] <= 64'h0;
@@ -955,6 +1458,33 @@ module bbc_micro_de1_cl_io
             dprintf_req__data_1[6] <= 64'h0;
             dprintf_req__data_1[7] <= 64'h0;
             dprintf_req__data_1[8] <= 64'h0;
+            dprintf_req__data_1[9] <= 64'h0;
+            dprintf_req__data_1[10] <= 64'h0;
+            dprintf_req__data_1[11] <= 64'h0;
+            dprintf_req__data_2[0] <= 64'h0;
+            dprintf_req__data_2[1] <= 64'h0;
+            dprintf_req__data_2[2] <= 64'h0;
+            dprintf_req__data_2[3] <= 64'h0;
+            dprintf_req__data_2[4] <= 64'h0;
+            dprintf_req__data_2[5] <= 64'h0;
+            dprintf_req__data_2[6] <= 64'h0;
+            dprintf_req__data_2[7] <= 64'h0;
+            dprintf_req__data_2[8] <= 64'h0;
+            dprintf_req__data_2[9] <= 64'h0;
+            dprintf_req__data_2[10] <= 64'h0;
+            dprintf_req__data_2[11] <= 64'h0;
+            dprintf_req__data_3[0] <= 64'h0;
+            dprintf_req__data_3[1] <= 64'h0;
+            dprintf_req__data_3[2] <= 64'h0;
+            dprintf_req__data_3[3] <= 64'h0;
+            dprintf_req__data_3[4] <= 64'h0;
+            dprintf_req__data_3[5] <= 64'h0;
+            dprintf_req__data_3[6] <= 64'h0;
+            dprintf_req__data_3[7] <= 64'h0;
+            dprintf_req__data_3[8] <= 64'h0;
+            dprintf_req__data_3[9] <= 64'h0;
+            dprintf_req__data_3[10] <= 64'h0;
+            dprintf_req__data_3[11] <= 64'h0;
         end
         else if (clk__enable)
         begin
@@ -994,47 +1524,67 @@ module bbc_micro_de1_cl_io
             begin
                 dprintf_req__valid[8] <= 1'h0;
             end //if
-            if ((ps2_key__valid!=1'h0))
+            if ((dprintf_ack[9]!=1'h0))
             begin
-                dprintf_req__valid[0] <= 1'h1;
-                dprintf_req__address[0] <= 16'h0;
-                dprintf_req__data_0[0] <= 64'h505332206b65793a;
-                dprintf_req__data_1[0] <= {{{{((ps2_key__release!=1'h0)?8'h2:8'h1),((ps2_key__extended!=1'h0)?8'h45:8'h0)},8'h81},ps2_key__key_number},32'h2020ffff};
+                dprintf_req__valid[9] <= 1'h0;
+            end //if
+            if ((dprintf_ack[10]!=1'h0))
+            begin
+                dprintf_req__valid[10] <= 1'h0;
+            end //if
+            if ((dprintf_ack[11]!=1'h0))
+            begin
+                dprintf_req__valid[11] <= 1'h0;
             end //if
             if ((debug_combs__timer_10ms!=1'h0))
             begin
+                dprintf_req__valid[0] <= 1'h1;
+                dprintf_req__address[0] <= 16'h0;
+                dprintf_req__data_0[0] <= 64'hd041d0243505520;
+                dprintf_req__data_1[0] <= 64'h537065656420ffff;
+                dprintf_req__data_2[0] <= {{8'hd7,debug_state__cpu_ticks},24'h303020};
+                dprintf_req__data_3[0] <= 64'h466aff0000000000;
                 dprintf_req__valid[1] <= 1'h1;
                 dprintf_req__address[1] <= 16'h28;
-                dprintf_req__data_0[1] <= 64'h5269676874204469;
-                dprintf_req__data_1[1] <= {{{{{24'h616c3a,((user_inputs__right_dial__pressed!=1'h0)?8'h1:8'h6)},8'h80},4'h0},key_state__last_fn_key},16'hff};
-                dprintf_req__valid[2] <= 1'h1;
-                dprintf_req__address[2] <= 16'h50;
-                dprintf_req__data_0[2] <= 64'h4c65667420446961;
-                dprintf_req__data_1[2] <= {{{{{24'h6c203a,((user_inputs__left_dial__pressed!=1'h0)?8'h1:8'h6)},8'h80},4'h0},key_state__speed_selection},16'hff};
-                dprintf_req__valid[3] <= 1'h1;
-                dprintf_req__address[3] <= 16'h78;
-                dprintf_req__data_0[3] <= 64'h435055207469636b;
-                dprintf_req__data_1[3] <= {{24'h73203a,8'hdb},debug_state__cpu_ticks};
+                dprintf_req__data_0[1] <= 64'hd041d0243505520;
+                dprintf_req__data_1[1] <= 64'h537065656420ffff;
+                dprintf_req__data_2[1] <= {{8'hd7,debug_state__cpu_ticks},24'h303020};
+                dprintf_req__data_3[1] <= 64'h466aff0000000000;
                 dprintf_req__valid[4] <= 1'h1;
-                dprintf_req__address[4] <= 16'ha0;
-                dprintf_req__data_0[4] <= 64'h324d687a20566964;
-                dprintf_req__data_1[4] <= {{24'h656f3a,8'hdb},debug_state__video_2MHz_ticks};
+                dprintf_req__address[4] <= 16'hf0;
+                dprintf_req__data_0[4] <= 64'h5269676874204469;
+                dprintf_req__data_1[4] <= {{{{{24'h616c3a,((user_inputs__right_dial__pressed!=1'h0)?8'h1:8'h6)},8'h80},4'h0},key_state__last_fn_key},16'hff};
                 dprintf_req__valid[5] <= 1'h1;
-                dprintf_req__address[5] <= 16'hc8;
-                dprintf_req__data_0[5] <= 64'h314d687a2066616c;
-                dprintf_req__data_1[5] <= {{24'h6c203a,8'hdb},debug_state__falling_1MHz_ticks};
+                dprintf_req__address[5] <= 16'h118;
+                dprintf_req__data_0[5] <= 64'h4c65667420446961;
+                dprintf_req__data_1[5] <= {{{{{24'h6c203a,((user_inputs__left_dial__pressed!=1'h0)?8'h1:8'h6)},8'h80},4'h0},key_state__speed_selection},16'hff};
                 dprintf_req__valid[6] <= 1'h1;
-                dprintf_req__address[6] <= 16'hf0;
-                dprintf_req__data_0[6] <= 64'h314d687a20726973;
-                dprintf_req__data_1[6] <= {{24'h65203a,8'hdb},debug_state__rising_1MHz_ticks};
+                dprintf_req__address[6] <= 16'h168;
+                dprintf_req__data_0[6] <= 64'h324d687a20566964;
+                dprintf_req__data_1[6] <= {{24'h656f3a,8'hdb},debug_state__video_2MHz_ticks};
                 dprintf_req__valid[7] <= 1'h1;
-                dprintf_req__address[7] <= 16'h118;
-                dprintf_req__data_0[7] <= 64'h446562756720303a;
-                dprintf_req__data_1[7] <= {{{8'hdb,debug_state__counter_0},8'h81},16'h0};
+                dprintf_req__address[7] <= 16'h190;
+                dprintf_req__data_0[7] <= 64'h314d687a2066616c;
+                dprintf_req__data_1[7] <= {{24'h6c203a,8'hdb},debug_state__falling_1MHz_ticks};
                 dprintf_req__valid[8] <= 1'h1;
-                dprintf_req__address[8] <= 16'h140;
-                dprintf_req__data_0[8] <= 64'h446562756720313a;
-                dprintf_req__data_1[8] <= {{{{8'hdb,debug_state__counter_1},8'h81},12'h0},clock_control__debug};
+                dprintf_req__address[8] <= 16'h1b8;
+                dprintf_req__data_0[8] <= 64'h314d687a20726973;
+                dprintf_req__data_1[8] <= {{24'h65203a,8'hdb},debug_state__rising_1MHz_ticks};
+                dprintf_req__valid[9] <= 1'h1;
+                dprintf_req__address[9] <= 16'h1e0;
+                dprintf_req__data_0[9] <= 64'h446562756720303a;
+                dprintf_req__data_1[9] <= {{{8'hdb,debug_state__counter_0},8'h83},16'h0};
+                dprintf_req__valid[10] <= 1'h1;
+                dprintf_req__address[10] <= 16'h208;
+                dprintf_req__data_0[10] <= 64'h446562756720313a;
+                dprintf_req__data_1[10] <= {{{{8'hdb,debug_state__counter_1},8'h83},12'h0},clock_control__debug};
+            end //if
+            if ((ps2_key__valid!=1'h0))
+            begin
+                dprintf_req__valid[11] <= 1'h1;
+                dprintf_req__address[11] <= 16'h258;
+                dprintf_req__data_0[11] <= 64'h505332206b65793a;
+                dprintf_req__data_1[11] <= {{{{((ps2_key__release!=1'h0)?8'h2:8'h1),((ps2_key__extended!=1'h0)?8'h45:8'h0)},8'h81},ps2_key__key_number},32'h2020ffff};
             end //if
         end //if
     end //always
@@ -1045,31 +1595,43 @@ module bbc_micro_de1_cl_io
     always @ ( * )//apb_csr_logic__comb
     begin: apb_csr_logic__comb_code
     reg apb_processor_request__valid__var;
+    reg [15:0]apb_processor_request__address__var;
     reg [9:0]leds__var;
-    reg combined_csr_response__ack__var;
+    reg combined_csr_response__acknowledge__var;
     reg combined_csr_response__read_data_valid__var;
+    reg combined_csr_response__read_data_error__var;
     reg [31:0]combined_csr_response__read_data__var;
         apb_processor_request__valid__var = 1'h0;
-        apb_processor_request__address[7:4] = key_state__speed_selection;
-        if (((user_inputs__left_dial__pressed!=1'h0)&&!(key_state__left_dial_was_pressed!=1'h0)))
+        apb_processor_request__address__var = 16'h0;
+        if ((key_state__speed_selection_changed!=1'h0))
         begin
+            apb_processor_request__address__var[8:4] = {1'h0,key_state__speed_selection};
+            apb_processor_request__valid__var = 1'h1;
+        end //if
+        if ((key_state__video_selection_changed!=1'h0))
+        begin
+            apb_processor_request__address__var[8:4] = {1'h1,key_state__video_selection};
             apb_processor_request__valid__var = 1'h1;
         end //if
         leds__var[0] = apb_processor_request__valid__var;
         leds__var[1] = apb_processor_response__acknowledge;
         leds__var[2] = apb_processor_response__rom_busy;
         leds__var[3] = csr_request__valid;
-        leds__var[4] = csr_response_r__ack;
-        combined_csr_response__ack__var = csr_response__ack;
+        leds__var[4] = csr_response_r__acknowledge;
+        combined_csr_response__acknowledge__var = csr_response__acknowledge;
         combined_csr_response__read_data_valid__var = csr_response__read_data_valid;
+        combined_csr_response__read_data_error__var = csr_response__read_data_error;
         combined_csr_response__read_data__var = csr_response__read_data;
-        combined_csr_response__ack__var = combined_csr_response__ack__var | tt_framebuffer_csr_response__ack;
+        combined_csr_response__acknowledge__var = combined_csr_response__acknowledge__var | tt_framebuffer_csr_response__acknowledge;
         combined_csr_response__read_data_valid__var = combined_csr_response__read_data_valid__var | tt_framebuffer_csr_response__read_data_valid;
+        combined_csr_response__read_data_error__var = combined_csr_response__read_data_error__var | tt_framebuffer_csr_response__read_data_error;
         combined_csr_response__read_data__var = combined_csr_response__read_data__var | tt_framebuffer_csr_response__read_data;
         apb_processor_request__valid = apb_processor_request__valid__var;
+        apb_processor_request__address = apb_processor_request__address__var;
         leds = leds__var;
-        combined_csr_response__ack = combined_csr_response__ack__var;
+        combined_csr_response__acknowledge = combined_csr_response__acknowledge__var;
         combined_csr_response__read_data_valid = combined_csr_response__read_data_valid__var;
+        combined_csr_response__read_data_error = combined_csr_response__read_data_error__var;
         combined_csr_response__read_data = combined_csr_response__read_data__var;
     end //always
 
@@ -1080,14 +1642,16 @@ module bbc_micro_de1_cl_io
     begin : apb_csr_logic__posedge_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
-            csr_response_r__ack <= 1'h0;
+            csr_response_r__acknowledge <= 1'h0;
             csr_response_r__read_data_valid <= 1'h0;
+            csr_response_r__read_data_error <= 1'h0;
             csr_response_r__read_data <= 32'h0;
         end
         else if (clk__enable)
         begin
-            csr_response_r__ack <= csr_response__ack;
+            csr_response_r__acknowledge <= csr_response__acknowledge;
             csr_response_r__read_data_valid <= csr_response__read_data_valid;
+            csr_response_r__read_data_error <= csr_response__read_data_error;
             csr_response_r__read_data <= csr_response__read_data;
         end //if
     end //always

@@ -11,7 +11,7 @@
 // Verilog option use_always_at_star 1
 // Verilog option clocks_must_have_enables 1
 
-//a Module teletext_dprintf_mux
+//a Module dprintf_2_mux
     //   
     //   Generic multiplexer for two identical requesters (with a valid signal
     //   each), to arbitrate for an output request, with a response with an
@@ -32,7 +32,7 @@
     //   If its output is valid and is not acknowledged, then it will not
     //   consumer another request.
     //   
-module teletext_dprintf_mux
+module dprintf_2_mux
 (
     clk,
     clk__enable,
@@ -226,4 +226,4 @@ module teletext_dprintf_mux
         end //if
     end //always
 
-endmodule // teletext_dprintf_mux
+endmodule // dprintf_2_mux

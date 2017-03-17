@@ -13,6 +13,12 @@
 
 //a Module ps2_host_keyboard
     //   
+    //   Module to convert from PS2 receive data, from a host PS2 receive
+    //   module, in to keyboard data (up/down, extended key).
+    //   
+    //   An incoming valid byte helps build the result. An 0xe0 sets the @p
+    //   extended bit. A 0xf0 sets the @p released bit. The rest set the @p key
+    //   field, and @p valid out. @p valid is made in to a single cycle pulse.
     //   
 module ps2_host_keyboard
 (
@@ -38,14 +44,17 @@ module ps2_host_keyboard
     input clk__enable;
 
     //b Inputs
+        //   Receive data from a ps2_host module
     input ps2_rx_data__valid;
     input [7:0]ps2_rx_data__data;
     input ps2_rx_data__parity_error;
     input ps2_rx_data__protocol_error;
     input ps2_rx_data__timeout;
+        //   Active low reset
     input reset_n;
 
     //b Outputs
+        //   PS2 key decoded
     output ps2_key__valid;
     output ps2_key__extended;
     output ps2_key__release;
@@ -72,7 +81,14 @@ module ps2_host_keyboard
     //b Module instances
     //b interpretation_logic__comb combinatorial process
         //   
-        //       Interpret the PS2 keyboard codes
+        //       Decode an incoming valid PS2 data; 0xe0 implies an extended key,
+        //       0xf0 implies key release, and then the key number. Normal keys are
+        //       just (0xf0, keycode) for key release, or keycode alone if the key
+        //       is pressed. Extended keys are (0xe0, 0xf0, keycode) or (0xe0,
+        //       keycode) for key pressed.
+        //   
+        //       Build the output from the actions decoded; simply build up
+        //       ps2_key.
         //       
     always @ ( * )//interpretation_logic__comb
     begin: interpretation_logic__comb_code
@@ -111,7 +127,14 @@ module ps2_host_keyboard
 
     //b interpretation_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       Interpret the PS2 keyboard codes
+        //       Decode an incoming valid PS2 data; 0xe0 implies an extended key,
+        //       0xf0 implies key release, and then the key number. Normal keys are
+        //       just (0xf0, keycode) for key release, or keycode alone if the key
+        //       is pressed. Extended keys are (0xe0, 0xf0, keycode) or (0xe0,
+        //       keycode) for key pressed.
+        //   
+        //       Build the output from the actions decoded; simply build up
+        //       ps2_key.
         //       
     always @( posedge clk or negedge reset_n)
     begin : interpretation_logic__posedge_clk_active_low_reset_n__code

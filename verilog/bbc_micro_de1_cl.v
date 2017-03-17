@@ -129,8 +129,9 @@ module bbc_micro_de1_cl
     wire [63:0]bbc_keyboard__keys_down_cols_0_to_7;
     wire [15:0]bbc_keyboard__keys_down_cols_8_to_9;
     wire led_chain;
-    wire bbc_csr_response__ack;
+    wire bbc_csr_response__acknowledge;
     wire bbc_csr_response__read_data_valid;
+    wire bbc_csr_response__read_data_error;
     wire [31:0]bbc_csr_response__read_data;
     wire csr_request__valid;
     wire csr_request__read_not_write;
@@ -173,8 +174,9 @@ module bbc_micro_de1_cl
         .inputs_status__left_rotary__direction_pin(inputs_status__left_rotary__direction_pin),
         .inputs_status__sr_data(inputs_status__sr_data),
         .csr_response__read_data(bbc_csr_response__read_data),
+        .csr_response__read_data_error(bbc_csr_response__read_data_error),
         .csr_response__read_data_valid(bbc_csr_response__read_data_valid),
-        .csr_response__ack(bbc_csr_response__ack),
+        .csr_response__acknowledge(bbc_csr_response__acknowledge),
         .clock_control__debug(bbc_clock_control__debug),
         .clock_control__reset_cpu(bbc_clock_control__reset_cpu),
         .clock_control__phi(bbc_clock_control__phi),
@@ -226,8 +228,9 @@ module bbc_micro_de1_cl
         .bbc_reset_n(bbc_reset_n),
         .reset_n(reset_n),
         .csr_response__read_data(            bbc_csr_response__read_data),
+        .csr_response__read_data_error(            bbc_csr_response__read_data_error),
         .csr_response__read_data_valid(            bbc_csr_response__read_data_valid),
-        .csr_response__ack(            bbc_csr_response__ack),
+        .csr_response__acknowledge(            bbc_csr_response__acknowledge),
         .video_bus__blue(            bbc_video_bus__blue),
         .video_bus__green(            bbc_video_bus__green),
         .video_bus__red(            bbc_video_bus__red),

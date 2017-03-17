@@ -14,8 +14,14 @@
 //a Module apb_target_timer
     //   
     //   Simple timer with an APB interface.
+    //   This is a monotonically increasing 31-bit timer with three 31-bit comparators.
     //   
-    //   This is a monotonically increasing 31-bit timer with three comparators
+    //   The timers are read/written through the APB interface with timer 0 at
+    //   address 0, timer 1 at address 1, and so on. When a timer is written it
+    //   writes the 31-bit @a comparator value and it clears the @a timer's @a
+    //   equalled bit. When a timer is read it returns the @a comparator value
+    //   (in bits [31;0]), and it returns the @a equalled status in bit [31] -
+    //   while atomically clearing it.
     //   
     //   
 module apb_target_timer
@@ -52,6 +58,7 @@ module apb_target_timer
     input reset_n;
 
     //b Outputs
+        //   One output bit per timer, mirroring the three timer's @a equalled state
     output [2:0]timer_equalled;
         //   APB response
     output [31:0]apb_response__prdata;
@@ -69,9 +76,12 @@ module apb_target_timer
     //b Output nets
 
     //b Internal and output registers
+        //   Three comparators with @a equalled status
     reg [30:0]timers__comparator[2:0];
     reg [2:0]timers__equalled;
+        //   Timer counter value, autoincrementing
     reg [30:0]timer_value;
+        //   Access being performed by APB
     reg [2:0]access;
     reg [2:0]timer_equalled;
 
@@ -83,6 +93,14 @@ module apb_target_timer
     //b Module instances
     //b apb_interface_logic__comb combinatorial process
         //   
+        //       The APB interface is decoded to @a access when @p psel is asserted
+        //       and @p penable is deasserted - this is the first cycle of an APB
+        //       access. This permits the access type to be registered, so that the
+        //       APB @p prdata can be driven from registers, and so that writes
+        //       will occur correctly when @p penable is asserted.
+        //   
+        //       The APB read data @p prdata can then be generated based on @a
+        //       access.
         //       
     always @ ( * )//apb_interface_logic__comb
     begin: apb_interface_logic__comb_code
@@ -129,6 +147,14 @@ module apb_target_timer
 
     //b apb_interface_logic__posedge_clk_active_low_reset_n clock process
         //   
+        //       The APB interface is decoded to @a access when @p psel is asserted
+        //       and @p penable is deasserted - this is the first cycle of an APB
+        //       access. This permits the access type to be registered, so that the
+        //       APB @p prdata can be driven from registers, and so that writes
+        //       will occur correctly when @p penable is asserted.
+        //   
+        //       The APB read data @p prdata can then be generated based on @a
+        //       access.
         //       
     always @( posedge clk or negedge reset_n)
     begin : apb_interface_logic__posedge_clk_active_low_reset_n__code
@@ -176,6 +202,13 @@ module apb_target_timer
 
     //b timer_logic clock process
         //   
+        //       The @a timer_value is incremented on every clock tick.  The three
+        //       @a timers are compared with the @a timer_value, and if they are
+        //       equal they the @a timers' @a equalled bit is set. Id the
+        //       comparator is being read, then the @a equalled bit is cleared -
+        //       with lower priority than the comparison. Finally, the @a timers
+        //       can be written with a @a comparator value, which clears the @a
+        //       equalled bit.
         //       
     always @( posedge clk or negedge reset_n)
     begin : timer_logic__code

@@ -44,8 +44,9 @@ module bbc_micro_with_rams
     host_sram_response__ack,
     host_sram_response__read_data_valid,
     host_sram_response__read_data,
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data
 );
 
@@ -87,15 +88,17 @@ module bbc_micro_with_rams
     output host_sram_response__ack;
     output host_sram_response__read_data_valid;
     output [63:0]host_sram_response__read_data;
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
 
 // output components here
 
     //b Output combinatorials
-    reg csr_response__ack;
+    reg csr_response__acknowledge;
     reg csr_response__read_data_valid;
+    reg csr_response__read_data_error;
     reg [31:0]csr_response__read_data;
 
     //b Output nets
@@ -139,20 +142,25 @@ module bbc_micro_with_rams
     wire floppy_sram_request__read_not_write;
     wire [19:0]floppy_sram_request__address;
     wire [31:0]floppy_sram_request__write_data;
-    wire framebuffer_csr_response__ack;
+    wire framebuffer_csr_response__acknowledge;
     wire framebuffer_csr_response__read_data_valid;
+    wire framebuffer_csr_response__read_data_error;
     wire [31:0]framebuffer_csr_response__read_data;
-    wire floppy_sram_csr_response__ack;
+    wire floppy_sram_csr_response__acknowledge;
     wire floppy_sram_csr_response__read_data_valid;
+    wire floppy_sram_csr_response__read_data_error;
     wire [31:0]floppy_sram_csr_response__read_data;
-    wire keyboard_csr_response__ack;
+    wire keyboard_csr_response__acknowledge;
     wire keyboard_csr_response__read_data_valid;
+    wire keyboard_csr_response__read_data_error;
     wire [31:0]keyboard_csr_response__read_data;
-    wire display_sram_csr_response__ack;
+    wire display_sram_csr_response__acknowledge;
     wire display_sram_csr_response__read_data_valid;
+    wire display_sram_csr_response__read_data_error;
     wire [31:0]display_sram_csr_response__read_data;
-    wire clocking_csr_response__ack;
+    wire clocking_csr_response__acknowledge;
     wire clocking_csr_response__read_data_valid;
+    wire clocking_csr_response__read_data_error;
     wire [31:0]clocking_csr_response__read_data;
     wire clock_control__enable_cpu;
     wire clock_control__will_enable_2MHz_video;
@@ -215,8 +223,9 @@ module bbc_micro_with_rams
         .clock_status__cpu_1MHz_access(clock_status__cpu_1MHz_access),
         .reset_n(reset_n),
         .csr_response__read_data(            clocking_csr_response__read_data),
+        .csr_response__read_data_error(            clocking_csr_response__read_data_error),
         .csr_response__read_data_valid(            clocking_csr_response__read_data_valid),
-        .csr_response__ack(            clocking_csr_response__ack),
+        .csr_response__acknowledge(            clocking_csr_response__acknowledge),
         .clock_control__debug(            clock_control__debug),
         .clock_control__reset_cpu(            clock_control__reset_cpu),
         .clock_control__phi(            clock_control__phi),
@@ -303,8 +312,9 @@ module bbc_micro_with_rams
         .display__clock_enable(display__clock_enable),
         .reset_n(reset_n),
         .csr_response__read_data(            display_sram_csr_response__read_data),
+        .csr_response__read_data_error(            display_sram_csr_response__read_data_error),
         .csr_response__read_data_valid(            display_sram_csr_response__read_data_valid),
-        .csr_response__ack(            display_sram_csr_response__ack),
+        .csr_response__acknowledge(            display_sram_csr_response__acknowledge),
         .sram_write__address(            display_sram_write__address),
         .sram_write__data(            display_sram_write__data),
         .sram_write__enable(            display_sram_write__enable)         );
@@ -319,8 +329,9 @@ module bbc_micro_with_rams
         .keyboard_reset_n(1'h1),
         .reset_n(reset_n),
         .csr_response__read_data(            keyboard_csr_response__read_data),
+        .csr_response__read_data_error(            keyboard_csr_response__read_data_error),
         .csr_response__read_data_valid(            keyboard_csr_response__read_data_valid),
-        .csr_response__ack(            keyboard_csr_response__ack),
+        .csr_response__acknowledge(            keyboard_csr_response__acknowledge),
         .keyboard__keys_down_cols_8_to_9(            keyboard__keys_down_cols_8_to_9),
         .keyboard__keys_down_cols_0_to_7(            keyboard__keys_down_cols_0_to_7),
         .keyboard__reset_pressed(            keyboard__reset_pressed)         );
@@ -351,8 +362,9 @@ module bbc_micro_with_rams
         .floppy_op__step_out(floppy_op__step_out),
         .reset_n(reset_n),
         .csr_response__read_data(            floppy_sram_csr_response__read_data),
+        .csr_response__read_data_error(            floppy_sram_csr_response__read_data_error),
         .csr_response__read_data_valid(            floppy_sram_csr_response__read_data_valid),
-        .csr_response__ack(            floppy_sram_csr_response__ack),
+        .csr_response__acknowledge(            floppy_sram_csr_response__acknowledge),
         .sram_request__write_data(            floppy_sram_request__write_data),
         .sram_request__address(            floppy_sram_request__address),
         .sram_request__read_not_write(            floppy_sram_request__read_not_write),
@@ -428,8 +440,9 @@ module bbc_micro_with_rams
         .display_sram_write__enable(display_sram_write__enable),
         .reset_n(reset_n),
         .csr_response__read_data(            framebuffer_csr_response__read_data),
+        .csr_response__read_data_error(            framebuffer_csr_response__read_data_error),
         .csr_response__read_data_valid(            framebuffer_csr_response__read_data_valid),
-        .csr_response__ack(            framebuffer_csr_response__ack),
+        .csr_response__acknowledge(            framebuffer_csr_response__acknowledge),
         .video_bus__blue(            video_bus__blue),
         .video_bus__green(            video_bus__green),
         .video_bus__red(            video_bus__red),
@@ -441,26 +454,32 @@ module bbc_micro_with_rams
         //       
     always @ ( * )//stuff
     begin: stuff__comb_code
-    reg csr_response__ack__var;
+    reg csr_response__acknowledge__var;
     reg csr_response__read_data_valid__var;
+    reg csr_response__read_data_error__var;
     reg [31:0]csr_response__read_data__var;
-        csr_response__ack__var = floppy_sram_csr_response__ack;
+        csr_response__acknowledge__var = floppy_sram_csr_response__acknowledge;
         csr_response__read_data_valid__var = floppy_sram_csr_response__read_data_valid;
+        csr_response__read_data_error__var = floppy_sram_csr_response__read_data_error;
         csr_response__read_data__var = floppy_sram_csr_response__read_data;
-        csr_response__ack__var = csr_response__ack__var | display_sram_csr_response__ack;
+        csr_response__acknowledge__var = csr_response__acknowledge__var | display_sram_csr_response__acknowledge;
         csr_response__read_data_valid__var = csr_response__read_data_valid__var | display_sram_csr_response__read_data_valid;
+        csr_response__read_data_error__var = csr_response__read_data_error__var | display_sram_csr_response__read_data_error;
         csr_response__read_data__var = csr_response__read_data__var | display_sram_csr_response__read_data;
-        csr_response__ack__var = csr_response__ack__var | clocking_csr_response__ack;
+        csr_response__acknowledge__var = csr_response__acknowledge__var | clocking_csr_response__acknowledge;
         csr_response__read_data_valid__var = csr_response__read_data_valid__var | clocking_csr_response__read_data_valid;
+        csr_response__read_data_error__var = csr_response__read_data_error__var | clocking_csr_response__read_data_error;
         csr_response__read_data__var = csr_response__read_data__var | clocking_csr_response__read_data;
-        csr_response__ack__var = csr_response__ack__var | keyboard_csr_response__ack;
+        csr_response__acknowledge__var = csr_response__acknowledge__var | keyboard_csr_response__acknowledge;
         csr_response__read_data_valid__var = csr_response__read_data_valid__var | keyboard_csr_response__read_data_valid;
+        csr_response__read_data_error__var = csr_response__read_data_error__var | keyboard_csr_response__read_data_error;
         csr_response__read_data__var = csr_response__read_data__var | keyboard_csr_response__read_data;
         enable_clk_2MHz_video = clock_control__enable_2MHz_video;
         enable_cpu_clk = clock_control__enable_cpu;
         bbc_reset_n = (reset_n & !(clock_control__reset_cpu!=1'h0));
-        csr_response__ack = csr_response__ack__var;
+        csr_response__acknowledge = csr_response__acknowledge__var;
         csr_response__read_data_valid = csr_response__read_data_valid__var;
+        csr_response__read_data_error = csr_response__read_data_error__var;
         csr_response__read_data = csr_response__read_data__var;
     end //always
 

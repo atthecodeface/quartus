@@ -16,19 +16,30 @@
     //   The documentation of the CSR interface itself is in other files (at
     //   this time, csr_target_csr.cdl).
     //   
-    //   This module drives a CSR target interface in response to an incoming
-    //   APB interface.
+    //   This module drives a CSR interface in response to an incoming APB
+    //   interface; it is an APB target presenting a CSR master interface.  Its
+    //   purpose is to permit an extension of an APB bus through a CSR target
+    //   pipelined chain, hence providing for a timing-friendly CSR interface
+    //   in an FPGA or ASIC.
     //   
-    //   It therefore permits an extension of an APB bus through a CSR target
-    //   pipelined chain.
+    //   The APB has a 32-bit @p paddr field, which is presented as 16 bits of
+    //   CSR select and 16 bits of CSR address on the CSR interface. There is
+    //   no timeout in this module on the CSR interface, so accesses to CSRs
+    //   that have no responder on the bus will hang the module.
+    //   
+    //   It is therefore wise to add a CSR target that detects very long
+    //   transactions, and which responds by acknowledging them, to the CSR
+    //   chain.
+    //   
     //   
 module csr_master_apb
 (
     clk,
     clk__enable,
 
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data,
     apb_request__paddr,
     apb_request__penable,
@@ -48,14 +59,15 @@ module csr_master_apb
 );
 
     //b Clocks
-        //   Clock for the CSR interface; a superset of all targets clock
+        //   Clock for the APB and CSR interface; must be a superset of all targets clock
     input clk;
     input clk__enable;
 
     //b Inputs
         //   Pipelined csr request interface response
-    input csr_response__ack;
+    input csr_response__acknowledge;
     input csr_response__read_data_valid;
+    input csr_response__read_data_error;
     input [31:0]csr_response__read_data;
         //   APB request from master
     input [31:0]apb_request__paddr;
@@ -63,6 +75,7 @@ module csr_master_apb
     input apb_request__psel;
     input apb_request__pwrite;
     input [31:0]apb_request__pwdata;
+        //   Active low reset
     input reset_n;
 
     //b Outputs
@@ -84,7 +97,9 @@ module csr_master_apb
     //b Output nets
 
     //b Internal and output registers
+        //   Asserted if a CSR request is in progress
     reg csr_request_in_progress;
+        //   State of the APB interface
     reg [2:0]apb_state__fsm_state;
     reg csr_request__valid;
     reg csr_request__read_not_write;
@@ -96,6 +111,7 @@ module csr_master_apb
     reg apb_response__perr;
 
     //b Internal combinatorials
+        //   Decode of APB state and request to determine next action
     reg [2:0]apb_action;
 
     //b Internal nets
@@ -105,13 +121,24 @@ module csr_master_apb
     //b apb_target_logic__comb combinatorial process
         //   
         //       The APB target interface accepts an incoming request, holding it
-        //       with 'pready' low until the CSR request can start (i.e. until
-        //       csr_request_in_progress is clear).
+        //       with @p pready low until the CSR request can start (i.e. until
+        //       csr_request_in_progress is clear). It does this by the FSM staying
+        //       in the state, waiting for previous CSR request.
         //   
-        //       Then a write transaction is taken and pready asserts.
+        //       When an APB request can be taken, the APB will have either an
+        //       action to start a CSR write or to start a CSR read. These will
+        //       kick the state machines on appropriately, and drive the CSR
+        //       request out with the required data.
+        //   
+        //       A write transaction completes at this point, asserting @p
+        //       pready. If another APB transaction comes in before the CSR
+        //       interface completes the current write (which occurs when the CSR
+        //       @a acknowledge goes high and then low), then that transaction will be
+        //       waited.
         //   
         //       A read transaction has to wait for read_data_valid from the
-        //       target.
+        //       target; hence it waits for the acknowledge, and the read_data_valid, and
+        //       then presents @p prdata and @p pready high.
         //       
     always @ ( * )//apb_target_logic__comb
     begin: apb_target_logic__comb_code
@@ -169,13 +196,24 @@ module csr_master_apb
     //b apb_target_logic__posedge_clk_active_low_reset_n clock process
         //   
         //       The APB target interface accepts an incoming request, holding it
-        //       with 'pready' low until the CSR request can start (i.e. until
-        //       csr_request_in_progress is clear).
+        //       with @p pready low until the CSR request can start (i.e. until
+        //       csr_request_in_progress is clear). It does this by the FSM staying
+        //       in the state, waiting for previous CSR request.
         //   
-        //       Then a write transaction is taken and pready asserts.
+        //       When an APB request can be taken, the APB will have either an
+        //       action to start a CSR write or to start a CSR read. These will
+        //       kick the state machines on appropriately, and drive the CSR
+        //       request out with the required data.
+        //   
+        //       A write transaction completes at this point, asserting @p
+        //       pready. If another APB transaction comes in before the CSR
+        //       interface completes the current write (which occurs when the CSR
+        //       @a acknowledge goes high and then low), then that transaction will be
+        //       waited.
         //   
         //       A read transaction has to wait for read_data_valid from the
-        //       target.
+        //       target; hence it waits for the acknowledge, and the read_data_valid, and
+        //       then presents @p prdata and @p pready high.
         //       
     always @( posedge clk or negedge reset_n)
     begin : apb_target_logic__posedge_clk_active_low_reset_n__code
@@ -196,7 +234,7 @@ module csr_master_apb
         else if (clk__enable)
         begin
             apb_response__perr <= 1'h0;
-            if (((csr_response__ack!=1'h0)&&(csr_request__valid!=1'h0)))
+            if (((csr_response__acknowledge!=1'h0)&&(csr_request__valid!=1'h0)))
             begin
                 csr_request__valid <= 1'h0;
             end //if
@@ -212,7 +250,7 @@ module csr_master_apb
                 else
                 
                 begin
-                    if ((!(csr_request__valid!=1'h0)&&!(csr_response__ack!=1'h0)))
+                    if ((!(csr_request__valid!=1'h0)&&!(csr_response__acknowledge!=1'h0)))
                     begin
                         csr_request_in_progress <= 1'h0;
                     end //if
@@ -254,6 +292,7 @@ module csr_master_apb
                 begin
                 apb_response__pready <= 1'h1;
                 apb_response__prdata <= csr_response__read_data;
+                apb_response__perr <= csr_response__read_data_error;
                 apb_state__fsm_state <= 3'h4;
                 end
             3'h6: // req 1

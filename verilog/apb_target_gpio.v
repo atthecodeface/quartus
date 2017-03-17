@@ -15,10 +15,40 @@
     //   
     //   Simple APB interface to a GPIO system.
     //   
-    //   16 outputs, each with separate enables which reset to off
+    //   The module has 16 outputs, each with separate enables which reset to
+    //   off; it also has 16 inputs, each of which is synced and then edge
+    //   detected (or other configured event).
     //   
-    //   16 inputs, each of which is synced and then edge detected (or other configured event).
-    //   We do not support atomic read-and-clear of events; so race conditions exist, but this is meant for low speed I/O.
+    //   This module has four APB-addressable registers:
+    //   + OutputControl (0):
+    //   
+    //     Each output (16 of them) has 2 bits; bit 0 is used for GPIO
+    //     output 0 @a value, and bit 1 is used for its @a enable. Bits 2 and 3
+    //     are used for GPIO output 1, and so on.
+    //        
+    //   + InputStatus (1):
+    //   
+    //     This register contains the input pin values and the event status
+    //     for the 16 GPIO inputs. The bottom 16 bits contain the input pin
+    //     @a value for each of the 16 inputs; the top 16 bits contain the
+    //     @a event status.
+    //   
+    //   + InputReg0 (2):
+    //   
+    //     On reads, this register contains the input pin event types for input
+    //     pins - see the @a t_gpio_input_type for the decode; bits [3;0] are
+    //     used for GPIO 0, [3;4] for GPIO1, and so on up to [3;28] for GPIO7.
+    //     On writes, this register writes a *single* GPIO input control:
+    //     bits[4;0] contain the GPIO input to control; and bits [3;12] contain
+    //     the event type - which is only written if bit[8] is set; and if
+    //     bit[9] then the input event is cleared.
+    //   
+    //   + InputReg1 (3):
+    //   
+    //     This register contains the input pin event types for the top 8 GPIO
+    //     pins, in a manner identical to InputReg0.
+    //        
+    //   
     //   
 module apb_target_gpio
 (
@@ -47,6 +77,7 @@ module apb_target_gpio
     input clk__enable;
 
     //b Inputs
+        //   GPIO input pin connections
     input [15:0]gpio_input;
         //   APB request
     input [31:0]apb_request__paddr;
@@ -58,8 +89,11 @@ module apb_target_gpio
     input reset_n;
 
     //b Outputs
+        //   Driven high when at least one GPIO input event has occurred, for use as an interrupt to a CPU
     output gpio_input_event;
+        //   GPIO output enables
     output [15:0]gpio_output_enable;
+        //   GPIO output values, if @p gpio_output_enable is set
     output [15:0]gpio_output;
         //   APB response
     output [31:0]apb_response__prdata;
@@ -69,8 +103,11 @@ module apb_target_gpio
 // output components here
 
     //b Output combinatorials
+        //   Driven high when at least one GPIO input event has occurred, for use as an interrupt to a CPU
     reg gpio_input_event;
+        //   GPIO output enables
     reg [15:0]gpio_output_enable;
+        //   GPIO output values, if @p gpio_output_enable is set
     reg [15:0]gpio_output;
         //   APB response
     reg [31:0]apb_response__prdata;
@@ -80,13 +117,16 @@ module apb_target_gpio
     //b Output nets
 
     //b Internal and output registers
+        //   GPIO output controls
     reg [15:0]outputs__value;
     reg [15:0]outputs__enable;
+        //   GPIO input configuration and state
     reg [2:0]inputs__input_type[15:0];
     reg [15:0]inputs__sync_value;
     reg [15:0]inputs__last_sync_value;
     reg [15:0]inputs__value;
     reg [15:0]inputs__event;
+        //   Access being performed by APB
     reg [2:0]access;
 
     //b Internal combinatorials
@@ -97,6 +137,14 @@ module apb_target_gpio
     //b Module instances
     //b apb_interface_logic__comb combinatorial process
         //   
+        //       The APB interface is decoded to @a access when @p psel is asserted
+        //       and @p penable is deasserted - this is the first cycle of an APB
+        //       access. This permits the access type to be registered, so that the
+        //       APB @p prdata can be driven from registers, and so that writes
+        //       will occur correctly when @p penable is asserted.
+        //   
+        //       The APB read data @p prdata can then be generated based on @a
+        //       access.
         //       
     always @ ( * )//apb_interface_logic__comb
     begin: apb_interface_logic__comb_code
@@ -216,6 +264,14 @@ module apb_target_gpio
 
     //b apb_interface_logic__posedge_clk_active_low_reset_n clock process
         //   
+        //       The APB interface is decoded to @a access when @p psel is asserted
+        //       and @p penable is deasserted - this is the first cycle of an APB
+        //       access. This permits the access type to be registered, so that the
+        //       APB @p prdata can be driven from registers, and so that writes
+        //       will occur correctly when @p penable is asserted.
+        //   
+        //       The APB read data @p prdata can then be generated based on @a
+        //       access.
         //       
     always @( posedge clk or negedge reset_n)
     begin : apb_interface_logic__posedge_clk_active_low_reset_n__code
@@ -263,7 +319,7 @@ module apb_target_gpio
 
     //b output_logic__comb combinatorial process
         //   
-        //       GPIO outputs are simply driven outputs and output enables
+        //       GPIO outputs are simply driven outputs and output enables.
         //       
     always @ ( * )//output_logic__comb
     begin: output_logic__comb_code
@@ -307,7 +363,7 @@ module apb_target_gpio
 
     //b output_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       GPIO outputs are simply driven outputs and output enables
+        //       GPIO outputs are simply driven outputs and output enables.
         //       
     always @( posedge clk or negedge reset_n)
     begin : output_logic__posedge_clk_active_low_reset_n__code
@@ -433,7 +489,18 @@ module apb_target_gpio
 
     //b input_logic__comb combinatorial process
         //   
-        //       GPIO inputs; allow writing one input at a time
+        //       GPIO inputs; allow writing one input at a time, using @p pwdata[4;0] to specify which input is to be written.
+        //   
+        //       Bits [3;12] will be written as the @p input_type, but only if bit[8] is set.
+        //       The input event status may be cleared (separately, or at the same time) by writing with bit[9] set.
+        //   
+        //       The input pin state is synchronized with two flops. The
+        //       sychronized value (in @a last_sync_value) is copied to the GPIO
+        //       input value only if the APB access is not being used - this
+        //       permits event detection to be performed with atomic-read-and-clear
+        //       (if implemented). The input event can then be detected straight
+        //       from the input value, or from a difference between the input value
+        //       and the newly synchronized value.
         //       
     always @ ( * )//input_logic__comb
     begin: input_logic__comb_code
@@ -508,7 +575,18 @@ module apb_target_gpio
 
     //b input_logic__posedge_clk_active_low_reset_n clock process
         //   
-        //       GPIO inputs; allow writing one input at a time
+        //       GPIO inputs; allow writing one input at a time, using @p pwdata[4;0] to specify which input is to be written.
+        //   
+        //       Bits [3;12] will be written as the @p input_type, but only if bit[8] is set.
+        //       The input event status may be cleared (separately, or at the same time) by writing with bit[9] set.
+        //   
+        //       The input pin state is synchronized with two flops. The
+        //       sychronized value (in @a last_sync_value) is copied to the GPIO
+        //       input value only if the APB access is not being used - this
+        //       permits event detection to be performed with atomic-read-and-clear
+        //       (if implemented). The input event can then be detected straight
+        //       from the input value, or from a difference between the input value
+        //       and the newly synchronized value.
         //       
     always @( posedge clk or negedge reset_n)
     begin : input_logic__posedge_clk_active_low_reset_n__code
@@ -603,7 +681,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[0] <= apb_request__pwdata[18:16];
+                        inputs__input_type[0] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -617,7 +695,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[1] <= apb_request__pwdata[18:16];
+                        inputs__input_type[1] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -631,7 +709,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[2] <= apb_request__pwdata[18:16];
+                        inputs__input_type[2] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -645,7 +723,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[3] <= apb_request__pwdata[18:16];
+                        inputs__input_type[3] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -659,7 +737,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[4] <= apb_request__pwdata[18:16];
+                        inputs__input_type[4] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -673,7 +751,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[5] <= apb_request__pwdata[18:16];
+                        inputs__input_type[5] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -687,7 +765,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[6] <= apb_request__pwdata[18:16];
+                        inputs__input_type[6] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -701,7 +779,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[7] <= apb_request__pwdata[18:16];
+                        inputs__input_type[7] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -715,7 +793,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[8] <= apb_request__pwdata[18:16];
+                        inputs__input_type[8] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -729,7 +807,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[9] <= apb_request__pwdata[18:16];
+                        inputs__input_type[9] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -743,7 +821,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[10] <= apb_request__pwdata[18:16];
+                        inputs__input_type[10] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -757,7 +835,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[11] <= apb_request__pwdata[18:16];
+                        inputs__input_type[11] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -771,7 +849,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[12] <= apb_request__pwdata[18:16];
+                        inputs__input_type[12] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -785,7 +863,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[13] <= apb_request__pwdata[18:16];
+                        inputs__input_type[13] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -799,7 +877,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[14] <= apb_request__pwdata[18:16];
+                        inputs__input_type[14] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin
@@ -813,7 +891,7 @@ module apb_target_gpio
                 begin
                     if ((apb_request__pwdata[8]!=1'h0))
                     begin
-                        inputs__input_type[15] <= apb_request__pwdata[18:16];
+                        inputs__input_type[15] <= apb_request__pwdata[14:12];
                     end //if
                     if ((apb_request__pwdata[9]!=1'h0))
                     begin

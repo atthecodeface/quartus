@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys
+import sys, re
 mem_size  = int(sys.argv[1])
 mem_width = int(sys.argv[2])
 mem_format = "%x:%0"+str(((mem_width+3)/4))+"x;"
@@ -9,6 +9,8 @@ mem_contents = [0]*65536
 mif = open(mif_filename)
 for l in mif:
     l.strip()
+    m = re.match(r"(.*)#(.*)",l)
+    if m is not None: l=m.group(1)
     for k in l.split():
         if k[-1]==':':
             address = int(k[:-1],16)

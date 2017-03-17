@@ -74,8 +74,9 @@ module bbc_display_sram
     display__blue,
     reset_n,
 
-    csr_response__ack,
+    csr_response__acknowledge,
     csr_response__read_data_valid,
+    csr_response__read_data_error,
     csr_response__read_data,
     sram_write__enable,
     sram_write__data,
@@ -103,8 +104,9 @@ module bbc_display_sram
     input reset_n;
 
     //b Outputs
-    output csr_response__ack;
+    output csr_response__acknowledge;
     output csr_response__read_data_valid;
+    output csr_response__read_data_error;
     output [31:0]csr_response__read_data;
     output sram_write__enable;
     output [47:0]sram_write__data;
@@ -118,8 +120,9 @@ module bbc_display_sram
     reg [15:0]sram_write__address;
 
     //b Output nets
-    wire csr_response__ack;
+    wire csr_response__acknowledge;
     wire csr_response__read_data_valid;
+    wire csr_response__read_data_error;
     wire [31:0]csr_response__read_data;
 
     //b Internal and output registers
@@ -205,8 +208,9 @@ module bbc_display_sram
         .csr_access__read_not_write(            csr_access__read_not_write),
         .csr_access__valid(            csr_access__valid),
         .csr_response__read_data(            csr_response__read_data),
+        .csr_response__read_data_error(            csr_response__read_data_error),
         .csr_response__read_data_valid(            csr_response__read_data_valid),
-        .csr_response__ack(            csr_response__ack)         );
+        .csr_response__acknowledge(            csr_response__acknowledge)         );
     //b display_input_state_control_logic__comb combinatorial process
         //   
         //       Manage display input signals to generate screen coordinates and pixel validity
@@ -908,9 +912,9 @@ module bbc_display_sram
             csrs__sram_interlace_in_same_buffer <= 1'h0;
             csrs__sram_interlace_in_same_buffer <= 1'h0;
             csrs__h_back_porch <= 11'h0;
-            csrs__h_back_porch <= 11'h6e8;
+            csrs__h_back_porch <= 11'h756;
             csrs__v_back_porch <= 11'h0;
-            csrs__v_back_porch <= 11'h7ba;
+            csrs__v_back_porch <= 11'h7bc;
         end
         else if (clk__enable)
         begin

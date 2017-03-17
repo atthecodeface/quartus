@@ -11,7 +11,7 @@
 // Verilog option use_always_at_star 1
 // Verilog option clocks_must_have_enables 1
 
-//a Module teletext_dprintf_mux
+//a Module dprintf_4_mux
     //   
     //   Generic multiplexer for two identical requesters (with a valid signal
     //   each), to arbitrate for an output request, with a response with an
@@ -32,7 +32,7 @@
     //   If its output is valid and is not acknowledged, then it will not
     //   consumer another request.
     //   
-module teletext_dprintf_mux
+module dprintf_4_mux
 (
     clk,
     clk__enable,
@@ -42,16 +42,22 @@ module teletext_dprintf_mux
     req_b__address,
     req_b__data_0,
     req_b__data_1,
+    req_b__data_2,
+    req_b__data_3,
     req_a__valid,
     req_a__address,
     req_a__data_0,
     req_a__data_1,
+    req_a__data_2,
+    req_a__data_3,
     reset_n,
 
     req__valid,
     req__address,
     req__data_0,
     req__data_1,
+    req__data_2,
+    req__data_3,
     ack_b,
     ack_a
 );
@@ -69,11 +75,15 @@ module teletext_dprintf_mux
     input [15:0]req_b__address;
     input [63:0]req_b__data_0;
     input [63:0]req_b__data_1;
+    input [63:0]req_b__data_2;
+    input [63:0]req_b__data_3;
         //   Request from upstream 'A' port, which must have a @p valid bit
     input req_a__valid;
     input [15:0]req_a__address;
     input [63:0]req_a__data_0;
     input [63:0]req_a__data_1;
+    input [63:0]req_a__data_2;
+    input [63:0]req_a__data_3;
         //   Active low reset
     input reset_n;
 
@@ -83,6 +93,8 @@ module teletext_dprintf_mux
     output [15:0]req__address;
     output [63:0]req__data_0;
     output [63:0]req__data_1;
+    output [63:0]req__data_2;
+    output [63:0]req__data_3;
         //   Acknowledge to upstream 'B' port
     output ack_b;
         //   Acknowledge to upstream 'A' port
@@ -101,6 +113,8 @@ module teletext_dprintf_mux
     reg [15:0]req__address;
     reg [63:0]req__data_0;
     reg [63:0]req__data_1;
+    reg [63:0]req__data_2;
+    reg [63:0]req__data_3;
     reg ack_b;
     reg ack_a;
 
@@ -200,6 +214,8 @@ module teletext_dprintf_mux
             req__address <= 16'h0;
             req__data_0 <= 64'h0;
             req__data_1 <= 64'h0;
+            req__data_2 <= 64'h0;
+            req__data_3 <= 64'h0;
         end
         else if (clk__enable)
         begin
@@ -215,6 +231,8 @@ module teletext_dprintf_mux
                 req__address <= req_a__address;
                 req__data_0 <= req_a__data_0;
                 req__data_1 <= req_a__data_1;
+                req__data_2 <= req_a__data_2;
+                req__data_3 <= req_a__data_3;
             end //if
             if ((arbiter_combs__take_req_b!=1'h0))
             begin
@@ -222,8 +240,10 @@ module teletext_dprintf_mux
                 req__address <= req_b__address;
                 req__data_0 <= req_b__data_0;
                 req__data_1 <= req_b__data_1;
+                req__data_2 <= req_b__data_2;
+                req__data_3 <= req_b__data_3;
             end //if
         end //if
     end //always
 
-endmodule // teletext_dprintf_mux
+endmodule // dprintf_4_mux
