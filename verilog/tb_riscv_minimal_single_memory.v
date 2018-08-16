@@ -46,6 +46,12 @@ module tb_riscv_minimal_single_memory
     //b Internal combinatorials
     reg [2:0]riscv_clock_action;
     reg riscv_clk_enable;
+    reg riscv_config__i32c;
+    reg riscv_config__e32;
+    reg riscv_config__i32m;
+    reg riscv_config__i32m_fuse;
+    reg riscv_config__coproc_disable;
+    reg riscv_config__unaligned_mem;
     reg [31:0]mem_access_req__address;
     reg [3:0]mem_access_req__byte_enable;
     reg mem_access_req__write_enable;
@@ -57,6 +63,16 @@ module tb_riscv_minimal_single_memory
     reg [31:0]dmem_access_resp__read_data;
 
     //b Internal nets
+    wire trace__instr_valid;
+    wire [31:0]trace__instr_pc;
+    wire [31:0]trace__instr_data;
+    wire trace__rfw_retire;
+    wire trace__rfw_data_valid;
+    wire [4:0]trace__rfw_rd;
+    wire [31:0]trace__rfw_data;
+    wire trace__branch_taken;
+    wire [31:0]trace__branch_target;
+    wire trace__trap;
     wire [31:0]mem_read_data;
     wire [31:0]imem_access_req__address;
     wire [3:0]imem_access_req__byte_enable;
@@ -88,11 +104,27 @@ module tb_riscv_minimal_single_memory
     riscv_minimal dut(
         .clk(clk),
         .clk__enable(riscv_clk__enable),
+        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
+        .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
+        .riscv_config__i32m(riscv_config__i32m),
+        .riscv_config__e32(riscv_config__e32),
+        .riscv_config__i32c(riscv_config__i32c),
         .imem_access_resp__read_data(imem_access_resp__read_data),
         .imem_access_resp__wait(imem_access_resp__wait),
         .dmem_access_resp__read_data(dmem_access_resp__read_data),
         .dmem_access_resp__wait(dmem_access_resp__wait),
         .reset_n(reset_n),
+        .trace__trap(            trace__trap),
+        .trace__branch_target(            trace__branch_target),
+        .trace__branch_taken(            trace__branch_taken),
+        .trace__rfw_data(            trace__rfw_data),
+        .trace__rfw_rd(            trace__rfw_rd),
+        .trace__rfw_data_valid(            trace__rfw_data_valid),
+        .trace__rfw_retire(            trace__rfw_retire),
+        .trace__instr_data(            trace__instr_data),
+        .trace__instr_pc(            trace__instr_pc),
+        .trace__instr_valid(            trace__instr_valid),
         .imem_access_req__write_data(            imem_access_req__write_data),
         .imem_access_req__read_enable(            imem_access_req__read_enable),
         .imem_access_req__write_enable(            imem_access_req__write_enable),
@@ -103,6 +135,20 @@ module tb_riscv_minimal_single_memory
         .dmem_access_req__write_enable(            dmem_access_req__write_enable),
         .dmem_access_req__byte_enable(            dmem_access_req__byte_enable),
         .dmem_access_req__address(            dmem_access_req__address)         );
+    riscv_i32_trace trace(
+        .clk(clk),
+        .clk__enable(riscv_clk__enable),
+        .trace__trap(trace__trap),
+        .trace__branch_target(trace__branch_target),
+        .trace__branch_taken(trace__branch_taken),
+        .trace__rfw_data(trace__rfw_data),
+        .trace__rfw_rd(trace__rfw_rd),
+        .trace__rfw_data_valid(trace__rfw_data_valid),
+        .trace__rfw_retire(trace__rfw_retire),
+        .trace__instr_data(trace__instr_data),
+        .trace__instr_pc(trace__instr_pc),
+        .trace__instr_valid(trace__instr_valid),
+        .reset_n(reset_n)         );
     //b clock_control__comb combinatorial process
         //   
         //       The clock control for a single SRAM implementation could be
@@ -388,6 +434,26 @@ module tb_riscv_minimal_single_memory
                 read_data_reg <= mem_read_data;
             end //if
         end //if
+    end //always
+
+    //b riscv_instance combinatorial process
+    always @ ( * )//riscv_instance
+    begin: riscv_instance__comb_code
+    reg riscv_config__i32c__var;
+    reg riscv_config__e32__var;
+    reg riscv_config__i32m__var;
+        riscv_config__i32c__var = 1'h0;
+        riscv_config__e32__var = 1'h0;
+        riscv_config__i32m__var = 1'h0;
+        riscv_config__i32m_fuse = 1'h0;
+        riscv_config__coproc_disable = 1'h0;
+        riscv_config__unaligned_mem = 1'h0;
+        riscv_config__i32c__var = 1'h0;
+        riscv_config__e32__var = 1'h0;
+        riscv_config__i32m__var = 1'h0;
+        riscv_config__i32c = riscv_config__i32c__var;
+        riscv_config__e32 = riscv_config__e32__var;
+        riscv_config__i32m = riscv_config__i32m__var;
     end //always
 
 endmodule // tb_riscv_minimal_single_memory

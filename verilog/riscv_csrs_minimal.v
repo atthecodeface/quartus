@@ -30,6 +30,8 @@ module riscv_csrs_minimal
     csr_controls__timer_value,
     csr_controls__trap,
     csr_controls__trap_cause,
+    csr_controls__trap_pc,
+    csr_controls__trap_value,
     csr_write_data,
     csr_access__access,
     csr_access__address,
@@ -41,6 +43,7 @@ module riscv_csrs_minimal
     csrs__mscratch,
     csrs__mepc,
     csrs__mcause,
+    csrs__mtval,
     csrs__mtvec,
     csr_data__read_data,
     csr_data__illegal_access
@@ -60,6 +63,8 @@ module riscv_csrs_minimal
     input [63:0]csr_controls__timer_value;
     input csr_controls__trap;
     input [3:0]csr_controls__trap_cause;
+    input [31:0]csr_controls__trap_pc;
+    input [31:0]csr_controls__trap_value;
         //   Write data for the CSR access, later in the cycle than @csr_access possibly
     input [31:0]csr_write_data;
         //   RISC-V CSR access, combinatorially decoded
@@ -76,6 +81,7 @@ module riscv_csrs_minimal
     output [31:0]csrs__mscratch;
     output [31:0]csrs__mepc;
     output [31:0]csrs__mcause;
+    output [31:0]csrs__mtval;
     output [31:0]csrs__mtvec;
         //   CSR respone (including read data), from the current @a csr_access
     output [31:0]csr_data__read_data;
@@ -97,6 +103,7 @@ module riscv_csrs_minimal
     reg [31:0]csrs__mscratch;
     reg [31:0]csrs__mepc;
     reg [31:0]csrs__mcause;
+    reg [31:0]csrs__mtval;
     reg [31:0]csrs__mtvec;
 
     //b Internal combinatorials
@@ -211,6 +218,16 @@ module riscv_csrs_minimal
             csr_data__illegal_access__var = 1'h0;
             csr_data__read_data__var = csrs__mepc;
             end
+        12'h342: // req 1
+            begin
+            csr_data__illegal_access__var = 1'h0;
+            csr_data__read_data__var = csrs__mcause;
+            end
+        12'h343: // req 1
+            begin
+            csr_data__illegal_access__var = 1'h0;
+            csr_data__read_data__var = csrs__mtval;
+            end
         12'h305: // req 1
             begin
             csr_data__illegal_access__var = 1'h0;
@@ -245,7 +262,11 @@ module riscv_csrs_minimal
         csr_write__enable__var = 1'h0;
         csr_write__data__var = csr_write_data;
         case (csr_access__access) //synopsys parallel_case
-        3'h5: // req 1
+        3'h1: // req 1
+            begin
+            csr_write__enable__var = 1'h1;
+            end
+        3'h3: // req 1
             begin
             csr_write__enable__var = 1'h1;
             end
@@ -288,6 +309,7 @@ module riscv_csrs_minimal
             csrs__instret <= 64'h0;
             csrs__mepc <= 32'h0;
             csrs__mtvec <= 32'h0;
+            csrs__mtval <= 32'h0;
             csrs__mcause <= 32'h0;
             csrs__mscratch <= 32'h0;
         end
@@ -343,9 +365,17 @@ module riscv_csrs_minimal
             begin
                 csrs__mepc <= csr_write__data;
             end //if
+            if ((csr_controls__trap!=1'h0))
+            begin
+                csrs__mepc <= csr_controls__trap_pc;
+            end //if
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h305)))
             begin
                 csrs__mtvec <= csr_write__data;
+            end //if
+            if ((csr_controls__trap!=1'h0))
+            begin
+                csrs__mtval <= csr_controls__trap_value;
             end //if
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h342)))
             begin

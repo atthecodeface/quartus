@@ -11,8 +11,8 @@
 // Verilog option use_always_at_star 1
 // Verilog option clocks_must_have_enables 1
 
-//a Module tb_riscv_minimal
-module tb_riscv_minimal
+//a Module tb_riscv_i32c_minimal
+module tb_riscv_i32c_minimal
 (
     clk,
     clk__enable,
@@ -24,7 +24,7 @@ module tb_riscv_minimal
     //b Clocks
     input clk;
     input clk__enable;
-    wire riscv_clk; // Gated version of clock 'clk' enabled by 'riscv_clk_low'
+    wire riscv_clk; // Gated version of clock 'clk' enabled by 'riscv_clk_cycle_2'
     wire riscv_clk__enable;
 
     //b Inputs
@@ -39,8 +39,11 @@ module tb_riscv_minimal
     //b Output nets
 
     //b Internal and output registers
-    reg riscv_clk_low;
-    reg riscv_clk_high;
+    reg [31:0]last_imem_mem_read_data;
+    reg riscv_clk_cycle_2;
+    reg riscv_clk_cycle_1;
+    reg riscv_clk_cycle_0;
+    reg [1:0]clk_divider;
 
     //b Internal combinatorials
     reg riscv_config__i32c;
@@ -49,8 +52,13 @@ module tb_riscv_minimal
     reg riscv_config__i32m_fuse;
     reg riscv_config__coproc_disable;
     reg riscv_config__unaligned_mem;
-    reg imem_access_resp__wait;
-    reg [31:0]imem_access_resp__read_data;
+    reg rv_imem_access_resp__wait;
+    reg [31:0]rv_imem_access_resp__read_data;
+    reg [31:0]imem_access_req__address;
+    reg [3:0]imem_access_req__byte_enable;
+    reg imem_access_req__write_enable;
+    reg imem_access_req__read_enable;
+    reg [31:0]imem_access_req__write_data;
     reg dmem_access_resp__wait;
     reg [31:0]dmem_access_resp__read_data;
 
@@ -67,11 +75,11 @@ module tb_riscv_minimal
     wire trace__trap;
     wire [31:0]main_mem_read_data;
     wire [31:0]imem_mem_read_data;
-    wire [31:0]imem_access_req__address;
-    wire [3:0]imem_access_req__byte_enable;
-    wire imem_access_req__write_enable;
-    wire imem_access_req__read_enable;
-    wire [31:0]imem_access_req__write_data;
+    wire [31:0]rv_imem_access_req__address;
+    wire [3:0]rv_imem_access_req__byte_enable;
+    wire rv_imem_access_req__write_enable;
+    wire rv_imem_access_req__read_enable;
+    wire [31:0]rv_imem_access_req__write_data;
     wire [31:0]dmem_access_req__address;
     wire [3:0]dmem_access_req__byte_enable;
     wire dmem_access_req__write_enable;
@@ -79,16 +87,16 @@ module tb_riscv_minimal
     wire [31:0]dmem_access_req__write_data;
 
     //b Clock gating module instances
-    assign riscv_clk__enable = (clk__enable && riscv_clk_low);
+    assign riscv_clk__enable = (clk__enable && riscv_clk_cycle_2);
     //b Module instances
     se_sram_srw_16384x32 imem(
         .sram_clock(clk),
         .sram_clock__enable(1'b1),
-        .write_data(imem_access_req__write_data),
+        .write_data(32'h0),
         .address(imem_access_req__address[15:2]),
         .write_enable(1'h1),
-        .read_not_write(imem_access_req__read_enable),
-        .select((((imem_access_req__read_enable!=1'h0)||(imem_access_req__write_enable!=1'h0)) & riscv_clk_high)),
+        .read_not_write(1'h1),
+        .select((imem_access_req__read_enable & ((riscv_clk_cycle_0!=1'h0)||(riscv_clk_cycle_1!=1'h0)))),
         .data_out(            imem_mem_read_data)         );
     se_sram_srw_16384x32_we8 dmem(
         .sram_clock(clk),
@@ -97,7 +105,7 @@ module tb_riscv_minimal
         .address(dmem_access_req__address[15:2]),
         .write_enable(4'hf),
         .read_not_write(dmem_access_req__read_enable),
-        .select((((dmem_access_req__read_enable!=1'h0)||(dmem_access_req__write_enable!=1'h0)) & riscv_clk_high)),
+        .select((((dmem_access_req__read_enable!=1'h0)||(dmem_access_req__write_enable!=1'h0)) & riscv_clk_cycle_1)),
         .data_out(            main_mem_read_data)         );
     se_test_harness th(
         .clk(clk),
@@ -112,8 +120,8 @@ module tb_riscv_minimal
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
         .riscv_config__i32c(riscv_config__i32c),
-        .imem_access_resp__read_data(imem_access_resp__read_data),
-        .imem_access_resp__wait(imem_access_resp__wait),
+        .imem_access_resp__read_data(rv_imem_access_resp__read_data),
+        .imem_access_resp__wait(rv_imem_access_resp__wait),
         .dmem_access_resp__read_data(dmem_access_resp__read_data),
         .dmem_access_resp__wait(dmem_access_resp__wait),
         .reset_n(reset_n),
@@ -127,11 +135,11 @@ module tb_riscv_minimal
         .trace__instr_data(            trace__instr_data),
         .trace__instr_pc(            trace__instr_pc),
         .trace__instr_valid(            trace__instr_valid),
-        .imem_access_req__write_data(            imem_access_req__write_data),
-        .imem_access_req__read_enable(            imem_access_req__read_enable),
-        .imem_access_req__write_enable(            imem_access_req__write_enable),
-        .imem_access_req__byte_enable(            imem_access_req__byte_enable),
-        .imem_access_req__address(            imem_access_req__address),
+        .imem_access_req__write_data(            rv_imem_access_req__write_data),
+        .imem_access_req__read_enable(            rv_imem_access_req__read_enable),
+        .imem_access_req__write_enable(            rv_imem_access_req__write_enable),
+        .imem_access_req__byte_enable(            rv_imem_access_req__byte_enable),
+        .imem_access_req__address(            rv_imem_access_req__address),
         .dmem_access_req__write_data(            dmem_access_req__write_data),
         .dmem_access_req__read_enable(            dmem_access_req__read_enable),
         .dmem_access_req__write_enable(            dmem_access_req__write_enable),
@@ -158,23 +166,88 @@ module tb_riscv_minimal
     begin : clock_divider__code
         if (reset_n==1'b0)
         begin
-            riscv_clk_high <= 1'h0;
-            riscv_clk_low <= 1'h0;
+            riscv_clk_cycle_0 <= 1'h1;
+            riscv_clk_cycle_1 <= 1'h0;
+            riscv_clk_cycle_2 <= 1'h0;
+            clk_divider <= 2'h0;
         end
         else if (clk__enable)
         begin
-            riscv_clk_high <= !(riscv_clk_high!=1'h0);
-            riscv_clk_low <= riscv_clk_high;
+            riscv_clk_cycle_0 <= (clk_divider==2'h2);
+            riscv_clk_cycle_1 <= (clk_divider==2'h0);
+            riscv_clk_cycle_2 <= (clk_divider==2'h1);
+            clk_divider <= (clk_divider+2'h1);
+            if ((riscv_clk_cycle_2!=1'h0))
+            begin
+                clk_divider <= 2'h0;
+            end //if
         end //if
     end //always
 
-    //b srams combinatorial process
-    always @ ( * )//srams
+    //b srams__comb combinatorial process
+    always @ ( * )//srams__comb
     begin: srams__comb_code
-        imem_access_resp__wait = 1'h0;
-        imem_access_resp__read_data = imem_mem_read_data;
+    reg [31:0]rv_imem_access_resp__read_data__var;
+    reg [31:0]imem_access_req__address__var;
+    reg [3:0]imem_access_req__byte_enable__var;
+    reg imem_access_req__write_enable__var;
+    reg imem_access_req__read_enable__var;
+    reg [31:0]imem_access_req__write_data__var;
+        rv_imem_access_resp__wait = 1'h0;
+        rv_imem_access_resp__read_data__var = imem_mem_read_data;
+        if (!(rv_imem_access_req__address[1]!=1'h0))
+        begin
+            imem_access_req__address__var = rv_imem_access_req__address;
+            imem_access_req__byte_enable__var = rv_imem_access_req__byte_enable;
+            imem_access_req__write_enable__var = rv_imem_access_req__write_enable;
+            imem_access_req__read_enable__var = rv_imem_access_req__read_enable;
+            imem_access_req__write_data__var = rv_imem_access_req__write_data;
+            rv_imem_access_resp__read_data__var = imem_mem_read_data;
+        end //if
+        else
+        
+        begin
+            if ((riscv_clk_cycle_0!=1'h0))
+            begin
+                imem_access_req__address__var = rv_imem_access_req__address;
+                imem_access_req__byte_enable__var = rv_imem_access_req__byte_enable;
+                imem_access_req__write_enable__var = rv_imem_access_req__write_enable;
+                imem_access_req__read_enable__var = rv_imem_access_req__read_enable;
+                imem_access_req__write_data__var = rv_imem_access_req__write_data;
+            end //if
+            else
+            
+            begin
+                imem_access_req__address__var = rv_imem_access_req__address;
+                imem_access_req__byte_enable__var = rv_imem_access_req__byte_enable;
+                imem_access_req__write_enable__var = rv_imem_access_req__write_enable;
+                imem_access_req__read_enable__var = rv_imem_access_req__read_enable;
+                imem_access_req__write_data__var = rv_imem_access_req__write_data;
+                imem_access_req__address__var = (rv_imem_access_req__address+32'h4);
+                rv_imem_access_resp__read_data__var = {imem_mem_read_data[15:0],last_imem_mem_read_data[31:16]};
+            end //else
+        end //else
         dmem_access_resp__wait = 1'h0;
         dmem_access_resp__read_data = main_mem_read_data;
+        rv_imem_access_resp__read_data = rv_imem_access_resp__read_data__var;
+        imem_access_req__address = imem_access_req__address__var;
+        imem_access_req__byte_enable = imem_access_req__byte_enable__var;
+        imem_access_req__write_enable = imem_access_req__write_enable__var;
+        imem_access_req__read_enable = imem_access_req__read_enable__var;
+        imem_access_req__write_data = imem_access_req__write_data__var;
+    end //always
+
+    //b srams__posedge_clk_active_low_reset_n clock process
+    always @( posedge clk or negedge reset_n)
+    begin : srams__posedge_clk_active_low_reset_n__code
+        if (reset_n==1'b0)
+        begin
+            last_imem_mem_read_data <= 32'h0;
+        end
+        else if (clk__enable)
+        begin
+            last_imem_mem_read_data <= imem_mem_read_data;
+        end //if
     end //always
 
     //b riscv_instance combinatorial process
@@ -189,7 +262,7 @@ module tb_riscv_minimal
         riscv_config__i32m_fuse = 1'h0;
         riscv_config__coproc_disable = 1'h0;
         riscv_config__unaligned_mem = 1'h0;
-        riscv_config__i32c__var = 1'h0;
+        riscv_config__i32c__var = 1'h1;
         riscv_config__e32__var = 1'h0;
         riscv_config__i32m__var = 1'h0;
         riscv_config__i32c = riscv_config__i32c__var;
@@ -197,4 +270,4 @@ module tb_riscv_minimal
         riscv_config__i32m = riscv_config__i32m__var;
     end //always
 
-endmodule // tb_riscv_minimal
+endmodule // tb_riscv_i32c_minimal

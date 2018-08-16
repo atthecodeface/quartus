@@ -30,6 +30,7 @@ module riscv_i32_alu
     idecode__csr_access__access,
     idecode__csr_access__address,
     idecode__immediate,
+    idecode__immediate_shift,
     idecode__immediate_valid,
     idecode__op,
     idecode__subop,
@@ -37,6 +38,7 @@ module riscv_i32_alu
     idecode__memory_read_unsigned,
     idecode__memory_width,
     idecode__illegal,
+    idecode__is_compressed,
 
     alu_result__result,
     alu_result__arith_result,
@@ -61,6 +63,7 @@ module riscv_i32_alu
     input [2:0]idecode__csr_access__access;
     input [11:0]idecode__csr_access__address;
     input [31:0]idecode__immediate;
+    input [4:0]idecode__immediate_shift;
     input idecode__immediate_valid;
     input [3:0]idecode__op;
     input [3:0]idecode__subop;
@@ -68,6 +71,7 @@ module riscv_i32_alu
     input idecode__memory_read_unsigned;
     input [1:0]idecode__memory_width;
     input idecode__illegal;
+    input idecode__is_compressed;
 
     //b Outputs
     output [31:0]alu_result__result;
@@ -100,11 +104,15 @@ module riscv_i32_alu
     reg [31:0]alu_combs__arith_in_0;
     reg [31:0]alu_combs__arith_in_1;
     reg alu_combs__arith_carry_in;
+    reg alu_combs__carry_in_to_31;
+    reg [31:0]alu_combs__arith_result_32;
     reg [32:0]alu_combs__arith_result;
     reg alu_combs__arith_eq;
     reg alu_combs__arith_unsigned_ge;
     reg alu_combs__arith_signed_ge;
     reg [31:0]alu_combs__pc_plus_4;
+    reg [31:0]alu_combs__pc_plus_2;
+    reg [31:0]alu_combs__pc_plus_inst;
     reg [31:0]alu_combs__pc_plus_imm;
 
     //b Internal nets
@@ -118,8 +126,10 @@ module riscv_i32_alu
     begin: alu_operation__comb_code
     reg [31:0]alu_combs__imm_or_rs2__var;
     reg [63:0]alu_combs__rshift_operand__var;
+    reg [4:0]alu_combs__shift_amount__var;
     reg [31:0]alu_combs__arith_in_1__var;
     reg alu_combs__arith_carry_in__var;
+    reg [32:0]alu_combs__arith_result__var;
     reg alu_result__branch_condition_met__var;
     reg [31:0]alu_result__result__var;
     reg [31:0]alu_result__branch_target__var;
@@ -134,8 +144,12 @@ module riscv_i32_alu
         begin
             alu_combs__rshift_operand__var[63:32] = 32'hffffffff;
         end //if
-        alu_combs__shift_amount = alu_combs__imm_or_rs2__var[4:0];
-        alu_combs__rshift_result = (alu_combs__rshift_operand__var>>alu_combs__shift_amount);
+        alu_combs__shift_amount__var = rs2[4:0];
+        if ((idecode__immediate_valid!=1'h0))
+        begin
+            alu_combs__shift_amount__var = idecode__immediate_shift;
+        end //if
+        alu_combs__rshift_result = (alu_combs__rshift_operand__var>>alu_combs__shift_amount__var);
         alu_combs__arith_in_0 = rs1;
         alu_combs__arith_in_1__var = alu_combs__imm_or_rs2__var;
         alu_combs__arith_carry_in__var = 1'h0;
@@ -154,10 +168,13 @@ module riscv_i32_alu
             alu_combs__arith_in_1__var = idecode__immediate;
             alu_combs__arith_carry_in__var = 1'h0;
         end //if
-        alu_combs__arith_result = (({1'h0,alu_combs__arith_in_0}+{1'h0,alu_combs__arith_in_1__var})+{32'h0,alu_combs__arith_carry_in__var});
-        alu_combs__arith_eq = (alu_combs__arith_result[31:0]==32'h0);
-        alu_combs__arith_unsigned_ge = alu_combs__arith_result[32];
-        alu_combs__arith_signed_ge = !(alu_combs__arith_result[31]!=1'h0);
+        alu_combs__arith_result_32 = (({1'h0,alu_combs__arith_in_0[30:0]}+{1'h0,alu_combs__arith_in_1__var[30:0]})+{31'h0,alu_combs__arith_carry_in__var});
+        alu_combs__carry_in_to_31 = alu_combs__arith_result_32[31];
+        alu_combs__arith_result__var[30:0] = alu_combs__arith_result_32[30:0];
+        alu_combs__arith_result__var[32:31] = (({1'h0,alu_combs__arith_in_0[31]}+{1'h0,alu_combs__arith_in_1__var[31]})+{1'h0,alu_combs__carry_in_to_31});
+        alu_combs__arith_eq = (alu_combs__arith_result__var[31:0]==32'h0);
+        alu_combs__arith_unsigned_ge = alu_combs__arith_result__var[32];
+        alu_combs__arith_signed_ge = ((alu_combs__carry_in_to_31 ^ alu_combs__arith_result__var[32])==alu_combs__arith_result__var[31]);
         alu_result__branch_condition_met__var = 1'h0;
         case (idecode__subop) //synopsys parallel_case
         4'h0: // req 1
@@ -196,17 +213,19 @@ module riscv_i32_alu
         //synopsys  translate_on
         endcase
         alu_combs__pc_plus_4 = (pc+32'h4);
+        alu_combs__pc_plus_2 = (pc+32'h2);
+        alu_combs__pc_plus_inst = ((idecode__is_compressed!=1'h0)?alu_combs__pc_plus_2:alu_combs__pc_plus_4);
         alu_combs__pc_plus_imm = (pc+idecode__immediate);
-        alu_result__arith_result = alu_combs__arith_result[31:0];
-        alu_result__result__var = alu_combs__arith_result[31:0];
+        alu_result__arith_result = alu_combs__arith_result__var[31:0];
+        alu_result__result__var = alu_combs__arith_result__var[31:0];
         case (idecode__subop) //synopsys parallel_case
         4'h0: // req 1
             begin
-            alu_result__result__var = alu_combs__arith_result[31:0];
+            alu_result__result__var = alu_combs__arith_result__var[31:0];
             end
         4'h8: // req 1
             begin
-            alu_result__result__var = alu_combs__arith_result[31:0];
+            alu_result__result__var = alu_combs__arith_result__var[31:0];
             end
         4'h2: // req 1
             begin
@@ -230,7 +249,7 @@ module riscv_i32_alu
             end
         4'h1: // req 1
             begin
-            alu_result__result__var = (rs1<<alu_combs__shift_amount);
+            alu_result__result__var = (rs1<<alu_combs__shift_amount__var);
             end
         4'h5: // req 1
             begin
@@ -252,21 +271,21 @@ module riscv_i32_alu
         //synopsys  translate_on
         endcase
         case (idecode__op) //synopsys parallel_case
-        4'ha: // req 1
+        4'hb: // req 1
             begin
             alu_result__result__var = idecode__immediate;
             end
-        4'h9: // req 1
+        4'ha: // req 1
             begin
             alu_result__result__var = alu_combs__pc_plus_imm;
             end
         4'h1: // req 1
             begin
-            alu_result__result__var = alu_combs__pc_plus_4;
+            alu_result__result__var = alu_combs__pc_plus_inst;
             end
         4'h2: // req 1
             begin
-            alu_result__result__var = alu_combs__pc_plus_4;
+            alu_result__result__var = alu_combs__pc_plus_inst;
             end
         //synopsys  translate_off
         //pragma coverage off
@@ -283,7 +302,7 @@ module riscv_i32_alu
         case (idecode__op) //synopsys parallel_case
         4'h2: // req 1
             begin
-            alu_result__branch_target__var = {alu_combs__arith_result[31:2],2'h0};
+            alu_result__branch_target__var = {alu_combs__arith_result__var[31:1],1'h0};
             end
         //synopsys  translate_off
         //pragma coverage off
@@ -300,7 +319,7 @@ module riscv_i32_alu
         alu_result__csr_access__address = idecode__csr_access__address;
         if ((idecode__subop==4'h1))
         begin
-            alu_result__csr_access__access__var = 3'h5;
+            alu_result__csr_access__access__var = 3'h3;
         end //if
         else
         
@@ -320,7 +339,7 @@ module riscv_i32_alu
         end //else
         if ((idecode__rs1==5'h0))
         begin
-            alu_result__csr_access__access__var = 3'h4;
+            alu_result__csr_access__access__var = 3'h2;
         end //if
         if ((idecode__op!=4'h4))
         begin
@@ -328,8 +347,10 @@ module riscv_i32_alu
         end //if
         alu_combs__imm_or_rs2 = alu_combs__imm_or_rs2__var;
         alu_combs__rshift_operand = alu_combs__rshift_operand__var;
+        alu_combs__shift_amount = alu_combs__shift_amount__var;
         alu_combs__arith_in_1 = alu_combs__arith_in_1__var;
         alu_combs__arith_carry_in = alu_combs__arith_carry_in__var;
+        alu_combs__arith_result = alu_combs__arith_result__var;
         alu_result__branch_condition_met = alu_result__branch_condition_met__var;
         alu_result__result = alu_result__result__var;
         alu_result__branch_target = alu_result__branch_target__var;

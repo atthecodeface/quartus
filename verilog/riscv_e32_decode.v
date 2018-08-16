@@ -32,13 +32,15 @@ module riscv_e32_decode
     idecode__csr_access__access,
     idecode__csr_access__address,
     idecode__immediate,
+    idecode__immediate_shift,
     idecode__immediate_valid,
     idecode__op,
     idecode__subop,
     idecode__requires_machine_mode,
     idecode__memory_read_unsigned,
     idecode__memory_width,
-    idecode__illegal
+    idecode__illegal,
+    idecode__is_compressed
 );
 
     //b Clocks
@@ -56,6 +58,7 @@ module riscv_e32_decode
     output [2:0]idecode__csr_access__access;
     output [11:0]idecode__csr_access__address;
     output [31:0]idecode__immediate;
+    output [4:0]idecode__immediate_shift;
     output idecode__immediate_valid;
     output [3:0]idecode__op;
     output [3:0]idecode__subop;
@@ -63,6 +66,7 @@ module riscv_e32_decode
     output idecode__memory_read_unsigned;
     output [1:0]idecode__memory_width;
     output idecode__illegal;
+    output idecode__is_compressed;
 
 // output components here
 
@@ -76,6 +80,7 @@ module riscv_e32_decode
     reg [2:0]idecode__csr_access__access;
     reg [11:0]idecode__csr_access__address;
     reg [31:0]idecode__immediate;
+    reg [4:0]idecode__immediate_shift;
     reg idecode__immediate_valid;
     reg [3:0]idecode__op;
     reg [3:0]idecode__subop;
@@ -83,6 +88,7 @@ module riscv_e32_decode
     reg idecode__memory_read_unsigned;
     reg [1:0]idecode__memory_width;
     reg idecode__illegal;
+    reg idecode__is_compressed;
 
     //b Output nets
 
@@ -100,6 +106,7 @@ module riscv_e32_decode
     wire [2:0]rv32i_idecode__csr_access__access;
     wire [11:0]rv32i_idecode__csr_access__address;
     wire [31:0]rv32i_idecode__immediate;
+    wire [4:0]rv32i_idecode__immediate_shift;
     wire rv32i_idecode__immediate_valid;
     wire [3:0]rv32i_idecode__op;
     wire [3:0]rv32i_idecode__subop;
@@ -107,11 +114,13 @@ module riscv_e32_decode
     wire rv32i_idecode__memory_read_unsigned;
     wire [1:0]rv32i_idecode__memory_width;
     wire rv32i_idecode__illegal;
+    wire rv32i_idecode__is_compressed;
 
     //b Clock gating module instances
     //b Module instances
     riscv_i32_decode rv32i_decode(
         .instruction(instruction),
+        .idecode__is_compressed(            rv32i_idecode__is_compressed),
         .idecode__illegal(            rv32i_idecode__illegal),
         .idecode__memory_width(            rv32i_idecode__memory_width),
         .idecode__memory_read_unsigned(            rv32i_idecode__memory_read_unsigned),
@@ -119,6 +128,7 @@ module riscv_e32_decode
         .idecode__subop(            rv32i_idecode__subop),
         .idecode__op(            rv32i_idecode__op),
         .idecode__immediate_valid(            rv32i_idecode__immediate_valid),
+        .idecode__immediate_shift(            rv32i_idecode__immediate_shift),
         .idecode__immediate(            rv32i_idecode__immediate),
         .idecode__csr_access__address(            rv32i_idecode__csr_access__address),
         .idecode__csr_access__access(            rv32i_idecode__csr_access__access),
@@ -144,6 +154,7 @@ module riscv_e32_decode
         idecode__csr_access__access = rv32i_idecode__csr_access__access;
         idecode__csr_access__address = rv32i_idecode__csr_access__address;
         idecode__immediate = rv32i_idecode__immediate;
+        idecode__immediate_shift = rv32i_idecode__immediate_shift;
         idecode__immediate_valid = rv32i_idecode__immediate_valid;
         idecode__op = rv32i_idecode__op;
         idecode__subop = rv32i_idecode__subop;
@@ -151,6 +162,7 @@ module riscv_e32_decode
         idecode__memory_read_unsigned = rv32i_idecode__memory_read_unsigned;
         idecode__memory_width = rv32i_idecode__memory_width;
         idecode__illegal__var = rv32i_idecode__illegal;
+        idecode__is_compressed = rv32i_idecode__is_compressed;
         if (((rv32i_idecode__rs1_valid!=1'h0)&&(rv32i_idecode__rs1[4]!=1'h0)))
         begin
             idecode__illegal__var = 1'h1;

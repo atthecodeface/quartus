@@ -15,12 +15,25 @@
     //   
     //   Instruction decoder for RISC-V I32 instruction set.
     //   
-    //   This is based on the RISC-V v2.1 specification (hence figure numbers
+    //   This is based on the RISC-V v2.2 specification (hence figure numbers
     //   are from that specification)
+    //   
+    //   It provides for the option of RV32E and RV32M.
+    //   
+    //   RV32E indicates an illegal instruction if a register outside 0-15 is accessed.
+    //   
+    //   RV32M provides decode of multiply and divide; if it is not desired
+    //   then the instructions are decoded as illegal.
     //   
 module riscv_i32_decode
 (
 
+    riscv_config__i32c,
+    riscv_config__e32,
+    riscv_config__i32m,
+    riscv_config__i32m_fuse,
+    riscv_config__coproc_disable,
+    riscv_config__unaligned_mem,
     instruction,
 
     idecode__rs1,
@@ -32,18 +45,26 @@ module riscv_i32_decode
     idecode__csr_access__access,
     idecode__csr_access__address,
     idecode__immediate,
+    idecode__immediate_shift,
     idecode__immediate_valid,
     idecode__op,
     idecode__subop,
     idecode__requires_machine_mode,
     idecode__memory_read_unsigned,
     idecode__memory_width,
-    idecode__illegal
+    idecode__illegal,
+    idecode__is_compressed
 );
 
     //b Clocks
 
     //b Inputs
+    input riscv_config__i32c;
+    input riscv_config__e32;
+    input riscv_config__i32m;
+    input riscv_config__i32m_fuse;
+    input riscv_config__coproc_disable;
+    input riscv_config__unaligned_mem;
     input [31:0]instruction;
 
     //b Outputs
@@ -56,6 +77,7 @@ module riscv_i32_decode
     output [2:0]idecode__csr_access__access;
     output [11:0]idecode__csr_access__address;
     output [31:0]idecode__immediate;
+    output [4:0]idecode__immediate_shift;
     output idecode__immediate_valid;
     output [3:0]idecode__op;
     output [3:0]idecode__subop;
@@ -63,6 +85,7 @@ module riscv_i32_decode
     output idecode__memory_read_unsigned;
     output [1:0]idecode__memory_width;
     output idecode__illegal;
+    output idecode__is_compressed;
 
 // output components here
 
@@ -76,6 +99,7 @@ module riscv_i32_decode
     reg [2:0]idecode__csr_access__access;
     reg [11:0]idecode__csr_access__address;
     reg [31:0]idecode__immediate;
+    reg [4:0]idecode__immediate_shift;
     reg idecode__immediate_valid;
     reg [3:0]idecode__op;
     reg [3:0]idecode__subop;
@@ -83,6 +107,7 @@ module riscv_i32_decode
     reg idecode__memory_read_unsigned;
     reg [1:0]idecode__memory_width;
     reg idecode__illegal;
+    reg idecode__is_compressed;
 
     //b Output nets
 
@@ -115,6 +140,9 @@ module riscv_i32_decode
         //       the same place; the remaining fields are funct3 (used in R/I/S
         //       types), funct7 (used in R type instructions), and various
         //       immediate fields.
+        //   
+        //       Spec 2.2 fig 2.3 shows opcode (must_be_ones and opc); rd, rs1, rs2; funct3 and funct7.
+        //       The other fields in fig 2.3 relate to the immediate value (see immediate_decode)
         //       
     always @ ( * )//instruction_breakout
     begin: instruction_breakout__comb_code
@@ -138,15 +166,17 @@ module riscv_i32_decode
         //       
         //       The immediate variants of the RISC-V I32 base instruction (fig 2.4) are:
         //   
-        //         I-type (12-bit sign extended using i[20;1]) (register-immediate, load, jalr)
+        //         I-type (12-bit sign extended using i[31], i[11;20]) (register-immediate, load, jalr)
         //   
-        //         S-type (12-bit sign extended using i[31], i[6;25], i[4;8], i[7]) (store)
+        //         S-type (12-bit sign extended using i[31], i[6;25], i[5;7]) (store)
         //   
-        //         B-type ?(13-bit, one zero, sign extended using i[31],i[7], i[6;25], i[4;8], 0) (branch)
+        //         B-type ?(13-bit, one zero, sign extended using i[31], i[7], i[6;25], i[4;8], 0) (branch)
         //   
-        //         U-type ?(32-bit, twelve zeros, sign extended using i[20;12], 12b0 (lui, auipc)
+        //         U-type ?(32-bit, twelve zeros, sign extended using i[31]; i[19;12], 12b0 (lui, auipc)
         //   
-        //         J-type ?(12-bit sign extended using i[31], i[8;12], i[20], i[10;1], 0) (jal)
+        //         J-type ?(12-bit sign extended using i[31], i[8;12], i[20], i[10;21], 0) (jal)
+        //   
+        //       Note that all are sign extended, hence i[31] is replicated on the top bits.
         //       
     always @ ( * )//immediate_decode
     begin: immediate_decode__comb_code
@@ -154,8 +184,9 @@ module riscv_i32_decode
     reg [31:0]idecode__immediate__var;
         combs__imm_signed = ((combs__funct7[6]!=1'h0)?64'hffffffffffffffff:64'h0);
         idecode__immediate_valid__var = 1'h0;
+        idecode__immediate_shift = idecode__rs2;
         idecode__immediate__var = {{combs__imm_signed[19:0],combs__funct7},idecode__rs2};
-        case (instruction[6:2]) //synopsys parallel_case
+        case (combs__opc) //synopsys parallel_case
         5'h4: // req 1
             begin
             idecode__immediate_valid__var = 1'h1;
@@ -226,6 +257,7 @@ module riscv_i32_decode
     reg idecode__illegal__var;
     reg [3:0]idecode__subop__var;
     reg [2:0]idecode__csr_access__access__var;
+        idecode__is_compressed = 1'h0;
         idecode__rs1_valid__var = 1'h0;
         idecode__rs2_valid__var = 1'h0;
         idecode__rd_written__var = 1'h0;
@@ -233,7 +265,7 @@ module riscv_i32_decode
         idecode__memory_read_unsigned = instruction[14];
         idecode__memory_width = instruction[13:12];
         combs__is_imm_op = (combs__opc==5'h4);
-        idecode__op__var = 4'hb;
+        idecode__op__var = 4'hc;
         idecode__illegal__var = 1'h1;
         idecode__subop__var = 4'h0;
         idecode__csr_access__address = instruction[31:20];
@@ -242,13 +274,13 @@ module riscv_i32_decode
         case (combs__opc) //synopsys parallel_case
         5'hd: // req 1
             begin
-            idecode__op__var = 4'ha;
+            idecode__op__var = 4'hb;
             idecode__rd_written__var = 1'h1;
             idecode__illegal__var = 1'h0;
             end
         5'h5: // req 1
             begin
-            idecode__op__var = 4'h9;
+            idecode__op__var = 4'ha;
             idecode__rd_written__var = 1'h1;
             idecode__illegal__var = 1'h0;
             end
@@ -328,46 +360,104 @@ module riscv_i32_decode
             idecode__rs1_valid__var = 1'h1;
             idecode__rs2_valid__var = !(combs__is_imm_op!=1'h0);
             idecode__rd_written__var = 1'h1;
-            idecode__illegal__var = 1'h0;
-            case (combs__funct3) //synopsys parallel_case
-            3'h0: // req 1
+            if (((combs__funct7==7'h1)&&!(combs__is_imm_op!=1'h0)))
+            begin
+                if ((1'h1&&(riscv_config__i32m!=1'h0)))
                 begin
-                idecode__subop__var = ((!(combs__is_imm_op!=1'h0)&&(combs__funct7[5]!=1'h0))?4'h8:4'h0);
-                end
-            3'h2: // req 1
-                begin
-                idecode__subop__var = 4'h2;
-                end
-            3'h3: // req 1
-                begin
-                idecode__subop__var = 4'h3;
-                end
-            3'h4: // req 1
-                begin
-                idecode__subop__var = 4'h4;
-                end
-            3'h6: // req 1
-                begin
-                idecode__subop__var = 4'h6;
-                end
-            3'h7: // req 1
-                begin
-                idecode__subop__var = 4'h7;
-                end
-            3'h1: // req 1
-                begin
-                idecode__illegal__var = ((combs__is_imm_op!=1'h0)&&(combs__funct7!=7'h0));
-                idecode__subop__var = 4'h1;
-                end
-            3'h5: // req 1
-                begin
-                idecode__subop__var = ((combs__funct7[5]!=1'h0)?4'hd:4'h5);
-                end
-            default: // req 1
-                begin
-                idecode__illegal__var = 1'h1;
-                end
-            endcase
+                    idecode__illegal__var = 1'h0;
+                    idecode__op__var = 4'h9;
+                    case (combs__funct3) //synopsys parallel_case
+                    3'h0: // req 1
+                        begin
+                        idecode__subop__var = 4'h0;
+                        end
+                    3'h1: // req 1
+                        begin
+                        idecode__subop__var = 4'h1;
+                        end
+                    3'h2: // req 1
+                        begin
+                        idecode__subop__var = 4'h2;
+                        end
+                    3'h3: // req 1
+                        begin
+                        idecode__subop__var = 4'h3;
+                        end
+                    3'h4: // req 1
+                        begin
+                        idecode__subop__var = 4'h4;
+                        end
+                    3'h5: // req 1
+                        begin
+                        idecode__subop__var = 4'h5;
+                        end
+                    3'h6: // req 1
+                        begin
+                        idecode__subop__var = 4'h6;
+                        end
+                    3'h7: // req 1
+                        begin
+                        idecode__subop__var = 4'h7;
+                        end
+    //synopsys  translate_off
+    //pragma coverage off
+                    default:
+                        begin
+                            if (1)
+                            begin
+                                $display("%t *********CDL ASSERTION FAILURE:riscv_i32_decode:instruction_decode: Full switch statement did not cover all values", $time);
+                            end
+                        end
+    //pragma coverage on
+    //synopsys  translate_on
+                    endcase
+                end //if
+            end //if
+            else
+            
+            begin
+                idecode__illegal__var = ((!(combs__is_imm_op!=1'h0)&&(combs__funct7!=7'h0))&&(combs__funct7!=7'h20));
+                case (combs__funct3) //synopsys parallel_case
+                3'h0: // req 1
+                    begin
+                    idecode__subop__var = ((!(combs__is_imm_op!=1'h0)&&(combs__funct7[5]!=1'h0))?4'h8:4'h0);
+                    end
+                3'h2: // req 1
+                    begin
+                    idecode__subop__var = 4'h2;
+                    end
+                3'h3: // req 1
+                    begin
+                    idecode__subop__var = 4'h3;
+                    end
+                3'h4: // req 1
+                    begin
+                    idecode__subop__var = 4'h4;
+                    end
+                3'h6: // req 1
+                    begin
+                    idecode__subop__var = 4'h6;
+                    end
+                3'h7: // req 1
+                    begin
+                    idecode__subop__var = 4'h7;
+                    end
+                3'h1: // req 1
+                    begin
+                    idecode__illegal__var = (combs__funct7!=7'h0);
+                    idecode__subop__var = 4'h1;
+                    end
+                3'h5: // req 1
+                    begin
+                    idecode__illegal__var = ((combs__funct7[4:0]!=5'h0)||(combs__funct7[6]!=1'h0));
+                    idecode__subop__var = ((combs__funct7[5]!=1'h0)?4'hd:4'h5);
+                    end
+                default: // req 1
+                    begin
+                    idecode__illegal__var = 1'h1;
+                    end
+                endcase
+            end //else
             end
         5'h4: // req 1
             begin
@@ -375,46 +465,104 @@ module riscv_i32_decode
             idecode__rs1_valid__var = 1'h1;
             idecode__rs2_valid__var = !(combs__is_imm_op!=1'h0);
             idecode__rd_written__var = 1'h1;
-            idecode__illegal__var = 1'h0;
-            case (combs__funct3) //synopsys parallel_case
-            3'h0: // req 1
+            if (((combs__funct7==7'h1)&&!(combs__is_imm_op!=1'h0)))
+            begin
+                if ((1'h1&&(riscv_config__i32m!=1'h0)))
                 begin
-                idecode__subop__var = ((!(combs__is_imm_op!=1'h0)&&(combs__funct7[5]!=1'h0))?4'h8:4'h0);
-                end
-            3'h2: // req 1
-                begin
-                idecode__subop__var = 4'h2;
-                end
-            3'h3: // req 1
-                begin
-                idecode__subop__var = 4'h3;
-                end
-            3'h4: // req 1
-                begin
-                idecode__subop__var = 4'h4;
-                end
-            3'h6: // req 1
-                begin
-                idecode__subop__var = 4'h6;
-                end
-            3'h7: // req 1
-                begin
-                idecode__subop__var = 4'h7;
-                end
-            3'h1: // req 1
-                begin
-                idecode__illegal__var = ((combs__is_imm_op!=1'h0)&&(combs__funct7!=7'h0));
-                idecode__subop__var = 4'h1;
-                end
-            3'h5: // req 1
-                begin
-                idecode__subop__var = ((combs__funct7[5]!=1'h0)?4'hd:4'h5);
-                end
-            default: // req 1
-                begin
-                idecode__illegal__var = 1'h1;
-                end
-            endcase
+                    idecode__illegal__var = 1'h0;
+                    idecode__op__var = 4'h9;
+                    case (combs__funct3) //synopsys parallel_case
+                    3'h0: // req 1
+                        begin
+                        idecode__subop__var = 4'h0;
+                        end
+                    3'h1: // req 1
+                        begin
+                        idecode__subop__var = 4'h1;
+                        end
+                    3'h2: // req 1
+                        begin
+                        idecode__subop__var = 4'h2;
+                        end
+                    3'h3: // req 1
+                        begin
+                        idecode__subop__var = 4'h3;
+                        end
+                    3'h4: // req 1
+                        begin
+                        idecode__subop__var = 4'h4;
+                        end
+                    3'h5: // req 1
+                        begin
+                        idecode__subop__var = 4'h5;
+                        end
+                    3'h6: // req 1
+                        begin
+                        idecode__subop__var = 4'h6;
+                        end
+                    3'h7: // req 1
+                        begin
+                        idecode__subop__var = 4'h7;
+                        end
+    //synopsys  translate_off
+    //pragma coverage off
+                    default:
+                        begin
+                            if (1)
+                            begin
+                                $display("%t *********CDL ASSERTION FAILURE:riscv_i32_decode:instruction_decode: Full switch statement did not cover all values", $time);
+                            end
+                        end
+    //pragma coverage on
+    //synopsys  translate_on
+                    endcase
+                end //if
+            end //if
+            else
+            
+            begin
+                idecode__illegal__var = ((!(combs__is_imm_op!=1'h0)&&(combs__funct7!=7'h0))&&(combs__funct7!=7'h20));
+                case (combs__funct3) //synopsys parallel_case
+                3'h0: // req 1
+                    begin
+                    idecode__subop__var = ((!(combs__is_imm_op!=1'h0)&&(combs__funct7[5]!=1'h0))?4'h8:4'h0);
+                    end
+                3'h2: // req 1
+                    begin
+                    idecode__subop__var = 4'h2;
+                    end
+                3'h3: // req 1
+                    begin
+                    idecode__subop__var = 4'h3;
+                    end
+                3'h4: // req 1
+                    begin
+                    idecode__subop__var = 4'h4;
+                    end
+                3'h6: // req 1
+                    begin
+                    idecode__subop__var = 4'h6;
+                    end
+                3'h7: // req 1
+                    begin
+                    idecode__subop__var = 4'h7;
+                    end
+                3'h1: // req 1
+                    begin
+                    idecode__illegal__var = (combs__funct7!=7'h0);
+                    idecode__subop__var = 4'h1;
+                    end
+                3'h5: // req 1
+                    begin
+                    idecode__illegal__var = ((combs__funct7[4:0]!=5'h0)||(combs__funct7[6]!=1'h0));
+                    idecode__subop__var = ((combs__funct7[5]!=1'h0)?4'hd:4'h5);
+                    end
+                default: // req 1
+                    begin
+                    idecode__illegal__var = 1'h1;
+                    end
+                endcase
+            end //else
             end
         5'h3: // req 1
             begin
@@ -424,21 +572,40 @@ module riscv_i32_decode
             end
         5'h1c: // req 1
             begin
+            idecode__op__var = 4'h3;
             idecode__rs1_valid__var = 1'h1;
             idecode__rd_written__var = 1'h1;
             idecode__illegal__var = 1'h0;
             case (combs__funct3[1:0]) //synopsys parallel_case
             2'h1: // req 1
                 begin
-                idecode__csr_access__access__var = (((combs__rs1_nonzero | combs__funct3[2])!=1'h0)?3'h5:3'h4);
+                idecode__op__var = 4'h4;
+                idecode__subop__var = 4'h1;
+                idecode__csr_access__access__var = 3'h3;
+                if ((idecode__rd==5'h0))
+                begin
+                    idecode__csr_access__access__var = 3'h1;
+                end //if
                 end
             2'h2: // req 1
                 begin
-                idecode__csr_access__access__var = (((combs__rs1_nonzero | combs__funct3[2])!=1'h0)?3'h6:3'h4);
+                idecode__op__var = 4'h4;
+                idecode__subop__var = 4'h2;
+                idecode__csr_access__access__var = 3'h6;
+                if (!(combs__rs1_nonzero!=1'h0))
+                begin
+                    idecode__csr_access__access__var = 3'h2;
+                end //if
                 end
             2'h3: // req 1
                 begin
-                idecode__csr_access__access__var = (((combs__rs1_nonzero | combs__funct3[2])!=1'h0)?3'h7:3'h4);
+                idecode__op__var = 4'h4;
+                idecode__subop__var = 4'h3;
+                idecode__csr_access__access__var = 3'h7;
+                if (!(combs__rs1_nonzero!=1'h0))
+                begin
+                    idecode__csr_access__access__var = 3'h2;
+                end //if
                 end
             2'h0: // req 1
                 begin
@@ -507,6 +674,21 @@ module riscv_i32_decode
         if ((idecode__rd==5'h0))
         begin
             idecode__rd_written__var = 1'h0;
+        end //if
+        if (((riscv_config__e32!=1'h0)||(1'h0!=64'h0)))
+        begin
+            if (((idecode__rs1_valid__var!=1'h0)&&(idecode__rs1[4]!=1'h0)))
+            begin
+                idecode__illegal__var = 1'h1;
+            end //if
+            if (((idecode__rs2_valid__var!=1'h0)&&(idecode__rs2[4]!=1'h0)))
+            begin
+                idecode__illegal__var = 1'h1;
+            end //if
+            if (((idecode__rd_written__var!=1'h0)&&(idecode__rd[4]!=1'h0)))
+            begin
+                idecode__illegal__var = 1'h1;
+            end //if
         end //if
         idecode__rs1_valid = idecode__rs1_valid__var;
         idecode__rs2_valid = idecode__rs2_valid__var;

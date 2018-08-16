@@ -20,27 +20,16 @@ module riscv_i32_trace
     clk,
     clk__enable,
 
-    branch_target,
-    branch_taken,
-    pc,
-    result,
-    idecode__rs1,
-    idecode__rs1_valid,
-    idecode__rs2,
-    idecode__rs2_valid,
-    idecode__rd,
-    idecode__rd_written,
-    idecode__csr_access__access,
-    idecode__csr_access__address,
-    idecode__immediate,
-    idecode__immediate_valid,
-    idecode__op,
-    idecode__subop,
-    idecode__requires_machine_mode,
-    idecode__memory_read_unsigned,
-    idecode__memory_width,
-    idecode__illegal,
-    clk_enable,
+    trace__instr_valid,
+    trace__instr_pc,
+    trace__instr_data,
+    trace__rfw_retire,
+    trace__rfw_data_valid,
+    trace__rfw_rd,
+    trace__rfw_data,
+    trace__branch_taken,
+    trace__branch_target,
+    trace__trap,
     reset_n
 
 );
@@ -49,37 +38,19 @@ module riscv_i32_trace
         //   Clock for the CPU
     input clk;
     input clk__enable;
-    wire trace_clk; // Gated version of clock 'clk' enabled by 'clk_enable'
-    wire trace_clk__enable;
 
     //b Inputs
-        //   Asserted if a branch is being taken
-    input [31:0]branch_target;
-        //   Asserted if a branch is being taken
-    input branch_taken;
-        //   Program counter of the instruction
-    input [31:0]pc;
-        //   Result of ALU/memory operation for the instruction
-    input [31:0]result;
-        //   Decoded instruction being traced
-    input [4:0]idecode__rs1;
-    input idecode__rs1_valid;
-    input [4:0]idecode__rs2;
-    input idecode__rs2_valid;
-    input [4:0]idecode__rd;
-    input idecode__rd_written;
-    input [2:0]idecode__csr_access__access;
-    input [11:0]idecode__csr_access__address;
-    input [31:0]idecode__immediate;
-    input idecode__immediate_valid;
-    input [3:0]idecode__op;
-    input [3:0]idecode__subop;
-    input idecode__requires_machine_mode;
-    input idecode__memory_read_unsigned;
-    input [1:0]idecode__memory_width;
-    input idecode__illegal;
-        //   Active high clock enable for the tracing
-    input clk_enable;
+        //   Trace signals
+    input trace__instr_valid;
+    input [31:0]trace__instr_pc;
+    input [31:0]trace__instr_data;
+    input trace__rfw_retire;
+    input trace__rfw_data_valid;
+    input [4:0]trace__rfw_rd;
+    input [31:0]trace__rfw_data;
+    input trace__branch_taken;
+    input [31:0]trace__branch_target;
+    input trace__trap;
         //   Active low reset
     input reset_n;
 
@@ -98,6 +69,5 @@ module riscv_i32_trace
     //b Internal nets
 
     //b Clock gating module instances
-    assign trace_clk__enable = (clk__enable && clk_enable);
     //b Module instances
 endmodule // riscv_i32_trace

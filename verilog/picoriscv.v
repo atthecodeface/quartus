@@ -95,6 +95,12 @@ module picoriscv
     reg [31:0]read_data_reg;
 
     //b Internal combinatorials
+    reg riscv_config__i32c;
+    reg riscv_config__e32;
+    reg riscv_config__i32m;
+    reg riscv_config__i32m_fuse;
+    reg riscv_config__coproc_disable;
+    reg riscv_config__unaligned_mem;
     reg riscv_clk_enable;
     reg clock_status__imem_request;
     reg clock_status__io_request;
@@ -115,6 +121,16 @@ module picoriscv
     reg [31:0]dmem_access_resp__read_data;
 
     //b Internal nets
+    wire trace__instr_valid;
+    wire [31:0]trace__instr_pc;
+    wire [31:0]trace__instr_data;
+    wire trace__rfw_retire;
+    wire trace__rfw_data_valid;
+    wire [4:0]trace__rfw_rd;
+    wire [31:0]trace__rfw_data;
+    wire trace__branch_taken;
+    wire [31:0]trace__branch_target;
+    wire trace__trap;
     wire clock_control__riscv_clk_enable;
     wire [3:0]clock_control__debug;
     wire mem_control__dmem_request;
@@ -184,11 +200,27 @@ module picoriscv
     riscv_minimal riscv(
         .clk(clk),
         .clk__enable(riscv_clk__enable),
+        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
+        .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
+        .riscv_config__i32m(riscv_config__i32m),
+        .riscv_config__e32(riscv_config__e32),
+        .riscv_config__i32c(riscv_config__i32c),
         .imem_access_resp__read_data(imem_access_resp__read_data),
         .imem_access_resp__wait(imem_access_resp__wait),
         .dmem_access_resp__read_data(dmem_access_resp__read_data),
         .dmem_access_resp__wait(dmem_access_resp__wait),
         .reset_n(reset_n),
+        .trace__trap(            trace__trap),
+        .trace__branch_target(            trace__branch_target),
+        .trace__branch_taken(            trace__branch_taken),
+        .trace__rfw_data(            trace__rfw_data),
+        .trace__rfw_rd(            trace__rfw_rd),
+        .trace__rfw_data_valid(            trace__rfw_data_valid),
+        .trace__rfw_retire(            trace__rfw_retire),
+        .trace__instr_data(            trace__instr_data),
+        .trace__instr_pc(            trace__instr_pc),
+        .trace__instr_valid(            trace__instr_valid),
         .imem_access_req__write_data(            imem_access_req__write_data),
         .imem_access_req__read_enable(            imem_access_req__read_enable),
         .imem_access_req__write_enable(            imem_access_req__write_enable),
@@ -199,6 +231,20 @@ module picoriscv
         .dmem_access_req__write_enable(            dmem_access_req__write_enable),
         .dmem_access_req__byte_enable(            dmem_access_req__byte_enable),
         .dmem_access_req__address(            dmem_access_req__address)         );
+    riscv_i32_trace trace(
+        .clk(clk),
+        .clk__enable(riscv_clk__enable),
+        .trace__trap(trace__trap),
+        .trace__branch_target(trace__branch_target),
+        .trace__branch_taken(trace__branch_taken),
+        .trace__rfw_data(trace__rfw_data),
+        .trace__rfw_rd(trace__rfw_rd),
+        .trace__rfw_data_valid(trace__rfw_data_valid),
+        .trace__rfw_retire(trace__rfw_retire),
+        .trace__instr_data(trace__instr_data),
+        .trace__instr_pc(trace__instr_pc),
+        .trace__instr_valid(trace__instr_valid),
+        .reset_n(reset_n)         );
     framebuffer_teletext ftb(
         .video_clk(video_clk),
         .video_clk__enable(1'b1),
@@ -316,12 +362,24 @@ module picoriscv
         //       
     always @ ( * )//cpu_and_addressing
     begin: cpu_and_addressing__comb_code
+    reg riscv_config__i32c__var;
+    reg riscv_config__e32__var;
+    reg riscv_config__i32m__var;
     reg clock_status__io_request__var;
     reg clock_status__dmem_read_enable__var;
     reg clock_status__dmem_write_enable__var;
     reg tt_display_sram_write__enable__var;
     reg [47:0]tt_display_sram_write__data__var;
     reg [15:0]tt_display_sram_write__address__var;
+        riscv_config__i32c__var = 1'h0;
+        riscv_config__e32__var = 1'h0;
+        riscv_config__i32m__var = 1'h0;
+        riscv_config__i32m_fuse = 1'h0;
+        riscv_config__coproc_disable = 1'h0;
+        riscv_config__unaligned_mem = 1'h0;
+        riscv_config__i32c__var = 1'h0;
+        riscv_config__e32__var = 1'h0;
+        riscv_config__i32m__var = 1'h0;
         clock_status__imem_request = imem_access_req__read_enable;
         clock_status__io_request__var = 1'h0;
         clock_status__io_ready = 1'h1;
@@ -354,6 +412,9 @@ module picoriscv
         begin
             tt_display_sram_write__enable__var = (dmem_access_req__address[27:24]==4'h0);
         end //if
+        riscv_config__i32c = riscv_config__i32c__var;
+        riscv_config__e32 = riscv_config__e32__var;
+        riscv_config__i32m = riscv_config__i32m__var;
         clock_status__io_request = clock_status__io_request__var;
         clock_status__dmem_read_enable = clock_status__dmem_read_enable__var;
         clock_status__dmem_write_enable = clock_status__dmem_write_enable__var;

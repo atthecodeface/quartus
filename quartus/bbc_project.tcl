@@ -397,6 +397,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_csr.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/acia6850.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/via6522.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_timing.v
 
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_processor.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_master_apb.v
@@ -412,8 +413,8 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/bbc_micro_de1_cl.v
 
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_teletext.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext.v
-set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext_dprintf.v
-set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext_dprintf_mux.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf_4_mux.v
 
 set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
 
