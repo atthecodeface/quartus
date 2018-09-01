@@ -16,12 +16,20 @@ all: sim_adc
 # all: compile_verilog compile_rtl sim_tb_6502
 
 .PHONY: help
-help: help_synth help_sim help_sram
+help: help_toplevel help_synth help_sim help_sram
 
 .PHONY: help_toplevel
 help_toplevel:
-	$H "To initialize the make system:"
+	$H
+	$H "****************************************************************"
+	$H "To initialize the make system"
+	$H "****************************************************************"
 	$H "   make clean"
+	$H
+	$H "****************************************************************"
+	$H "To regenerate the modules from qsys (on repo init or change of qsys)"
+	$H "****************************************************************"
+	$H "   make regnerate_modules"
 	$H
 	$H "The Makefile splits into a few sub-makes:"
 	$H " Makefile.sim"

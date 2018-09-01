@@ -7,6 +7,11 @@ VLOG=$(MODELSIM)/vlog
 VSIM=$(MODELSIM)/vsim
 
 help_sim:
+	$H ""
+	$H "****************************************************************"
+	$H "Makefile.sim"
+	$H "****************************************************************"
+	$H ""
 	$H "Makefile.sim contains targets and recipes"
 	$H "to enable Modelsim simulation and regressions"
 	$H ""
@@ -15,6 +20,7 @@ help_sim:
 	$H "or"
 	$H "    make sim_addsub"
 	$H "which run simple regression tests on the 6502"
+	$H ""
 
 clean: clean_sim
 

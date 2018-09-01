@@ -2,9 +2,15 @@ SRAM_CONTENTS=$(ROOT)/sram_contents
 SRAM_CONTENTS_REL=$(ROOT_REL)/sram_contents
 
 help_sram:
+	$H ""
+	$H "****************************************************************"
+	$H "Makefile.sram"
+	$H "****************************************************************"
 	$H "Makefile.sram contains targets and recipes"
 	$H "to create the contents of the 'sram_contents'"
 	$H "directory"
+	$H ""
+	$H "Currently a lot of the SRAM MIF files are not in this repo"
 	$H ""
 
 clean: clean_sram

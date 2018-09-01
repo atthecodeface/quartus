@@ -21,3 +21,5 @@ set_global_assignment -name STATE_MACHINE_PROCESSING "USER-ENCODED"
 # Required for building, but breaks Quartus 13.0 as it does not support this in the same way
 set_global_assignment -name QIP_FILE modules/pll_lcd.qip
 set_global_assignment -name SIP_FILE modules/pll_lcd.sip
+set_global_assignment -name QIP_FILE modules/altclkctrl.qip
+#set_global_assignment -name QIP_FILE hps.qip

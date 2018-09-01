@@ -3,18 +3,31 @@ QUARTUS_OUTPUT=$(ROOT)/quartus_output
 QUARTUS_DB=$(ROOT)/quartus/db
 QUARTUS_IDB=$(ROOT)/quartus/incremental_db
 
-QUARTUS=$(ALTERA)/quartus/bin
+QUARTUS=$(ALTERA)/quartus
+QUARTUS_BIN=$(QUARTUS)/bin
+QUARTUS_SOPC_BUILDER=$(QUARTUS)/sopc_builder/bin/
 QUARTUS_ENV = SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) 
-QUARTUS_SH  =$(QUARTUS_ENV) $(QUARTUS)/quartus_sh
-QUARTUS_CDB =$(QUARTUS_ENV) $(QUARTUS)/quartus_cdb
-QUARTUS_EDA =$(QUARTUS_ENV) $(QUARTUS)/quartus_eda
-QUARTUS_PGM =$(QUARTUS_ENV) $(QUARTUS)/quartus_pgm
-QUARTUS_JTAGD =sudo $(QUARTUS_ENV) $(QUARTUS)/jtagd
-QUARTUS_JTAGCONFIG =$(QUARTUS_ENV) $(QUARTUS)/jtagconfig
+QUARTUS_GENERATE =$(QUARTUS_ENV) $(QUARTUS_SOPC_BUILDER)/qsys-generate
+QUARTUS_GENERATE_ARGS :=
+QUARTUS_SH  =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_sh
+QUARTUS_CDB =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_cdb
+QUARTUS_EDA =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_eda
+QUARTUS_PGM =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_pgm
+QUARTUS_JTAGD =sudo $(QUARTUS_ENV) $(QUARTUS_BIN)/jtagd
+QUARTUS_JTAGCONFIG =$(QUARTUS_ENV) $(QUARTUS_BIN)/jtagconfig
 
 SYNTH_PROJECT ?= bbc_project
 
 help_synth:
+	$H ""
+	$H "****************************************************************"
+	$H "Makefile.synth"
+	$H "****************************************************************"
+	$H ""
+	$H "To make quartus/modules contents when a qsys file changes or when"
+	$H "the repo is first checked out:"
+	$H "  make regenerate_modules"
+	$H ""
 	$H "Makefile.synth contains targets and recipes"
 	$H "to enable synthesis, fitting and timing of"
 	$H "FPGA builds using Altera Quartus"
@@ -41,6 +54,7 @@ help_synth:
 	$H ""
 	$H "Rerunning timing can be performed with"
 	$H "  make SYNTH_PROJECT=<project> retime"
+	$H ""
 
 clean: clean_synth
 .PHONY: clean_synth
@@ -64,6 +78,13 @@ resynth:
 retime:
 	rm -f $(MAKE_TARGETS)/timing.complete
 	make timing
+
+regenerate_modules: $(QUARTUS_DIR)/modules/regenerate_date
+
+$(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTUS_DIR)/modules/altclkctrl.qsys
+	(cd $(QUARTUS_DIR)/modules; $(QUARTUS_GENERATE) hps.qsys --synthesis=VERILOG $(QUARTUS_GENERATE_ARGS) )
+	(cd $(QUARTUS_DIR)/modules; $(QUARTUS_GENERATE) altclkctrl.qsys --synthesis=VERILOG $(QUARTUS_GENERATE_ARGS) )
+	date >> $(QUARTUS_DIR)/modules/regenerate_date
 
 $(MAKE_TARGETS)/synth.complete: $(SCRIPTS_DIR)/synth.tcl
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/synth.complete

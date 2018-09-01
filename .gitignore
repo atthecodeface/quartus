@@ -4,3 +4,11 @@
 *.log
 make
 modelsim_lib
+quartus/modules/altclkctrl
+quartus/modules/hps
+quartus/modules/regenerate_date
+*.sopcinfo
+quartus_output
+sram_contents
+quartus/db
+quartus/incremental_db
