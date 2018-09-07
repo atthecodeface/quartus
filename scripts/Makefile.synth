@@ -9,7 +9,9 @@ QUARTUS_SOPC_BUILDER=$(QUARTUS)/sopc_builder/bin/
 QUARTUS_ENV = SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) 
 QUARTUS_GENERATE =$(QUARTUS_ENV) $(QUARTUS_SOPC_BUILDER)/qsys-generate
 QUARTUS_GENERATE_ARGS :=
+QUARTUS_EXE =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus
 QUARTUS_SH  =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_sh
+QUARTUS_STA =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_sta
 QUARTUS_CDB =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_cdb
 QUARTUS_EDA =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_eda
 QUARTUS_PGM =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_pgm
@@ -64,6 +66,12 @@ clean_synth:
 
 .PHONY:synth fit timing
 synth: $(MAKE_TARGETS)/synth.complete
+
+edit:
+	(cd $(QUARTUS_DIR); $(QUARTUS_EXE) $(SYNTH_PROJECT) $(SYNTH_PROJECT))
+
+pins:
+	(cd $(QUARTUS_DIR); $(QUARTUS_STA) -t modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(SYNTH_PROJECT))
 
 fit: $(MAKE_TARGETS)/fit.complete
 
