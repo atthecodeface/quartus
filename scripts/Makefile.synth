@@ -15,6 +15,7 @@ QUARTUS_STA =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_sta
 QUARTUS_CDB =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_cdb
 QUARTUS_EDA =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_eda
 QUARTUS_PGM =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus_pgm
+QUARTUS_SOPC2DTS = $(QUARTUS_ENV)  $(QUARTUS_BIN)/sopc2dts
 QUARTUS_JTAGD =sudo $(QUARTUS_ENV) $(QUARTUS_BIN)/jtagd
 QUARTUS_JTAGCONFIG =$(QUARTUS_ENV) $(QUARTUS_BIN)/jtagconfig
 
@@ -69,6 +70,16 @@ synth: $(MAKE_TARGETS)/synth.complete
 
 edit:
 	(cd $(QUARTUS_DIR); $(QUARTUS_EXE) $(SYNTH_PROJECT) $(SYNTH_PROJECT))
+
+dts : $(SYNTH_PROJECT).dts
+# _board_info.xml hps_clock_info.xml
+
+%.dts %.sopcinfo:
+	$(QUARTUS_SOPC2DTS) --input $< --output $@
+# --board _board_info.xml --board hps_clock_info.xml
+
+%.dtb: %.dts
+	$(DTS.DTC) -I dts -O dtb -o $@ $<
 
 pins:
 	(cd $(QUARTUS_DIR); $(QUARTUS_STA) -t modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(SYNTH_PROJECT))

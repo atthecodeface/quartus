@@ -8,10 +8,10 @@
 # PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING (ON)
 # PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION (ON)
 
-pin_lvttl_signal AF14 clock_50
-pin_lvttl_signal AA16 clock2_50
-pin_lvttl_signal Y26  clock3_50
-pin_lvttl_signal K14  clock4_50
+pin_lvttl_signal AF14 clk_50
+pin_lvttl_signal AA16 clk2_50
+pin_lvttl_signal Y26  clk3_50
+pin_lvttl_signal K14  clk4_50
 
 pin_lvttl_signal AJ4 de1_adc__cs_n
 pin_lvttl_signal AK4 de1_adc__din

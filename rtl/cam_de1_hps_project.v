@@ -1,4 +1,4 @@
-module cam_de1_hps_project ( clk_50, clk_2_50, clk_3_50, clk_4_50, reset_n,
+module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, reset_n,
 
                      de1_adc__cs_n, de1_adc__din, de1_adc__dout, de1_adc__sclk,
                      de1_aud__adcdat, de1_aud__adclkrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
@@ -16,7 +16,7 @@ module cam_de1_hps_project ( clk_50, clk_2_50, clk_3_50, clk_4_50, reset_n,
                      de1_hex0, de1_hex1,de1_hex2, de1_hex3, de1_hex4, de1_hex5,
 
                      de1_irda__rxd, de1_irda__txd,
-                     de1_key, de1_switches, de1_leds,
+                     de1_keys, de1_switches, de1_leds,
                      
                      de1_td__clk27, de1_td__data, de1_td__hs, de1_td__reset_n, de1_td__vs,
 
@@ -42,13 +42,7 @@ module cam_de1_hps_project ( clk_50, clk_2_50, clk_3_50, clk_4_50, reset_n,
 
                      hps_flash__data, hps_flash__dclk, hps_flash__ncso,
 
-                     hps_gsensor_int,
-
                      hps_i2c1_sclk, hps_i2c1_sdat, hps_i2c2_sclk, hps_i2c2_sdat, hps_i2c_control,
-
-                     hps_key,
-                     hps_led,
-                     hps_ltc_gpio,
 
                      hps_sd__clk, hps_sd__cmd, hps_sd__data,
 
@@ -69,9 +63,9 @@ module cam_de1_hps_project ( clk_50, clk_2_50, clk_3_50, clk_4_50, reset_n,
 
                      );
    input clk_50;
-   input clk_2_50;
-   input clk_3_50;
-   input clk_4_50;
+   input clk2_50;
+   input clk3_50;
+   input clk4_50;
    input reset_n;
 
    inout   de1_adc__cs_n;
@@ -110,7 +104,7 @@ module cam_de1_hps_project ( clk_50, clk_2_50, clk_3_50, clk_4_50, reset_n,
 
    input         de1_irda__rxd;
    output        de1_irda__txd;
-   input [3:0]   de1_key;
+   input [3:0]   de1_keys;
    output [9:0]  de1_leds;
    input [9:0]   de1_switches;
 
@@ -185,18 +179,11 @@ module cam_de1_hps_project ( clk_50, clk_2_50, clk_3_50, clk_4_50, reset_n,
    output        hps_flash__dclk;
    output        hps_flash__ncso;
 
-   inout         hps_gsensor_int;
-
    inout         hps_i2c1_sclk;
    inout         hps_i2c1_sdat;
    inout         hps_i2c2_sclk;
    inout         hps_i2c2_sdat;
    inout         hps_i2c_control;
-
-   inout         hps_key;
-   inout         hps_led;
-
-   inout         hps_ltc_gpio;
 
    output        hps_sd__clk;
    inout         hps_sd__cmd;
@@ -540,6 +527,15 @@ module cam_de1_hps_project ( clk_50, clk_2_50, clk_3_50, clk_4_50, reset_n,
 	         );
 
 
+   // reset sources for hps reset are:
+   // .hps_0_f2h_cold_reset_req_reset_n      (~hps_cold_reset)   - derived from hps_reset_req[0]
+   // .hps_0_f2h_warm_reset_req_reset_n      (~hps_warm_reset)   - derived from hps_reset_req[1]
+   // .hps_0_f2h_debug_reset_req_reset_n     (~hps_debug_reset)  - derived from hps_reset_req[2]
+   // output of HPS reset is
+   // .hps_0_h2f_reset_reset_n               (hps_fpga_reset_n),               //                hps_0_h2f_reset.reset_n
+   // input to hps is
+   //.reset_reset_n in to hps is (hps_fpga_reset_n),                         //                          reset.reset_n
+   
 
    assign de1_adc__din = 0;
    assign de1_adc__sclk = 0;

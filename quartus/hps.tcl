@@ -105,15 +105,11 @@ lvttl_signal "" hps_enet__tx_en 1
 lvttl_signal "" hps_flash__data 4
 lvttl_signal "" hps_flash__dclk 1
 lvttl_signal "" hps_flash__ncso 1
-lvttl_signal "" hps_gsensor_int 1
 lvttl_signal "" hps_i2c1_sclk 1
 lvttl_signal "" hps_i2c1_sdat 1
 lvttl_signal "" hps_i2c2_sclk 1
 lvttl_signal "" hps_i2c2_sdat 1
 lvttl_signal "" hps_i2c_control 1
-lvttl_signal "" hps_key 1
-lvttl_signal "" hps_led 1
-lvttl_signal "" hps_ltc_gpio 1
 lvttl_signal "" hps_sd__clk 1
 lvttl_signal "" hps_sd__cmd 1
 lvttl_signal "" hps_sd__data 4
@@ -128,4 +124,9 @@ lvttl_signal "" hps_usb__data 8
 lvttl_signal "" hps_usb__dir 1
 lvttl_signal "" hps_usb__nxt 1
 lvttl_signal "" hps_usb__stp 1
+
+#lvttl_signal "" hps_key 1
+#lvttl_signal "" hps_led 1
+#lvttl_signal "" hps_ltc_gpio 1
+#lvttl_signal "" hps_gsensor_int 1
 
