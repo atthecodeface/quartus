@@ -241,6 +241,7 @@ module riscv_i32_muldiv
     coproc_controls__dec_idecode__memory_width,
     coproc_controls__dec_idecode__illegal,
     coproc_controls__dec_idecode__is_compressed,
+    coproc_controls__dec_idecode__ext__dummy,
     coproc_controls__dec_to_alu_blocked,
     coproc_controls__alu_rs1,
     coproc_controls__alu_rs2,
@@ -285,6 +286,7 @@ module riscv_i32_muldiv
     input [1:0]coproc_controls__dec_idecode__memory_width;
     input coproc_controls__dec_idecode__illegal;
     input coproc_controls__dec_idecode__is_compressed;
+    input coproc_controls__dec_idecode__ext__dummy;
     input coproc_controls__dec_to_alu_blocked;
     input [31:0]coproc_controls__alu_rs1;
     input [31:0]coproc_controls__alu_rs2;

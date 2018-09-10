@@ -30,7 +30,7 @@
     //   indicating 1 to 16 following nybbles are data (msb first). The
     //   data follows in the succeeding bytes.
     //   
-    //   A code of 192 to 154 is a space-padded decimal format field. The
+    //   A code of 192 to 254 is a space-padded decimal format field. The
     //   The encoding is 8h11ppppss; the @a size is 0-3 for 1 to 4 bytes of
     //   data, in the succeeding bytes. The @a padding (pppp) is zero for no
     //   padding; 1 forces the string to be at least 2 characters long

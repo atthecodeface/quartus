@@ -60,7 +60,8 @@ module riscv_i32c_pipeline
 
     trace__instr_valid,
     trace__instr_pc,
-    trace__instr_data,
+    trace__instruction__mode,
+    trace__instruction__data,
     trace__rfw_retire,
     trace__rfw_data_valid,
     trace__rfw_rd,
@@ -87,6 +88,7 @@ module riscv_i32c_pipeline
     coproc_controls__dec_idecode__memory_width,
     coproc_controls__dec_idecode__illegal,
     coproc_controls__dec_idecode__is_compressed,
+    coproc_controls__dec_idecode__ext__dummy,
     coproc_controls__dec_to_alu_blocked,
     coproc_controls__alu_rs1,
     coproc_controls__alu_rs2,
@@ -133,7 +135,8 @@ module riscv_i32c_pipeline
     //b Outputs
     output trace__instr_valid;
     output [31:0]trace__instr_pc;
-    output [31:0]trace__instr_data;
+    output [2:0]trace__instruction__mode;
+    output [31:0]trace__instruction__data;
     output trace__rfw_retire;
     output trace__rfw_data_valid;
     output [4:0]trace__rfw_rd;
@@ -160,6 +163,7 @@ module riscv_i32c_pipeline
     output [1:0]coproc_controls__dec_idecode__memory_width;
     output coproc_controls__dec_idecode__illegal;
     output coproc_controls__dec_idecode__is_compressed;
+    output coproc_controls__dec_idecode__ext__dummy;
     output coproc_controls__dec_to_alu_blocked;
     output [31:0]coproc_controls__alu_rs1;
     output [31:0]coproc_controls__alu_rs2;
@@ -182,7 +186,8 @@ module riscv_i32c_pipeline
     //b Output combinatorials
     reg trace__instr_valid;
     reg [31:0]trace__instr_pc;
-    reg [31:0]trace__instr_data;
+    reg [2:0]trace__instruction__mode;
+    reg [31:0]trace__instruction__data;
     reg trace__rfw_retire;
     reg trace__rfw_data_valid;
     reg [4:0]trace__rfw_rd;
@@ -209,6 +214,7 @@ module riscv_i32c_pipeline
     reg [1:0]coproc_controls__dec_idecode__memory_width;
     reg coproc_controls__dec_idecode__illegal;
     reg coproc_controls__dec_idecode__is_compressed;
+    reg coproc_controls__dec_idecode__ext__dummy;
     reg coproc_controls__dec_to_alu_blocked;
     reg [31:0]coproc_controls__alu_rs1;
     reg [31:0]coproc_controls__alu_rs2;
@@ -230,7 +236,8 @@ module riscv_i32c_pipeline
 
     //b Internal and output registers
     reg decexecrfw_state__enable;
-    reg [31:0]decexecrfw_state__instr_data;
+    reg [2:0]decexecrfw_state__instruction__mode;
+    reg [31:0]decexecrfw_state__instruction__data;
     reg decexecrfw_state__valid;
     reg decexecrfw_state__valid_legal;
     reg decexecrfw_state__illegal_pc;
@@ -266,6 +273,7 @@ module riscv_i32c_pipeline
     reg [1:0]decexecrfw_combs__idecode__memory_width;
     reg decexecrfw_combs__idecode__illegal;
     reg decexecrfw_combs__idecode__is_compressed;
+    reg decexecrfw_combs__idecode__ext__dummy;
     reg [31:0]decexecrfw_combs__rs1;
     reg [31:0]decexecrfw_combs__rs2;
     reg [31:0]decexecrfw_combs__pc_plus_4;
@@ -324,6 +332,7 @@ module riscv_i32c_pipeline
     wire [1:0]decexecrfw_idecode_i32c__memory_width;
     wire decexecrfw_idecode_i32c__illegal;
     wire decexecrfw_idecode_i32c__is_compressed;
+    wire decexecrfw_idecode_i32c__ext__dummy;
     wire [4:0]decexecrfw_idecode_i32__rs1;
     wire decexecrfw_idecode_i32__rs1_valid;
     wire [4:0]decexecrfw_idecode_i32__rs2;
@@ -342,6 +351,7 @@ module riscv_i32c_pipeline
     wire [1:0]decexecrfw_idecode_i32__memory_width;
     wire decexecrfw_idecode_i32__illegal;
     wire decexecrfw_idecode_i32__is_compressed;
+    wire decexecrfw_idecode_i32__ext__dummy;
 
     //b Clock gating module instances
     //b Module instances
@@ -352,7 +362,9 @@ module riscv_i32c_pipeline
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
         .riscv_config__i32c(riscv_config__i32c),
-        .instruction(decexecrfw_state__instr_data),
+        .instruction__data(decexecrfw_state__instruction__data),
+        .instruction__mode(decexecrfw_state__instruction__mode),
+        .idecode__ext__dummy(            decexecrfw_idecode_i32__ext__dummy),
         .idecode__is_compressed(            decexecrfw_idecode_i32__is_compressed),
         .idecode__illegal(            decexecrfw_idecode_i32__illegal),
         .idecode__memory_width(            decexecrfw_idecode_i32__memory_width),
@@ -378,7 +390,9 @@ module riscv_i32c_pipeline
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
         .riscv_config__i32c(riscv_config__i32c),
-        .instruction(decexecrfw_state__instr_data),
+        .instruction__data(decexecrfw_state__instruction__data),
+        .instruction__mode(decexecrfw_state__instruction__mode),
+        .idecode__ext__dummy(            decexecrfw_idecode_i32c__ext__dummy),
         .idecode__is_compressed(            decexecrfw_idecode_i32c__is_compressed),
         .idecode__illegal(            decexecrfw_idecode_i32c__illegal),
         .idecode__memory_width(            decexecrfw_idecode_i32c__memory_width),
@@ -401,6 +415,7 @@ module riscv_i32c_pipeline
         .rs2(decexecrfw_combs__rs2),
         .rs1(decexecrfw_combs__rs1),
         .pc(decexecrfw_state__pc),
+        .idecode__ext__dummy(decexecrfw_combs__idecode__ext__dummy),
         .idecode__is_compressed(decexecrfw_combs__idecode__is_compressed),
         .idecode__illegal(decexecrfw_combs__idecode__illegal),
         .idecode__memory_width(decexecrfw_combs__idecode__memory_width),
@@ -526,6 +541,7 @@ module riscv_i32c_pipeline
     reg [1:0]decexecrfw_combs__idecode__memory_width__var;
     reg decexecrfw_combs__idecode__illegal__var;
     reg decexecrfw_combs__idecode__is_compressed__var;
+    reg decexecrfw_combs__idecode__ext__dummy__var;
     reg csr_controls__retire__var;
     reg csr_controls__timer_inc__var;
     reg csr_controls__trap__var;
@@ -566,9 +582,10 @@ module riscv_i32c_pipeline
         decexecrfw_combs__idecode__memory_width__var = decexecrfw_idecode_i32__memory_width;
         decexecrfw_combs__idecode__illegal__var = decexecrfw_idecode_i32__illegal;
         decexecrfw_combs__idecode__is_compressed__var = decexecrfw_idecode_i32__is_compressed;
+        decexecrfw_combs__idecode__ext__dummy__var = decexecrfw_idecode_i32__ext__dummy;
         if ((1'h1&&(riscv_config__i32c!=1'h0)))
         begin
-            if ((decexecrfw_state__instr_data[1:0]!=2'h3))
+            if ((decexecrfw_state__instruction__data[1:0]!=2'h3))
             begin
                 decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_i32c__rs1;
                 decexecrfw_combs__idecode__rs1_valid__var = decexecrfw_idecode_i32c__rs1_valid;
@@ -588,6 +605,7 @@ module riscv_i32c_pipeline
                 decexecrfw_combs__idecode__memory_width__var = decexecrfw_idecode_i32c__memory_width;
                 decexecrfw_combs__idecode__illegal__var = decexecrfw_idecode_i32c__illegal;
                 decexecrfw_combs__idecode__is_compressed__var = decexecrfw_idecode_i32c__is_compressed;
+                decexecrfw_combs__idecode__ext__dummy__var = decexecrfw_idecode_i32c__ext__dummy;
             end //if
         end //if
         decexecrfw_combs__rs1 = registers[decexecrfw_combs__idecode__rs1__var];
@@ -699,7 +717,7 @@ module riscv_i32c_pipeline
         begin
             decexecrfw_combs__trap__var = 1'h1;
             decexecrfw_combs__trap_cause__var = 4'h2;
-            decexecrfw_combs__trap_value__var = decexecrfw_state__instr_data;
+            decexecrfw_combs__trap_value__var = decexecrfw_state__instruction__data;
         end //if
         decexecrfw_combs__pc_plus_4 = (decexecrfw_state__pc+32'h4);
         decexecrfw_combs__pc_plus_2 = (decexecrfw_state__pc+32'h2);
@@ -790,6 +808,7 @@ module riscv_i32c_pipeline
         decexecrfw_combs__idecode__memory_width = decexecrfw_combs__idecode__memory_width__var;
         decexecrfw_combs__idecode__illegal = decexecrfw_combs__idecode__illegal__var;
         decexecrfw_combs__idecode__is_compressed = decexecrfw_combs__idecode__is_compressed__var;
+        decexecrfw_combs__idecode__ext__dummy = decexecrfw_combs__idecode__ext__dummy__var;
         csr_controls__retire = csr_controls__retire__var;
         csr_controls__timer_inc = csr_controls__timer_inc__var;
         csr_controls__trap = csr_controls__trap__var;
@@ -836,7 +855,8 @@ module riscv_i32c_pipeline
         begin
             decexecrfw_state__enable <= 1'h0;
             decexecrfw_state__valid <= 1'h0;
-            decexecrfw_state__instr_data <= 32'h0;
+            decexecrfw_state__instruction__data <= 32'h0;
+            decexecrfw_state__instruction__mode <= 3'h0;
             decexecrfw_state__illegal_pc <= 1'h0;
             decexecrfw_state__valid_legal <= 1'h0;
             decexecrfw_state__pc <= 32'h0;
@@ -880,7 +900,8 @@ module riscv_i32c_pipeline
             decexecrfw_state__valid <= 1'h0;
             if (((ifetch_req__valid!=1'h0)&&(ifetch_resp__valid!=1'h0)))
             begin
-                decexecrfw_state__instr_data <= ifetch_resp__data;
+                decexecrfw_state__instruction__data <= ifetch_resp__data;
+                decexecrfw_state__instruction__mode <= 3'h3;
                 decexecrfw_state__illegal_pc <= 1'h0;
                 decexecrfw_state__valid_legal <= 1'h1;
                 decexecrfw_state__valid <= 1'h1;
@@ -922,6 +943,7 @@ module riscv_i32c_pipeline
     reg [1:0]coproc_controls__dec_idecode__memory_width__var;
     reg coproc_controls__dec_idecode__illegal__var;
     reg coproc_controls__dec_idecode__is_compressed__var;
+    reg coproc_controls__dec_idecode__ext__dummy__var;
     reg coproc_controls__dec_to_alu_blocked__var;
     reg [31:0]coproc_controls__alu_rs1__var;
     reg [31:0]coproc_controls__alu_rs2__var;
@@ -947,6 +969,7 @@ module riscv_i32c_pipeline
         coproc_controls__dec_idecode__memory_width__var = 2'h0;
         coproc_controls__dec_idecode__illegal__var = 1'h0;
         coproc_controls__dec_idecode__is_compressed__var = 1'h0;
+        coproc_controls__dec_idecode__ext__dummy__var = 1'h0;
         coproc_controls__dec_to_alu_blocked__var = 1'h0;
         coproc_controls__alu_rs1__var = 32'h0;
         coproc_controls__alu_rs2__var = 32'h0;
@@ -972,6 +995,7 @@ module riscv_i32c_pipeline
         coproc_controls__dec_idecode__memory_width__var = decexecrfw_combs__idecode__memory_width;
         coproc_controls__dec_idecode__illegal__var = decexecrfw_combs__idecode__illegal;
         coproc_controls__dec_idecode__is_compressed__var = decexecrfw_combs__idecode__is_compressed;
+        coproc_controls__dec_idecode__ext__dummy__var = decexecrfw_combs__idecode__ext__dummy;
         coproc_controls__dec_to_alu_blocked__var = coproc_response__cannot_complete;
         coproc_controls__alu_rs1__var = decexecrfw_combs__rs1;
         coproc_controls__alu_rs2__var = decexecrfw_combs__rs2;
@@ -999,6 +1023,7 @@ module riscv_i32c_pipeline
             coproc_controls__dec_idecode__memory_width__var = 2'h0;
             coproc_controls__dec_idecode__illegal__var = 1'h0;
             coproc_controls__dec_idecode__is_compressed__var = 1'h0;
+            coproc_controls__dec_idecode__ext__dummy__var = 1'h0;
             coproc_controls__dec_to_alu_blocked__var = 1'h0;
             coproc_controls__alu_rs1__var = 32'h0;
             coproc_controls__alu_rs2__var = 32'h0;
@@ -1025,6 +1050,7 @@ module riscv_i32c_pipeline
         coproc_controls__dec_idecode__memory_width = coproc_controls__dec_idecode__memory_width__var;
         coproc_controls__dec_idecode__illegal = coproc_controls__dec_idecode__illegal__var;
         coproc_controls__dec_idecode__is_compressed = coproc_controls__dec_idecode__is_compressed__var;
+        coproc_controls__dec_idecode__ext__dummy = coproc_controls__dec_idecode__ext__dummy__var;
         coproc_controls__dec_to_alu_blocked = coproc_controls__dec_to_alu_blocked__var;
         coproc_controls__alu_rs1 = coproc_controls__alu_rs1__var;
         coproc_controls__alu_rs2 = coproc_controls__alu_rs2__var;
@@ -1040,7 +1066,8 @@ module riscv_i32c_pipeline
     begin: logging__comb_code
     reg trace__instr_valid__var;
     reg [31:0]trace__instr_pc__var;
-    reg [31:0]trace__instr_data__var;
+    reg [2:0]trace__instruction__mode__var;
+    reg [31:0]trace__instruction__data__var;
     reg trace__rfw_retire__var;
     reg trace__rfw_data_valid__var;
     reg [4:0]trace__rfw_rd__var;
@@ -1050,7 +1077,8 @@ module riscv_i32c_pipeline
     reg trace__trap__var;
         trace__instr_valid__var = 1'h0;
         trace__instr_pc__var = 32'h0;
-        trace__instr_data__var = 32'h0;
+        trace__instruction__mode__var = 3'h0;
+        trace__instruction__data__var = 32'h0;
         trace__rfw_retire__var = 1'h0;
         trace__rfw_data_valid__var = 1'h0;
         trace__rfw_rd__var = 5'h0;
@@ -1060,7 +1088,8 @@ module riscv_i32c_pipeline
         trace__trap__var = 1'h0;
         trace__instr_valid__var = decexecrfw_state__valid;
         trace__instr_pc__var = decexecrfw_state__pc;
-        trace__instr_data__var = decexecrfw_state__instr_data;
+        trace__instruction__mode__var = decexecrfw_state__instruction__mode;
+        trace__instruction__data__var = decexecrfw_state__instruction__data;
         trace__rfw_retire__var = decexecrfw_state__valid;
         trace__rfw_data_valid__var = (((decexecrfw_state__valid_legal!=1'h0)&&(decexecrfw_combs__idecode__rd_written!=1'h0))&&!(decexecrfw_combs__idecode__illegal!=1'h0));
         trace__rfw_rd__var = decexecrfw_combs__idecode__rd;
@@ -1070,7 +1099,8 @@ module riscv_i32c_pipeline
         trace__branch_target__var = decexecrfw_combs__branch_target;
         trace__instr_valid = trace__instr_valid__var;
         trace__instr_pc = trace__instr_pc__var;
-        trace__instr_data = trace__instr_data__var;
+        trace__instruction__mode = trace__instruction__mode__var;
+        trace__instruction__data = trace__instruction__data__var;
         trace__rfw_retire = trace__rfw_retire__var;
         trace__rfw_data_valid = trace__rfw_data_valid__var;
         trace__rfw_rd = trace__rfw_rd__var;

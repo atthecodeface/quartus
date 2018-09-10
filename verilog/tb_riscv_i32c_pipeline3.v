@@ -77,7 +77,8 @@ module tb_riscv_i32c_pipeline3
     //b Internal nets
     wire trace__instr_valid;
     wire [31:0]trace__instr_pc;
-    wire [31:0]trace__instr_data;
+    wire [2:0]trace__instruction__mode;
+    wire [31:0]trace__instruction__data;
     wire trace__rfw_retire;
     wire trace__rfw_data_valid;
     wire [4:0]trace__rfw_rd;
@@ -104,6 +105,7 @@ module tb_riscv_i32c_pipeline3
     wire [1:0]coproc_controls__dec_idecode__memory_width;
     wire coproc_controls__dec_idecode__illegal;
     wire coproc_controls__dec_idecode__is_compressed;
+    wire coproc_controls__dec_idecode__ext__dummy;
     wire coproc_controls__dec_to_alu_blocked;
     wire [31:0]coproc_controls__alu_rs1;
     wire [31:0]coproc_controls__alu_rs2;
@@ -177,7 +179,8 @@ module tb_riscv_i32c_pipeline3
         .trace__rfw_rd(            trace__rfw_rd),
         .trace__rfw_data_valid(            trace__rfw_data_valid),
         .trace__rfw_retire(            trace__rfw_retire),
-        .trace__instr_data(            trace__instr_data),
+        .trace__instruction__data(            trace__instruction__data),
+        .trace__instruction__mode(            trace__instruction__mode),
         .trace__instr_pc(            trace__instr_pc),
         .trace__instr_valid(            trace__instr_valid),
         .coproc_controls__alu_cannot_complete(            coproc_controls__alu_cannot_complete),
@@ -186,6 +189,7 @@ module tb_riscv_i32c_pipeline3
         .coproc_controls__alu_rs2(            coproc_controls__alu_rs2),
         .coproc_controls__alu_rs1(            coproc_controls__alu_rs1),
         .coproc_controls__dec_to_alu_blocked(            coproc_controls__dec_to_alu_blocked),
+        .coproc_controls__dec_idecode__ext__dummy(            coproc_controls__dec_idecode__ext__dummy),
         .coproc_controls__dec_idecode__is_compressed(            coproc_controls__dec_idecode__is_compressed),
         .coproc_controls__dec_idecode__illegal(            coproc_controls__dec_idecode__illegal),
         .coproc_controls__dec_idecode__memory_width(            coproc_controls__dec_idecode__memory_width),
@@ -225,7 +229,8 @@ module tb_riscv_i32c_pipeline3
         .trace__rfw_rd(trace__rfw_rd),
         .trace__rfw_data_valid(trace__rfw_data_valid),
         .trace__rfw_retire(trace__rfw_retire),
-        .trace__instr_data(trace__instr_data),
+        .trace__instruction__data(trace__instruction__data),
+        .trace__instruction__mode(trace__instruction__mode),
         .trace__instr_pc(trace__instr_pc),
         .trace__instr_valid(trace__instr_valid),
         .reset_n(reset_n)         );

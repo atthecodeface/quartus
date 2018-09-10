@@ -1,4 +1,104 @@
-module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, reset_n,
+module  pll_lcd_0002(
+
+	// interface 'refclk'
+	input wire refclk,
+
+	// interface 'reset'
+	input wire rst,
+
+	// interface 'outclk0'
+	output wire outclk_0,
+
+	// interface 'locked'
+	output wire locked
+);
+
+	altera_pll #(
+		.fractional_vco_multiplier("false"),
+		.reference_clock_frequency("50.0 MHz"),
+		.operation_mode("direct"),
+		.number_of_clocks(1),
+		.output_clock_frequency0("9.000000 MHz"),
+		.phase_shift0("0 ps"),
+		.duty_cycle0(50),
+		.output_clock_frequency1("0 MHz"),
+		.phase_shift1("0 ps"),
+		.duty_cycle1(50),
+		.output_clock_frequency2("0 MHz"),
+		.phase_shift2("0 ps"),
+		.duty_cycle2(50),
+		.output_clock_frequency3("0 MHz"),
+		.phase_shift3("0 ps"),
+		.duty_cycle3(50),
+		.output_clock_frequency4("0 MHz"),
+		.phase_shift4("0 ps"),
+		.duty_cycle4(50),
+		.output_clock_frequency5("0 MHz"),
+		.phase_shift5("0 ps"),
+		.duty_cycle5(50),
+		.output_clock_frequency6("0 MHz"),
+		.phase_shift6("0 ps"),
+		.duty_cycle6(50),
+		.output_clock_frequency7("0 MHz"),
+		.phase_shift7("0 ps"),
+		.duty_cycle7(50),
+		.output_clock_frequency8("0 MHz"),
+		.phase_shift8("0 ps"),
+		.duty_cycle8(50),
+		.output_clock_frequency9("0 MHz"),
+		.phase_shift9("0 ps"),
+		.duty_cycle9(50),
+		.output_clock_frequency10("0 MHz"),
+		.phase_shift10("0 ps"),
+		.duty_cycle10(50),
+		.output_clock_frequency11("0 MHz"),
+		.phase_shift11("0 ps"),
+		.duty_cycle11(50),
+		.output_clock_frequency12("0 MHz"),
+		.phase_shift12("0 ps"),
+		.duty_cycle12(50),
+		.output_clock_frequency13("0 MHz"),
+		.phase_shift13("0 ps"),
+		.duty_cycle13(50),
+		.output_clock_frequency14("0 MHz"),
+		.phase_shift14("0 ps"),
+		.duty_cycle14(50),
+		.output_clock_frequency15("0 MHz"),
+		.phase_shift15("0 ps"),
+		.duty_cycle15(50),
+		.output_clock_frequency16("0 MHz"),
+		.phase_shift16("0 ps"),
+		.duty_cycle16(50),
+		.output_clock_frequency17("0 MHz"),
+		.phase_shift17("0 ps"),
+		.duty_cycle17(50),
+		.pll_type("General"),
+		.pll_subtype("General")
+	) altera_pll_i (
+		.rst	(rst),
+		.outclk	({outclk_0}),
+		.locked	(locked),
+		.fboutclk	( ),
+		.fbclk	(1'b0),
+		.refclk	(refclk)
+	);
+endmodule
+module pll_lcd (
+		input  wire  refclk,   //  refclk.clk
+		input  wire  rst,      //   reset.reset
+		output wire  outclk_0, // outclk0.clk
+		output wire  locked    //  locked.export
+	);
+
+	pll_lcd_0002 pll_lcd_inst (
+		.refclk   (refclk),   //  refclk.clk
+		.rst      (rst),      //   reset.reset
+		.outclk_0 (outclk_0), // outclk0.clk
+		.locked   (locked)    //  locked.export
+	);
+
+endmodule
+module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
 
                      de1_adc__cs_n, de1_adc__din, de1_adc__dout, de1_adc__sclk,
                      de1_aud__adcdat, de1_aud__adclkrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
@@ -52,21 +152,21 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, reset_n,
 
                      hps_usb__clkout, hps_usb__data, hps_usb__dir, hps_usb__nxt, hps_usb__stp,
 
-                     cam_inputs_status__sr_data,
-                     cam_inputs_status__left_rotary__direction_pin, cam_inputs_status__left_rotary__transition_pin,
-                     cam_inputs_status__right_rotary__direction_pin, cam_inputs_status__right_rotary__transition_pin,
+                     de1_cl_inputs_status__sr_data,
+                     de1_cl_inputs_status__left_rotary__direction_pin, de1_cl_inputs_status__left_rotary__transition_pin,
+                     de1_cl_inputs_status__right_rotary__direction_pin, de1_cl_inputs_status__right_rotary__transition_pin,
 
-                     cam_inputs_control__sr_clock, cam_inputs_control__sr_shift,
-                     cam_led_data_pin,
-                     cam_lcd__clock, cam_lcd__vsync_n, cam_lcd__hsync_n, cam_lcd__display_enable, cam_lcd__red, cam_lcd__green, cam_lcd__blue,
-                     cam_lcd__backlight
+                     de1_cl_inputs_control__sr_clock, de1_cl_inputs_control__sr_shift,
+                     de1_cl_led_data_pin,
+                     de1_cl_lcd__clock, de1_cl_lcd__vsync_n, de1_cl_lcd__hsync_n, de1_cl_lcd__display_enable, de1_cl_lcd__red, de1_cl_lcd__green, de1_cl_lcd__blue,
+                     de1_cl_lcd__backlight
 
                      );
    input clk_50;
    input clk2_50;
    input clk3_50;
    input clk4_50;
-   input reset_n;
+   //input reset_n;
 
    inout   de1_adc__cs_n;
    output  de1_adc__din;
@@ -128,23 +228,23 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, reset_n,
    output       de1_vga__sync_n;
    output       de1_vga__vs;
    
-   input        cam_inputs_status__sr_data;
-   input        cam_inputs_status__left_rotary__direction_pin;
-   input        cam_inputs_status__left_rotary__transition_pin;
-   input        cam_inputs_status__right_rotary__direction_pin;
-   input        cam_inputs_status__right_rotary__transition_pin;
+   input        de1_cl_inputs_status__sr_data;
+   input        de1_cl_inputs_status__left_rotary__direction_pin;
+   input        de1_cl_inputs_status__left_rotary__transition_pin;
+   input        de1_cl_inputs_status__right_rotary__direction_pin;
+   input        de1_cl_inputs_status__right_rotary__transition_pin;
 
-   output      cam_inputs_control__sr_clock;
-   output      cam_inputs_control__sr_shift;
-   output      cam_led_data_pin;
-   output      cam_lcd__clock             ;
-   output      cam_lcd__vsync_n           ;
-   output      cam_lcd__hsync_n           ;
-   output      cam_lcd__display_enable    ;
-   output [5:0] cam_lcd__red               ;
-   output [6:0] cam_lcd__green             ;
-   output [5:0] cam_lcd__blue              ;
-   output       cam_lcd__backlight         ;
+   output      de1_cl_inputs_control__sr_clock;
+   output      de1_cl_inputs_control__sr_shift;
+   output      de1_cl_led_data_pin;
+   output      de1_cl_lcd__clock             ;
+   output      de1_cl_lcd__vsync_n           ;
+   output      de1_cl_lcd__hsync_n           ;
+   output      de1_cl_lcd__display_enable    ;
+   output [5:0] de1_cl_lcd__red               ;
+   output [6:0] de1_cl_lcd__green             ;
+   output [5:0] de1_cl_lcd__blue              ;
+   output       de1_cl_lcd__backlight         ;
 
    inout        hps_conv_usb_n;
 
@@ -323,6 +423,39 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, reset_n,
                 
    wire               h2f_reset_reset_n;
 
+   wire               reset_n;
+   assign reset_n = de1_switches[0];
+  
+   wire         video_clk;
+   wire         video_clk_locked;
+   wire         de1_cl_lcd__clock;
+   wire         de1_vga_clock;
+   wire         de1_vga_reset_n;
+   pll_lcd video_clk_gen( .refclk(clk_50), .rst(!reset_n), .outclk_0(video_clk), .locked(video_clk_locked) );
+   assign de1_cl_lcd__clock  = !video_clk;
+   //assign de1_cl_lcd_reset_n   = reset_n && video_clk_locked;
+   assign de1_vga_clock     = !video_clk;
+   assign de1_vga_reset_n   = reset_n && video_clk_locked;
+   
+  
+   wire         de1_ps2_in__clk;
+   wire         de1_ps2_in__data;
+   wire         de1_ps2_out__clk;
+   wire         de1_ps2_out__data;
+   assign de1_ps2_clk = de1_ps2_out__clk  ? 1'bz: 1'b0;
+   assign de1_ps2_dat = de1_ps2_out__data ? 1'bz: 1'b0;
+   assign de1_ps2_in__clk  = de1_ps2_clk;
+   assign de1_ps2_in__data = de1_ps2_dat;
+
+   wire         de1_ps2b_in__clk;
+   wire         de1_ps2b_in__data;
+   wire         de1_ps2b_out__clk;
+   wire         de1_ps2b_out__data;
+   assign de1_ps2b_clk = de1_ps2b_out__clk  ? 1'bz: 1'b0;
+   assign de1_ps2b_dat = de1_ps2b_out__data ? 1'bz: 1'b0;
+   assign de1_ps2b_in__clk  = de1_ps2b_clk;
+   assign de1_ps2b_in__data = de1_ps2b_dat;
+   
    hps hps_i(.clk_clk(clk_50),
              .hps_0_f2h_axi_clock_clk( hps_0_f2h_axi_clock_clk),
              .hps_0_f2h_axi_slave_awid( f2h__awid),
@@ -537,64 +670,105 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, reset_n,
    //.reset_reset_n in to hps is (hps_fpga_reset_n),                         //                          reset.reset_n
    
 
-   assign de1_adc__din = 0;
-   assign de1_adc__sclk = 0;
+   assign hps_0_h2f_lw_axi_clock_clk = clk_50;
+   hps_fpga_debug fpga_0( .de1_vga_clock(de1_vga_clock),
+                          .de1_vga_clock__enable(1'b1),
+                          .de1_cl_lcd_clock(de1_cl_lcd__clock),
+                          .de1_cl_lcd_clock__enable(1'b1),
+                          .lw_axi_clock_clk(hps_0_h2f_lw_axi_clock_clk),
+                          .lw_axi_clock_clk__enable(1'b1),
+                          .clk(hps_0_h2f_lw_axi_clock_clk),
+                          .clk__enable(1'b1),
+    .reset_n(reset_n),
 
-//   inout   de1_aud__adclkrck;
-//   inout   de1_aud__bclk;
-   assign de1_aud__dacdat = 0;
-//   inout   de1_aud__daclrck;
-   assign de1_aud__xck = 0;
+    .de1_irda_rxd(de1_irda__rxd),
+    .de1_switches(de1_switches),
+    .de1_keys(de1_keys),
+    .de1_vga_reset_n(de1_vga_reset_n),
+    .de1_ps2b_in__data(de1_ps2b_in__data),
+    .de1_ps2b_in__clk(de1_ps2b_in__clk),
+    .de1_ps2_in__data(de1_ps2_in__data),
+    .de1_ps2_in__clk(de1_ps2_in__clk),
+    .de1_cl_inputs_status__sr_data(de1_cl_inputs_status__sr_data),
+    .de1_cl_inputs_status__left_rotary__direction_pin(de1_cl_inputs_status__left_rotary__direction_pin),
+    .de1_cl_inputs_status__left_rotary__transition_pin(de1_cl_inputs_status__left_rotary__transition_pin),
+    .de1_cl_inputs_status__right_rotary__direction_pin(de1_cl_inputs_status__right_rotary__direction_pin),
+    .de1_cl_inputs_status__right_rotary__transition_pin(de1_cl_inputs_status__right_rotary__transition_pin),
+    .lw_axi_rready(h2f_lw__rready),
+    .lw_axi_bready(h2f_lw__bready),
+    .lw_axi_w__valid(h2f_lw__wvalid),
+    .lw_axi_w__id(h2f_lw__wid),
+    .lw_axi_w__data(h2f_lw__wdata),
+    .lw_axi_w__strb(h2f_lw__wstrb),
+    .lw_axi_w__last(h2f_lw__wlast),
+    .lw_axi_w__user(0),
+    .lw_axi_aw__valid(h2f_lw__awvalid),
+    .lw_axi_aw__id(h2f_lw__awid),
+    .lw_axi_aw__addr(h2f_lw__awaddr),
+    .lw_axi_aw__len(h2f_lw__awlen),
+    .lw_axi_aw__size(h2f_lw__awsize),
+    .lw_axi_aw__burst(h2f_lw__awburst),
+    .lw_axi_aw__lock(h2f_lw__awlock),
+    .lw_axi_aw__cache(h2f_lw__awcache),
+    .lw_axi_aw__prot(h2f_lw__awprot),
+    .lw_axi_aw__qos(0),
+    .lw_axi_aw__region(0),
+    .lw_axi_aw__user(0),
+    .lw_axi_ar__valid(h2f_lw__arvalid),
+    .lw_axi_ar__id(h2f_lw__arid),
+    .lw_axi_ar__addr(h2f_lw__araddr),
+    .lw_axi_ar__len(h2f_lw__arlen),
+    .lw_axi_ar__size(h2f_lw__arsize),
+    .lw_axi_ar__burst(h2f_lw__arburst),
+    .lw_axi_ar__lock(h2f_lw__arlock),
+    .lw_axi_ar__cache(h2f_lw__arcache),
+    .lw_axi_ar__prot(h2f_lw__arprot),
+    .lw_axi_ar__qos(0),
+    .lw_axi_ar__region(0),
+    .lw_axi_ar__user(0),
 
-   assign de1_ddr__clk = 0;
-   assign de1_ddr__cke = 0;
-   assign de1_ddr__cs_n = 0;
-   assign de1_ddr__addr = 0;
-   assign  de1_ddr__ba = 0;
-//   inout [15:0]  de1_ddr__dq;
-   assign de1_ddr__ldqm = 0;
-   assign de1_ddr__udqm = 0;
-   assign de1_ddr__ras_n = 0;
-   assign de1_ddr__cas_n = 0;
-   assign de1_ddr__we_n = 0;
-
-   assign de1_fan_ctrl = 0;
-   assign de1_fpga_i2c__sclk = 0;
-//   inout         de1_fpga_i2c__sdat;
-   assign  de1_hex0 = 0;
-   assign  de1_hex1 = 0;
-   assign  de1_hex2 = 0;
-   assign  de1_hex3 = 0;
-   assign  de1_hex4 = 0;
-   assign  de1_hex5 = 0;
-
-   assign de1_irda__txd = 0;
-   assign  de1_leds = 0;
-
-//   inout       de1_ps2_clk;
-//   inout       de1_ps2_dat;
-//   inout       de1_ps2_b_clk;
-//   inout       de1_ps2_b_dat;
-
-   assign de1_td__reset_n = 0;
-
-   assign de1_vga__b = 0;
-   assign de1_vga__blank_n = 0;
-   assign de1_vga__clk = 0;
-   assign de1_vga__g = 0;
-   assign de1_vga__hs = 0;
-   assign de1_vga__r = 0;
-   assign de1_vga__sync_n = 0;
-   assign de1_vga__vs = 0;
-   
-//   assign cam_led_data_pin = 0;
-   assign cam_lcd__clock              = 0;
-   assign cam_lcd__vsync_n            = 0;
-   assign cam_lcd__hsync_n            = 0;
-   assign cam_lcd__display_enable     = 0;
-   assign cam_lcd__red                = 0;
-   assign cam_lcd__green              = 0;
-   assign cam_lcd__blue               = 0;
-   assign cam_lcd__backlight          = 0;
+    .de1_vga__vs(de1_vga__vs),
+    .de1_vga__hs(de1_vga__hs),
+    .de1_vga__blank_n(de1_vga__blank_n),
+    .de1_vga__sync_n(de1_vga__sync_n),
+    .de1_vga__red(de1_vga__r),
+    .de1_vga__green(de1_vga__g),
+    .de1_vga__blue(de1_vga__b),
+    .de1_cl_lcd__vsync_n(de1_cl_lcd__vsync_n),
+    .de1_cl_lcd__hsync_n(de1_cl_lcd__hsync_n),
+    .de1_cl_lcd__display_enable(de1_cl_lcd__display_enable),
+    .de1_cl_lcd__red(de1_cl_lcd__red),
+    .de1_cl_lcd__green(de1_cl_lcd__green),
+    .de1_cl_lcd__blue(de1_cl_lcd__blue),
+    .de1_cl_lcd__backlight(de1_cl_lcd__backlight),
+    .de1_irda_txd(de1_irda__txd),
+    .de1_ps2b_out__data(de1_ps2b_out__data),
+    .de1_ps2b_out__clk(de1_ps2b_out__clk),
+    .de1_ps2_out__data(de1_ps2_out__data),
+    .de1_ps2_out__clk(de1_ps2_out__clk),
+    .de1_leds__leds(de1_leds),
+    .de1_leds__h0(de1_hex0),
+    .de1_leds__h1(de1_hex1),
+    .de1_leds__h2(de1_hex2),
+    .de1_leds__h3(de1_hex3),
+    .de1_leds__h4(de1_hex4),
+    .de1_leds__h5(de1_hex5),
+    .de1_cl_led_data_pin(de1_cl_led_data_pin),
+    .de1_cl_inputs_control__sr_clock(de1_cl_inputs_control__sr_clock),
+    .de1_cl_inputs_control__sr_shift(de1_cl_inputs_control__sr_shift),
+    .lw_axi_r__valid(h2f_lw__rvalid),
+    .lw_axi_r__id(h2f_lw__rid),
+    .lw_axi_r__data(h2f_lw__rdata),
+    .lw_axi_r__resp(h2f_lw__rresp),
+    .lw_axi_r__last(h2f_lw__rlast),
+    .lw_axi_r__user(),
+    .lw_axi_b__valid(h2f_lw__bvalid),
+    .lw_axi_b__id(h2f_lw__bid),
+    .lw_axi_b__resp(h2f_lw__bresp),
+    .lw_axi_b__user(),
+    .lw_axi_wready(h2f_lw__wready),
+    .lw_axi_awready(h2f_lw__awready),
+    .lw_axi_arready(h2f_lw__arready)
+);
 
 endmodule

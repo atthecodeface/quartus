@@ -21,7 +21,14 @@
 module riscv_e32_decode
 (
 
-    instruction,
+    riscv_config__i32c,
+    riscv_config__e32,
+    riscv_config__i32m,
+    riscv_config__i32m_fuse,
+    riscv_config__coproc_disable,
+    riscv_config__unaligned_mem,
+    instruction__mode,
+    instruction__data,
 
     idecode__rs1,
     idecode__rs1_valid,
@@ -40,13 +47,21 @@ module riscv_e32_decode
     idecode__memory_read_unsigned,
     idecode__memory_width,
     idecode__illegal,
-    idecode__is_compressed
+    idecode__is_compressed,
+    idecode__ext__dummy
 );
 
     //b Clocks
 
     //b Inputs
-    input [31:0]instruction;
+    input riscv_config__i32c;
+    input riscv_config__e32;
+    input riscv_config__i32m;
+    input riscv_config__i32m_fuse;
+    input riscv_config__coproc_disable;
+    input riscv_config__unaligned_mem;
+    input [2:0]instruction__mode;
+    input [31:0]instruction__data;
 
     //b Outputs
     output [4:0]idecode__rs1;
@@ -67,6 +82,7 @@ module riscv_e32_decode
     output [1:0]idecode__memory_width;
     output idecode__illegal;
     output idecode__is_compressed;
+    output idecode__ext__dummy;
 
 // output components here
 
@@ -89,6 +105,7 @@ module riscv_e32_decode
     reg [1:0]idecode__memory_width;
     reg idecode__illegal;
     reg idecode__is_compressed;
+    reg idecode__ext__dummy;
 
     //b Output nets
 
@@ -115,11 +132,20 @@ module riscv_e32_decode
     wire [1:0]rv32i_idecode__memory_width;
     wire rv32i_idecode__illegal;
     wire rv32i_idecode__is_compressed;
+    wire rv32i_idecode__ext__dummy;
 
     //b Clock gating module instances
     //b Module instances
     riscv_i32_decode rv32i_decode(
-        .instruction(instruction),
+        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
+        .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
+        .riscv_config__i32m(riscv_config__i32m),
+        .riscv_config__e32(riscv_config__e32),
+        .riscv_config__i32c(riscv_config__i32c),
+        .instruction__data(instruction__data),
+        .instruction__mode(instruction__mode),
+        .idecode__ext__dummy(            rv32i_idecode__ext__dummy),
         .idecode__is_compressed(            rv32i_idecode__is_compressed),
         .idecode__illegal(            rv32i_idecode__illegal),
         .idecode__memory_width(            rv32i_idecode__memory_width),
@@ -163,6 +189,7 @@ module riscv_e32_decode
         idecode__memory_width = rv32i_idecode__memory_width;
         idecode__illegal__var = rv32i_idecode__illegal;
         idecode__is_compressed = rv32i_idecode__is_compressed;
+        idecode__ext__dummy = rv32i_idecode__ext__dummy;
         if (((rv32i_idecode__rs1_valid!=1'h0)&&(rv32i_idecode__rs1[4]!=1'h0)))
         begin
             idecode__illegal__var = 1'h1;

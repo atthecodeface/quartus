@@ -16,6 +16,8 @@ module tb_riscv_i32mc_pipeline3
 (
     clk,
     clk__enable,
+    jtag_tck,
+    jtag_tck__enable,
 
     reset_n
 
@@ -26,6 +28,10 @@ module tb_riscv_i32mc_pipeline3
     input clk__enable;
     wire riscv_clk; // Gated version of clock 'clk' enabled by 'riscv_clk_cycle_2'
     wire riscv_clk__enable;
+    input jtag_tck;
+    input jtag_tck__enable;
+    wire jtag_tck_gated; // Gated version of clock 'jtag_tck' enabled by 'tck_enable_fix'
+    wire jtag_tck_gated__enable;
 
     //b Inputs
     input reset_n;
@@ -69,11 +75,25 @@ module tb_riscv_i32mc_pipeline3
     reg imem_access_req__flush;
     reg dmem_access_resp__wait;
     reg [31:0]dmem_access_resp__read_data;
+    reg debug_response0__exec_valid;
+    reg debug_response0__exec_halting;
+    reg debug_response0__exec_dret;
+    reg debug_tgt__valid;
+    reg [5:0]debug_tgt__selected;
+    reg debug_tgt__halted;
+    reg debug_tgt__resumed;
+    reg debug_tgt__hit_breakpoint;
+    reg debug_tgt__op_was_none;
+    reg debug_tgt__resp;
+    reg [31:0]debug_tgt__data;
+    reg debug_tgt__attention;
+    reg tck_enable_fix;
 
     //b Internal nets
     wire trace__instr_valid;
     wire [31:0]trace__instr_pc;
-    wire [31:0]trace__instr_data;
+    wire [2:0]trace__instruction__mode;
+    wire [31:0]trace__instruction__data;
     wire trace__rfw_retire;
     wire trace__rfw_data_valid;
     wire [4:0]trace__rfw_rd;
@@ -104,6 +124,7 @@ module tb_riscv_i32mc_pipeline3
     wire [1:0]coproc_controls__dec_idecode__memory_width;
     wire coproc_controls__dec_idecode__illegal;
     wire coproc_controls__dec_idecode__is_compressed;
+    wire coproc_controls__dec_idecode__ext__dummy;
     wire coproc_controls__dec_to_alu_blocked;
     wire [31:0]coproc_controls__alu_rs1;
     wire [31:0]coproc_controls__alu_rs2;
@@ -122,9 +143,50 @@ module tb_riscv_i32mc_pipeline3
     wire dmem_access_req__write_enable;
     wire dmem_access_req__read_enable;
     wire [31:0]dmem_access_req__write_data;
+    wire debug_control0__valid;
+    wire debug_control0__kill_fetch;
+    wire debug_control0__halt_request;
+    wire debug_control0__fetch_dret;
+    wire [31:0]debug_control0__data;
+    wire debug_tgt0__valid;
+    wire [5:0]debug_tgt0__selected;
+    wire debug_tgt0__halted;
+    wire debug_tgt0__resumed;
+    wire debug_tgt0__hit_breakpoint;
+    wire debug_tgt0__op_was_none;
+    wire debug_tgt0__resp;
+    wire [31:0]debug_tgt0__data;
+    wire debug_tgt0__attention;
+    wire debug_mst__valid;
+    wire [5:0]debug_mst__select;
+    wire [5:0]debug_mst__mask;
+    wire [3:0]debug_mst__op;
+    wire [15:0]debug_mst__arg;
+    wire [31:0]debug_mst__data;
+        //   APB response
+    wire [31:0]apb_response__prdata;
+    wire apb_response__pready;
+    wire apb_response__perr;
+        //   APB request
+    wire [31:0]apb_request__paddr;
+    wire apb_request__penable;
+    wire apb_request__psel;
+    wire apb_request__pwrite;
+    wire [31:0]apb_request__pwdata;
+    wire tck_enable;
+    wire [49:0]dr_out;
+    wire [49:0]dr_tdi_mask;
+    wire [49:0]dr_in;
+    wire [1:0]dr_action;
+    wire [4:0]ir;
+    wire tdo;
+    wire jtag__ntrst;
+    wire jtag__tms;
+    wire jtag__tdi;
 
     //b Clock gating module instances
     assign riscv_clk__enable = (clk__enable && riscv_clk_cycle_2);
+    assign jtag_tck_gated__enable = (jtag_tck__enable && tck_enable_fix);
     //b Module instances
     se_sram_srw_16384x32 imem(
         .sram_clock(clk),
@@ -145,9 +207,100 @@ module tb_riscv_i32mc_pipeline3
         .select(dmem_select),
         .data_out(            main_mem_read_data)         );
     se_test_harness th(
-        .clk(clk),
+        .clk(jtag_tck),
         .clk__enable(1'b1),
-        .a(1'h0)         );
+        .tdo(tdo),
+        .tck_enable(            tck_enable),
+        .jtag__tdi(            jtag__tdi),
+        .jtag__tms(            jtag__tms),
+        .jtag__ntrst(            jtag__ntrst)         );
+    jtag_tap tap(
+        .jtag_tck(jtag_tck),
+        .jtag_tck__enable(jtag_tck_gated__enable),
+        .dr_out(dr_out),
+        .dr_tdi_mask(dr_tdi_mask),
+        .jtag__tdi(jtag__tdi),
+        .jtag__tms(jtag__tms),
+        .jtag__ntrst(jtag__ntrst),
+        .reset_n(reset_n),
+        .dr_in(            dr_in),
+        .dr_action(            dr_action),
+        .ir(            ir),
+        .tdo(            tdo)         );
+    riscv_jtag_apb_dm dm_apb(
+        .apb_clock(clk),
+        .apb_clock__enable(riscv_clk__enable),
+        .jtag_tck(jtag_tck),
+        .jtag_tck__enable(jtag_tck_gated__enable),
+        .apb_response__perr(apb_response__perr),
+        .apb_response__pready(apb_response__pready),
+        .apb_response__prdata(apb_response__prdata),
+        .dr_in(dr_in),
+        .dr_action(dr_action),
+        .ir(ir),
+        .reset_n(reset_n),
+        .apb_request__pwdata(            apb_request__pwdata),
+        .apb_request__pwrite(            apb_request__pwrite),
+        .apb_request__psel(            apb_request__psel),
+        .apb_request__penable(            apb_request__penable),
+        .apb_request__paddr(            apb_request__paddr),
+        .dr_out(            dr_out),
+        .dr_tdi_mask(            dr_tdi_mask)         );
+    riscv_i32_debug dm(
+        .clk(clk),
+        .clk__enable(riscv_clk__enable),
+        .debug_tgt__attention(debug_tgt__attention),
+        .debug_tgt__data(debug_tgt__data),
+        .debug_tgt__resp(debug_tgt__resp),
+        .debug_tgt__op_was_none(debug_tgt__op_was_none),
+        .debug_tgt__hit_breakpoint(debug_tgt__hit_breakpoint),
+        .debug_tgt__resumed(debug_tgt__resumed),
+        .debug_tgt__halted(debug_tgt__halted),
+        .debug_tgt__selected(debug_tgt__selected),
+        .debug_tgt__valid(debug_tgt__valid),
+        .apb_request__pwdata(apb_request__pwdata),
+        .apb_request__pwrite(apb_request__pwrite),
+        .apb_request__psel(apb_request__psel),
+        .apb_request__penable(apb_request__penable),
+        .apb_request__paddr(apb_request__paddr),
+        .reset_n(reset_n),
+        .debug_mst__data(            debug_mst__data),
+        .debug_mst__arg(            debug_mst__arg),
+        .debug_mst__op(            debug_mst__op),
+        .debug_mst__mask(            debug_mst__mask),
+        .debug_mst__select(            debug_mst__select),
+        .debug_mst__valid(            debug_mst__valid),
+        .apb_response__perr(            apb_response__perr),
+        .apb_response__pready(            apb_response__pready),
+        .apb_response__prdata(            apb_response__prdata)         );
+    riscv_i32_pipeline_debug pd0(
+        .clk(clk),
+        .clk__enable(riscv_clk__enable),
+        .rv_select(6'h0),
+        .debug_response__exec_dret(debug_response0__exec_dret),
+        .debug_response__exec_halting(debug_response0__exec_halting),
+        .debug_response__exec_valid(debug_response0__exec_valid),
+        .debug_mst__data(debug_mst__data),
+        .debug_mst__arg(debug_mst__arg),
+        .debug_mst__op(debug_mst__op),
+        .debug_mst__mask(debug_mst__mask),
+        .debug_mst__select(debug_mst__select),
+        .debug_mst__valid(debug_mst__valid),
+        .reset_n(reset_n),
+        .debug_control__data(            debug_control0__data),
+        .debug_control__fetch_dret(            debug_control0__fetch_dret),
+        .debug_control__halt_request(            debug_control0__halt_request),
+        .debug_control__kill_fetch(            debug_control0__kill_fetch),
+        .debug_control__valid(            debug_control0__valid),
+        .debug_tgt__attention(            debug_tgt0__attention),
+        .debug_tgt__data(            debug_tgt0__data),
+        .debug_tgt__resp(            debug_tgt0__resp),
+        .debug_tgt__op_was_none(            debug_tgt0__op_was_none),
+        .debug_tgt__hit_breakpoint(            debug_tgt0__hit_breakpoint),
+        .debug_tgt__resumed(            debug_tgt0__resumed),
+        .debug_tgt__halted(            debug_tgt0__halted),
+        .debug_tgt__selected(            debug_tgt0__selected),
+        .debug_tgt__valid(            debug_tgt0__valid)         );
     riscv_i32c_pipeline3 dut(
         .clk(clk),
         .clk__enable(riscv_clk__enable),
@@ -177,7 +330,8 @@ module tb_riscv_i32mc_pipeline3
         .trace__rfw_rd(            trace__rfw_rd),
         .trace__rfw_data_valid(            trace__rfw_data_valid),
         .trace__rfw_retire(            trace__rfw_retire),
-        .trace__instr_data(            trace__instr_data),
+        .trace__instruction__data(            trace__instruction__data),
+        .trace__instruction__mode(            trace__instruction__mode),
         .trace__instr_pc(            trace__instr_pc),
         .trace__instr_valid(            trace__instr_valid),
         .coproc_controls__alu_cannot_complete(            coproc_controls__alu_cannot_complete),
@@ -186,6 +340,7 @@ module tb_riscv_i32mc_pipeline3
         .coproc_controls__alu_rs2(            coproc_controls__alu_rs2),
         .coproc_controls__alu_rs1(            coproc_controls__alu_rs1),
         .coproc_controls__dec_to_alu_blocked(            coproc_controls__dec_to_alu_blocked),
+        .coproc_controls__dec_idecode__ext__dummy(            coproc_controls__dec_idecode__ext__dummy),
         .coproc_controls__dec_idecode__is_compressed(            coproc_controls__dec_idecode__is_compressed),
         .coproc_controls__dec_idecode__illegal(            coproc_controls__dec_idecode__illegal),
         .coproc_controls__dec_idecode__memory_width(            coproc_controls__dec_idecode__memory_width),
@@ -230,6 +385,7 @@ module tb_riscv_i32mc_pipeline3
         .coproc_controls__alu_rs2(coproc_controls__alu_rs2),
         .coproc_controls__alu_rs1(coproc_controls__alu_rs1),
         .coproc_controls__dec_to_alu_blocked(coproc_controls__dec_to_alu_blocked),
+        .coproc_controls__dec_idecode__ext__dummy(coproc_controls__dec_idecode__ext__dummy),
         .coproc_controls__dec_idecode__is_compressed(coproc_controls__dec_idecode__is_compressed),
         .coproc_controls__dec_idecode__illegal(coproc_controls__dec_idecode__illegal),
         .coproc_controls__dec_idecode__memory_width(coproc_controls__dec_idecode__memory_width),
@@ -264,7 +420,8 @@ module tb_riscv_i32mc_pipeline3
         .trace__rfw_rd(trace__rfw_rd),
         .trace__rfw_data_valid(trace__rfw_data_valid),
         .trace__rfw_retire(trace__rfw_retire),
-        .trace__instr_data(trace__instr_data),
+        .trace__instruction__data(trace__instruction__data),
+        .trace__instruction__mode(trace__instruction__mode),
         .trace__instr_pc(trace__instr_pc),
         .trace__instr_valid(trace__instr_valid),
         .reset_n(reset_n)         );
@@ -387,20 +544,36 @@ module tb_riscv_i32mc_pipeline3
     reg riscv_config__i32c__var;
     reg riscv_config__e32__var;
     reg riscv_config__i32m__var;
+    reg riscv_config__i32m_fuse__var;
     reg riscv_config__coproc_disable__var;
+        tck_enable_fix = tck_enable;
+        debug_response0__exec_valid = 1'h0;
+        debug_response0__exec_halting = 1'h0;
+        debug_response0__exec_dret = 1'h0;
+        debug_tgt__valid = debug_tgt0__valid;
+        debug_tgt__selected = debug_tgt0__selected;
+        debug_tgt__halted = debug_tgt0__halted;
+        debug_tgt__resumed = debug_tgt0__resumed;
+        debug_tgt__hit_breakpoint = debug_tgt0__hit_breakpoint;
+        debug_tgt__op_was_none = debug_tgt0__op_was_none;
+        debug_tgt__resp = debug_tgt0__resp;
+        debug_tgt__data = debug_tgt0__data;
+        debug_tgt__attention = debug_tgt0__attention;
         riscv_config__i32c__var = 1'h0;
         riscv_config__e32__var = 1'h0;
         riscv_config__i32m__var = 1'h0;
-        riscv_config__i32m_fuse = 1'h0;
+        riscv_config__i32m_fuse__var = 1'h0;
         riscv_config__coproc_disable__var = 1'h0;
         riscv_config__unaligned_mem = 1'h0;
         riscv_config__i32c__var = 1'h1;
         riscv_config__e32__var = 1'h0;
         riscv_config__i32m__var = 1'h1;
+        riscv_config__i32m_fuse__var = 1'h1;
         riscv_config__coproc_disable__var = 1'h0;
         riscv_config__i32c = riscv_config__i32c__var;
         riscv_config__e32 = riscv_config__e32__var;
         riscv_config__i32m = riscv_config__i32m__var;
+        riscv_config__i32m_fuse = riscv_config__i32m_fuse__var;
         riscv_config__coproc_disable = riscv_config__coproc_disable__var;
     end //always
 

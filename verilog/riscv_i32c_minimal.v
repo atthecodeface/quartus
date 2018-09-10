@@ -40,6 +40,12 @@ module riscv_i32c_minimal
     clk,
     clk__enable,
 
+    riscv_config__i32c,
+    riscv_config__e32,
+    riscv_config__i32m,
+    riscv_config__i32m_fuse,
+    riscv_config__coproc_disable,
+    riscv_config__unaligned_mem,
     imem_access_resp__wait,
     imem_access_resp__read_data,
     dmem_access_resp__wait,
@@ -48,7 +54,8 @@ module riscv_i32c_minimal
 
     trace__instr_valid,
     trace__instr_pc,
-    trace__instr_data,
+    trace__instruction__mode,
+    trace__instruction__data,
     trace__rfw_retire,
     trace__rfw_data_valid,
     trace__rfw_rd,
@@ -73,6 +80,12 @@ module riscv_i32c_minimal
     input clk__enable;
 
     //b Inputs
+    input riscv_config__i32c;
+    input riscv_config__e32;
+    input riscv_config__i32m;
+    input riscv_config__i32m_fuse;
+    input riscv_config__coproc_disable;
+    input riscv_config__unaligned_mem;
     input imem_access_resp__wait;
     input [31:0]imem_access_resp__read_data;
     input dmem_access_resp__wait;
@@ -82,7 +95,8 @@ module riscv_i32c_minimal
     //b Outputs
     output trace__instr_valid;
     output [31:0]trace__instr_pc;
-    output [31:0]trace__instr_data;
+    output [2:0]trace__instruction__mode;
+    output [31:0]trace__instruction__data;
     output trace__rfw_retire;
     output trace__rfw_data_valid;
     output [4:0]trace__rfw_rd;
@@ -106,7 +120,8 @@ module riscv_i32c_minimal
     //b Output combinatorials
     reg trace__instr_valid;
     reg [31:0]trace__instr_pc;
-    reg [31:0]trace__instr_data;
+    reg [2:0]trace__instruction__mode;
+    reg [31:0]trace__instruction__data;
     reg trace__rfw_retire;
     reg trace__rfw_data_valid;
     reg [4:0]trace__rfw_rd;
@@ -128,7 +143,8 @@ module riscv_i32c_minimal
     //b Output nets
 
     //b Internal and output registers
-    reg [31:0]decexecrfw_state__instr_data;
+    reg [2:0]decexecrfw_state__instruction__mode;
+    reg [31:0]decexecrfw_state__instruction__data;
     reg decexecrfw_state__valid;
     reg decexecrfw_state__valid_legal;
     reg decexecrfw_state__illegal_pc;
@@ -165,6 +181,7 @@ module riscv_i32c_minimal
     reg [1:0]decexecrfw_combs__idecode__memory_width;
     reg decexecrfw_combs__idecode__illegal;
     reg decexecrfw_combs__idecode__is_compressed;
+    reg decexecrfw_combs__idecode__ext__dummy;
     reg [31:0]decexecrfw_combs__rs1;
     reg [31:0]decexecrfw_combs__rs2;
     reg [31:0]decexecrfw_combs__next_pc;
@@ -218,6 +235,7 @@ module riscv_i32c_minimal
     wire [1:0]decexecrfw_idecode_i32c__memory_width;
     wire decexecrfw_idecode_i32c__illegal;
     wire decexecrfw_idecode_i32c__is_compressed;
+    wire decexecrfw_idecode_i32c__ext__dummy;
     wire [4:0]decexecrfw_idecode_i32__rs1;
     wire decexecrfw_idecode_i32__rs1_valid;
     wire [4:0]decexecrfw_idecode_i32__rs2;
@@ -236,11 +254,20 @@ module riscv_i32c_minimal
     wire [1:0]decexecrfw_idecode_i32__memory_width;
     wire decexecrfw_idecode_i32__illegal;
     wire decexecrfw_idecode_i32__is_compressed;
+    wire decexecrfw_idecode_i32__ext__dummy;
 
     //b Clock gating module instances
     //b Module instances
     riscv_i32_decode decode_i32(
-        .instruction(decexecrfw_state__instr_data),
+        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
+        .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
+        .riscv_config__i32m(riscv_config__i32m),
+        .riscv_config__e32(riscv_config__e32),
+        .riscv_config__i32c(riscv_config__i32c),
+        .instruction__data(decexecrfw_state__instruction__data),
+        .instruction__mode(decexecrfw_state__instruction__mode),
+        .idecode__ext__dummy(            decexecrfw_idecode_i32__ext__dummy),
         .idecode__is_compressed(            decexecrfw_idecode_i32__is_compressed),
         .idecode__illegal(            decexecrfw_idecode_i32__illegal),
         .idecode__memory_width(            decexecrfw_idecode_i32__memory_width),
@@ -260,7 +287,15 @@ module riscv_i32c_minimal
         .idecode__rs1_valid(            decexecrfw_idecode_i32__rs1_valid),
         .idecode__rs1(            decexecrfw_idecode_i32__rs1)         );
     riscv_i32c_decode decode_i32c(
-        .instruction(decexecrfw_state__instr_data),
+        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
+        .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
+        .riscv_config__i32m(riscv_config__i32m),
+        .riscv_config__e32(riscv_config__e32),
+        .riscv_config__i32c(riscv_config__i32c),
+        .instruction__data(decexecrfw_state__instruction__data),
+        .instruction__mode(decexecrfw_state__instruction__mode),
+        .idecode__ext__dummy(            decexecrfw_idecode_i32c__ext__dummy),
         .idecode__is_compressed(            decexecrfw_idecode_i32c__is_compressed),
         .idecode__illegal(            decexecrfw_idecode_i32c__illegal),
         .idecode__memory_width(            decexecrfw_idecode_i32c__memory_width),
@@ -283,6 +318,7 @@ module riscv_i32c_minimal
         .rs2(decexecrfw_combs__rs2),
         .rs1(decexecrfw_combs__rs1),
         .pc(decexecrfw_state__pc),
+        .idecode__ext__dummy(decexecrfw_combs__idecode__ext__dummy),
         .idecode__is_compressed(decexecrfw_combs__idecode__is_compressed),
         .idecode__illegal(decexecrfw_combs__idecode__illegal),
         .idecode__memory_width(decexecrfw_combs__idecode__memory_width),
@@ -430,6 +466,7 @@ module riscv_i32c_minimal
     reg [1:0]decexecrfw_combs__idecode__memory_width__var;
     reg decexecrfw_combs__idecode__illegal__var;
     reg decexecrfw_combs__idecode__is_compressed__var;
+    reg decexecrfw_combs__idecode__ext__dummy__var;
     reg csr_controls__retire__var;
     reg csr_controls__timer_inc__var;
     reg csr_controls__trap__var;
@@ -447,44 +484,49 @@ module riscv_i32c_minimal
     reg [31:0]decexecrfw_combs__branch_target__var;
     reg [31:0]decexecrfw_combs__next_pc__var;
     reg [31:0]decexecrfw_combs__memory_data__var;
-        decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_i32c__rs1;
-        decexecrfw_combs__idecode__rs1_valid__var = decexecrfw_idecode_i32c__rs1_valid;
-        decexecrfw_combs__idecode__rs2__var = decexecrfw_idecode_i32c__rs2;
-        decexecrfw_combs__idecode__rs2_valid__var = decexecrfw_idecode_i32c__rs2_valid;
-        decexecrfw_combs__idecode__rd__var = decexecrfw_idecode_i32c__rd;
-        decexecrfw_combs__idecode__rd_written__var = decexecrfw_idecode_i32c__rd_written;
-        decexecrfw_combs__idecode__csr_access__access__var = decexecrfw_idecode_i32c__csr_access__access;
-        decexecrfw_combs__idecode__csr_access__address__var = decexecrfw_idecode_i32c__csr_access__address;
-        decexecrfw_combs__idecode__immediate__var = decexecrfw_idecode_i32c__immediate;
-        decexecrfw_combs__idecode__immediate_shift__var = decexecrfw_idecode_i32c__immediate_shift;
-        decexecrfw_combs__idecode__immediate_valid__var = decexecrfw_idecode_i32c__immediate_valid;
-        decexecrfw_combs__idecode__op__var = decexecrfw_idecode_i32c__op;
-        decexecrfw_combs__idecode__subop__var = decexecrfw_idecode_i32c__subop;
-        decexecrfw_combs__idecode__requires_machine_mode__var = decexecrfw_idecode_i32c__requires_machine_mode;
-        decexecrfw_combs__idecode__memory_read_unsigned__var = decexecrfw_idecode_i32c__memory_read_unsigned;
-        decexecrfw_combs__idecode__memory_width__var = decexecrfw_idecode_i32c__memory_width;
-        decexecrfw_combs__idecode__illegal__var = decexecrfw_idecode_i32c__illegal;
-        decexecrfw_combs__idecode__is_compressed__var = decexecrfw_idecode_i32c__is_compressed;
-        if ((decexecrfw_state__instr_data[1:0]==2'h3))
+        decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_i32__rs1;
+        decexecrfw_combs__idecode__rs1_valid__var = decexecrfw_idecode_i32__rs1_valid;
+        decexecrfw_combs__idecode__rs2__var = decexecrfw_idecode_i32__rs2;
+        decexecrfw_combs__idecode__rs2_valid__var = decexecrfw_idecode_i32__rs2_valid;
+        decexecrfw_combs__idecode__rd__var = decexecrfw_idecode_i32__rd;
+        decexecrfw_combs__idecode__rd_written__var = decexecrfw_idecode_i32__rd_written;
+        decexecrfw_combs__idecode__csr_access__access__var = decexecrfw_idecode_i32__csr_access__access;
+        decexecrfw_combs__idecode__csr_access__address__var = decexecrfw_idecode_i32__csr_access__address;
+        decexecrfw_combs__idecode__immediate__var = decexecrfw_idecode_i32__immediate;
+        decexecrfw_combs__idecode__immediate_shift__var = decexecrfw_idecode_i32__immediate_shift;
+        decexecrfw_combs__idecode__immediate_valid__var = decexecrfw_idecode_i32__immediate_valid;
+        decexecrfw_combs__idecode__op__var = decexecrfw_idecode_i32__op;
+        decexecrfw_combs__idecode__subop__var = decexecrfw_idecode_i32__subop;
+        decexecrfw_combs__idecode__requires_machine_mode__var = decexecrfw_idecode_i32__requires_machine_mode;
+        decexecrfw_combs__idecode__memory_read_unsigned__var = decexecrfw_idecode_i32__memory_read_unsigned;
+        decexecrfw_combs__idecode__memory_width__var = decexecrfw_idecode_i32__memory_width;
+        decexecrfw_combs__idecode__illegal__var = decexecrfw_idecode_i32__illegal;
+        decexecrfw_combs__idecode__is_compressed__var = decexecrfw_idecode_i32__is_compressed;
+        decexecrfw_combs__idecode__ext__dummy__var = decexecrfw_idecode_i32__ext__dummy;
+        if ((1'h1&&(riscv_config__i32c!=1'h0)))
         begin
-            decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_i32__rs1;
-            decexecrfw_combs__idecode__rs1_valid__var = decexecrfw_idecode_i32__rs1_valid;
-            decexecrfw_combs__idecode__rs2__var = decexecrfw_idecode_i32__rs2;
-            decexecrfw_combs__idecode__rs2_valid__var = decexecrfw_idecode_i32__rs2_valid;
-            decexecrfw_combs__idecode__rd__var = decexecrfw_idecode_i32__rd;
-            decexecrfw_combs__idecode__rd_written__var = decexecrfw_idecode_i32__rd_written;
-            decexecrfw_combs__idecode__csr_access__access__var = decexecrfw_idecode_i32__csr_access__access;
-            decexecrfw_combs__idecode__csr_access__address__var = decexecrfw_idecode_i32__csr_access__address;
-            decexecrfw_combs__idecode__immediate__var = decexecrfw_idecode_i32__immediate;
-            decexecrfw_combs__idecode__immediate_shift__var = decexecrfw_idecode_i32__immediate_shift;
-            decexecrfw_combs__idecode__immediate_valid__var = decexecrfw_idecode_i32__immediate_valid;
-            decexecrfw_combs__idecode__op__var = decexecrfw_idecode_i32__op;
-            decexecrfw_combs__idecode__subop__var = decexecrfw_idecode_i32__subop;
-            decexecrfw_combs__idecode__requires_machine_mode__var = decexecrfw_idecode_i32__requires_machine_mode;
-            decexecrfw_combs__idecode__memory_read_unsigned__var = decexecrfw_idecode_i32__memory_read_unsigned;
-            decexecrfw_combs__idecode__memory_width__var = decexecrfw_idecode_i32__memory_width;
-            decexecrfw_combs__idecode__illegal__var = decexecrfw_idecode_i32__illegal;
-            decexecrfw_combs__idecode__is_compressed__var = decexecrfw_idecode_i32__is_compressed;
+            if ((decexecrfw_state__instruction__data[1:0]!=2'h3))
+            begin
+                decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_i32c__rs1;
+                decexecrfw_combs__idecode__rs1_valid__var = decexecrfw_idecode_i32c__rs1_valid;
+                decexecrfw_combs__idecode__rs2__var = decexecrfw_idecode_i32c__rs2;
+                decexecrfw_combs__idecode__rs2_valid__var = decexecrfw_idecode_i32c__rs2_valid;
+                decexecrfw_combs__idecode__rd__var = decexecrfw_idecode_i32c__rd;
+                decexecrfw_combs__idecode__rd_written__var = decexecrfw_idecode_i32c__rd_written;
+                decexecrfw_combs__idecode__csr_access__access__var = decexecrfw_idecode_i32c__csr_access__access;
+                decexecrfw_combs__idecode__csr_access__address__var = decexecrfw_idecode_i32c__csr_access__address;
+                decexecrfw_combs__idecode__immediate__var = decexecrfw_idecode_i32c__immediate;
+                decexecrfw_combs__idecode__immediate_shift__var = decexecrfw_idecode_i32c__immediate_shift;
+                decexecrfw_combs__idecode__immediate_valid__var = decexecrfw_idecode_i32c__immediate_valid;
+                decexecrfw_combs__idecode__op__var = decexecrfw_idecode_i32c__op;
+                decexecrfw_combs__idecode__subop__var = decexecrfw_idecode_i32c__subop;
+                decexecrfw_combs__idecode__requires_machine_mode__var = decexecrfw_idecode_i32c__requires_machine_mode;
+                decexecrfw_combs__idecode__memory_read_unsigned__var = decexecrfw_idecode_i32c__memory_read_unsigned;
+                decexecrfw_combs__idecode__memory_width__var = decexecrfw_idecode_i32c__memory_width;
+                decexecrfw_combs__idecode__illegal__var = decexecrfw_idecode_i32c__illegal;
+                decexecrfw_combs__idecode__is_compressed__var = decexecrfw_idecode_i32c__is_compressed;
+                decexecrfw_combs__idecode__ext__dummy__var = decexecrfw_idecode_i32c__ext__dummy;
+            end //if
         end //if
         decexecrfw_combs__rs1 = registers[decexecrfw_combs__idecode__rs1__var];
         decexecrfw_combs__rs2 = registers[decexecrfw_combs__idecode__rs2__var];
@@ -657,6 +699,7 @@ module riscv_i32c_minimal
         decexecrfw_combs__idecode__memory_width = decexecrfw_combs__idecode__memory_width__var;
         decexecrfw_combs__idecode__illegal = decexecrfw_combs__idecode__illegal__var;
         decexecrfw_combs__idecode__is_compressed = decexecrfw_combs__idecode__is_compressed__var;
+        decexecrfw_combs__idecode__ext__dummy = decexecrfw_combs__idecode__ext__dummy__var;
         csr_controls__retire = csr_controls__retire__var;
         csr_controls__timer_inc = csr_controls__timer_inc__var;
         csr_controls__trap = csr_controls__trap__var;
@@ -697,7 +740,8 @@ module riscv_i32c_minimal
         if (reset_n==1'b0)
         begin
             decexecrfw_state__valid <= 1'h0;
-            decexecrfw_state__instr_data <= 32'h0;
+            decexecrfw_state__instruction__data <= 32'h0;
+            decexecrfw_state__instruction__mode <= 3'h0;
             decexecrfw_state__illegal_pc <= 1'h0;
             decexecrfw_state__valid_legal <= 1'h0;
             decexecrfw_state__pc <= 32'h0;
@@ -740,7 +784,8 @@ module riscv_i32c_minimal
             decexecrfw_state__valid <= 1'h0;
             if (((imem_access_req__read_enable!=1'h0)&&!(imem_access_resp__wait!=1'h0)))
             begin
-                decexecrfw_state__instr_data <= imem_access_resp__read_data;
+                decexecrfw_state__instruction__data <= imem_access_resp__read_data;
+                decexecrfw_state__instruction__mode <= 3'h3;
                 decexecrfw_state__illegal_pc <= 1'h0;
                 decexecrfw_state__valid_legal <= 1'h1;
                 decexecrfw_state__valid <= 1'h1;
@@ -764,7 +809,8 @@ module riscv_i32c_minimal
     begin: logging__comb_code
     reg trace__instr_valid__var;
     reg [31:0]trace__instr_pc__var;
-    reg [31:0]trace__instr_data__var;
+    reg [2:0]trace__instruction__mode__var;
+    reg [31:0]trace__instruction__data__var;
     reg trace__rfw_data_valid__var;
     reg [31:0]trace__rfw_data__var;
     reg trace__branch_taken__var;
@@ -772,7 +818,8 @@ module riscv_i32c_minimal
     reg trace__trap__var;
         trace__instr_valid__var = 1'h0;
         trace__instr_pc__var = 32'h0;
-        trace__instr_data__var = 32'h0;
+        trace__instruction__mode__var = 3'h0;
+        trace__instruction__data__var = 32'h0;
         trace__rfw_retire = 1'h0;
         trace__rfw_data_valid__var = 1'h0;
         trace__rfw_rd = 5'h0;
@@ -782,7 +829,8 @@ module riscv_i32c_minimal
         trace__trap__var = 1'h0;
         trace__instr_valid__var = decexecrfw_state__valid;
         trace__instr_pc__var = decexecrfw_state__pc;
-        trace__instr_data__var = decexecrfw_state__instr_data;
+        trace__instruction__mode__var = decexecrfw_state__instruction__mode;
+        trace__instruction__data__var = decexecrfw_state__instruction__data;
         trace__rfw_data_valid__var = decexecrfw_state__valid;
         trace__rfw_data__var = decexecrfw_combs__rfw_write_data;
         trace__branch_taken__var = decexecrfw_combs__branch_taken;
@@ -790,7 +838,8 @@ module riscv_i32c_minimal
         trace__branch_target__var = decexecrfw_combs__branch_target;
         trace__instr_valid = trace__instr_valid__var;
         trace__instr_pc = trace__instr_pc__var;
-        trace__instr_data = trace__instr_data__var;
+        trace__instruction__mode = trace__instruction__mode__var;
+        trace__instruction__data = trace__instruction__data__var;
         trace__rfw_data_valid = trace__rfw_data_valid__var;
         trace__rfw_data = trace__rfw_data__var;
         trace__branch_taken = trace__branch_taken__var;

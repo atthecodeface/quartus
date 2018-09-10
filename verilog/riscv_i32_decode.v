@@ -34,7 +34,8 @@ module riscv_i32_decode
     riscv_config__i32m_fuse,
     riscv_config__coproc_disable,
     riscv_config__unaligned_mem,
-    instruction,
+    instruction__mode,
+    instruction__data,
 
     idecode__rs1,
     idecode__rs1_valid,
@@ -53,7 +54,8 @@ module riscv_i32_decode
     idecode__memory_read_unsigned,
     idecode__memory_width,
     idecode__illegal,
-    idecode__is_compressed
+    idecode__is_compressed,
+    idecode__ext__dummy
 );
 
     //b Clocks
@@ -65,7 +67,8 @@ module riscv_i32_decode
     input riscv_config__i32m_fuse;
     input riscv_config__coproc_disable;
     input riscv_config__unaligned_mem;
-    input [31:0]instruction;
+    input [2:0]instruction__mode;
+    input [31:0]instruction__data;
 
     //b Outputs
     output [4:0]idecode__rs1;
@@ -86,6 +89,7 @@ module riscv_i32_decode
     output [1:0]idecode__memory_width;
     output idecode__illegal;
     output idecode__is_compressed;
+    output idecode__ext__dummy;
 
 // output components here
 
@@ -108,6 +112,7 @@ module riscv_i32_decode
     reg [1:0]idecode__memory_width;
     reg idecode__illegal;
     reg idecode__is_compressed;
+    reg idecode__ext__dummy;
 
     //b Output nets
 
@@ -146,13 +151,13 @@ module riscv_i32_decode
         //       
     always @ ( * )//instruction_breakout
     begin: instruction_breakout__comb_code
-        combs__must_be_ones = instruction[1:0];
-        combs__opc = instruction[6:2];
-        idecode__rd = instruction[11:7];
-        combs__funct3 = instruction[14:12];
-        idecode__rs1 = instruction[19:15];
-        idecode__rs2 = instruction[24:20];
-        combs__funct7 = instruction[31:25];
+        combs__must_be_ones = instruction__data[1:0];
+        combs__opc = instruction__data[6:2];
+        idecode__rd = instruction__data[11:7];
+        combs__funct3 = instruction__data[14:12];
+        idecode__rs1 = instruction__data[19:15];
+        idecode__rs2 = instruction__data[24:20];
+        combs__funct7 = instruction__data[31:25];
     end //always
 
     //b immediate_decode combinatorial process
@@ -226,7 +231,7 @@ module riscv_i32_decode
             end
         5'h1c: // req 1
             begin
-            idecode__immediate_valid__var = instruction[14];
+            idecode__immediate_valid__var = instruction__data[14];
             end
         //synopsys  translate_off
         //pragma coverage off
@@ -257,18 +262,19 @@ module riscv_i32_decode
     reg idecode__illegal__var;
     reg [3:0]idecode__subop__var;
     reg [2:0]idecode__csr_access__access__var;
+        idecode__ext__dummy = 1'h0;
         idecode__is_compressed = 1'h0;
         idecode__rs1_valid__var = 1'h0;
         idecode__rs2_valid__var = 1'h0;
         idecode__rd_written__var = 1'h0;
         idecode__requires_machine_mode__var = 1'h0;
-        idecode__memory_read_unsigned = instruction[14];
-        idecode__memory_width = instruction[13:12];
+        idecode__memory_read_unsigned = instruction__data[14];
+        idecode__memory_width = instruction__data[13:12];
         combs__is_imm_op = (combs__opc==5'h4);
-        idecode__op__var = 4'hc;
+        idecode__op__var = 4'hd;
         idecode__illegal__var = 1'h1;
         idecode__subop__var = 4'h0;
-        idecode__csr_access__address = instruction[31:20];
+        idecode__csr_access__address = instruction__data[31:20];
         idecode__csr_access__access__var = 3'h0;
         combs__rs1_nonzero = (idecode__rs1!=5'h0);
         case (combs__opc) //synopsys parallel_case
@@ -610,7 +616,7 @@ module riscv_i32_decode
             2'h0: // req 1
                 begin
                 idecode__op__var = 4'h3;
-                case (instruction[31:20]) //synopsys parallel_case
+                case (instruction__data[31:20]) //synopsys parallel_case
                 12'h0: // req 1
                     begin
                     idecode__subop__var = 4'h0;
@@ -647,6 +653,42 @@ module riscv_i32_decode
     //pragma coverage on
     //synopsys  translate_on
             endcase
+            end
+        5'h2: // req 1
+            begin
+            if (1'h0)
+            begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'hc;
+                idecode__subop__var = 4'h0;
+            end //if
+            end
+        5'ha: // req 1
+            begin
+            if (1'h0)
+            begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'hc;
+                idecode__subop__var = 4'h1;
+            end //if
+            end
+        5'h16: // req 1
+            begin
+            if (1'h0)
+            begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'hc;
+                idecode__subop__var = 4'h2;
+            end //if
+            end
+        5'h1e: // req 1
+            begin
+            if (1'h0)
+            begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'hc;
+                idecode__subop__var = 4'h3;
+            end //if
             end
         //synopsys  translate_off
         //pragma coverage off

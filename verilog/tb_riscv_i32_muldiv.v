@@ -58,6 +58,7 @@ module tb_riscv_i32_muldiv
     reg [1:0]coproc_controls_with_feedback__dec_idecode__memory_width;
     reg coproc_controls_with_feedback__dec_idecode__illegal;
     reg coproc_controls_with_feedback__dec_idecode__is_compressed;
+    reg coproc_controls_with_feedback__dec_idecode__ext__dummy;
     reg coproc_controls_with_feedback__dec_to_alu_blocked;
     reg [31:0]coproc_controls_with_feedback__alu_rs1;
     reg [31:0]coproc_controls_with_feedback__alu_rs2;
@@ -95,6 +96,7 @@ module tb_riscv_i32_muldiv
     wire [1:0]coproc_controls__dec_idecode__memory_width;
     wire coproc_controls__dec_idecode__illegal;
     wire coproc_controls__dec_idecode__is_compressed;
+    wire coproc_controls__dec_idecode__ext__dummy;
     wire coproc_controls__dec_to_alu_blocked;
     wire [31:0]coproc_controls__alu_rs1;
     wire [31:0]coproc_controls__alu_rs2;
@@ -123,6 +125,7 @@ module tb_riscv_i32_muldiv
         .coproc_controls__alu_rs2(            coproc_controls__alu_rs2),
         .coproc_controls__alu_rs1(            coproc_controls__alu_rs1),
         .coproc_controls__dec_to_alu_blocked(            coproc_controls__dec_to_alu_blocked),
+        .coproc_controls__dec_idecode__ext__dummy(            coproc_controls__dec_idecode__ext__dummy),
         .coproc_controls__dec_idecode__is_compressed(            coproc_controls__dec_idecode__is_compressed),
         .coproc_controls__dec_idecode__illegal(            coproc_controls__dec_idecode__illegal),
         .coproc_controls__dec_idecode__memory_width(            coproc_controls__dec_idecode__memory_width),
@@ -157,6 +160,7 @@ module tb_riscv_i32_muldiv
         .coproc_controls__alu_rs2(coproc_controls_with_feedback__alu_rs2),
         .coproc_controls__alu_rs1(coproc_controls_with_feedback__alu_rs1),
         .coproc_controls__dec_to_alu_blocked(coproc_controls_with_feedback__dec_to_alu_blocked),
+        .coproc_controls__dec_idecode__ext__dummy(coproc_controls_with_feedback__dec_idecode__ext__dummy),
         .coproc_controls__dec_idecode__is_compressed(coproc_controls_with_feedback__dec_idecode__is_compressed),
         .coproc_controls__dec_idecode__illegal(coproc_controls_with_feedback__dec_idecode__illegal),
         .coproc_controls__dec_idecode__memory_width(coproc_controls_with_feedback__dec_idecode__memory_width),
@@ -206,6 +210,7 @@ module tb_riscv_i32_muldiv
         coproc_controls_with_feedback__dec_idecode__memory_width = coproc_controls__dec_idecode__memory_width;
         coproc_controls_with_feedback__dec_idecode__illegal = coproc_controls__dec_idecode__illegal;
         coproc_controls_with_feedback__dec_idecode__is_compressed = coproc_controls__dec_idecode__is_compressed;
+        coproc_controls_with_feedback__dec_idecode__ext__dummy = coproc_controls__dec_idecode__ext__dummy;
         coproc_controls_with_feedback__dec_to_alu_blocked__var = coproc_controls__dec_to_alu_blocked;
         coproc_controls_with_feedback__alu_rs1 = coproc_controls__alu_rs1;
         coproc_controls_with_feedback__alu_rs2 = coproc_controls__alu_rs2;

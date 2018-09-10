@@ -175,6 +175,10 @@ module apb_master_mux
                 apb_request_0_r__psel <= apb_request_0__psel;
                 apb_request_0_r__pwrite <= apb_request_0__pwrite;
                 apb_request_0_r__pwdata <= apb_request_0__pwdata;
+                if ((apb_response_0__pready!=1'h0))
+                begin
+                    apb_request_0_r__psel <= 1'h0;
+                end //if
             end //if
             if (((apb_request_1__psel!=1'h0)||(apb_request_1_r__psel!=1'h0)))
             begin
@@ -183,6 +187,10 @@ module apb_master_mux
                 apb_request_1_r__psel <= apb_request_1__psel;
                 apb_request_1_r__pwrite <= apb_request_1__pwrite;
                 apb_request_1_r__pwdata <= apb_request_1__pwdata;
+                if ((apb_response_1__pready!=1'h0))
+                begin
+                    apb_request_1_r__psel <= 1'h0;
+                end //if
             end //if
             apb_response_0__pready <= 1'h0;
             apb_response_1__pready <= 1'h0;
@@ -222,7 +230,7 @@ module apb_master_mux
             else
             
             begin
-                if (((apb_request_0_r__psel!=1'h0)&&(!(apb_request_1_r__psel!=1'h0)||(arbiter_state__handling!=1'h0))))
+                if ((((apb_request_0_r__psel!=1'h0)&&!(apb_response_0__pready!=1'h0))&&(!(apb_request_1_r__psel!=1'h0)||(arbiter_state__handling!=1'h0))))
                 begin
                     arbiter_state__busy <= 1'h1;
                     arbiter_state__handling <= 1'h0;
@@ -236,7 +244,7 @@ module apb_master_mux
                 else
                 
                 begin
-                    if ((apb_request_1_r__psel!=1'h0))
+                    if (((apb_request_1_r__psel!=1'h0)&&!(apb_response_1__pready!=1'h0)))
                     begin
                         arbiter_state__busy <= 1'h1;
                         arbiter_state__handling <= 1'h1;

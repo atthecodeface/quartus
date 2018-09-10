@@ -22,7 +22,8 @@ module riscv_i32_trace
 
     trace__instr_valid,
     trace__instr_pc,
-    trace__instr_data,
+    trace__instruction__mode,
+    trace__instruction__data,
     trace__rfw_retire,
     trace__rfw_data_valid,
     trace__rfw_rd,
@@ -43,7 +44,8 @@ module riscv_i32_trace
         //   Trace signals
     input trace__instr_valid;
     input [31:0]trace__instr_pc;
-    input [31:0]trace__instr_data;
+    input [2:0]trace__instruction__mode;
+    input [31:0]trace__instruction__data;
     input trace__rfw_retire;
     input trace__rfw_data_valid;
     input [4:0]trace__rfw_rd;

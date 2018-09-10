@@ -57,7 +57,8 @@ module tb_riscv_minimal
     //b Internal nets
     wire trace__instr_valid;
     wire [31:0]trace__instr_pc;
-    wire [31:0]trace__instr_data;
+    wire [2:0]trace__instruction__mode;
+    wire [31:0]trace__instruction__data;
     wire trace__rfw_retire;
     wire trace__rfw_data_valid;
     wire [4:0]trace__rfw_rd;
@@ -124,7 +125,8 @@ module tb_riscv_minimal
         .trace__rfw_rd(            trace__rfw_rd),
         .trace__rfw_data_valid(            trace__rfw_data_valid),
         .trace__rfw_retire(            trace__rfw_retire),
-        .trace__instr_data(            trace__instr_data),
+        .trace__instruction__data(            trace__instruction__data),
+        .trace__instruction__mode(            trace__instruction__mode),
         .trace__instr_pc(            trace__instr_pc),
         .trace__instr_valid(            trace__instr_valid),
         .imem_access_req__write_data(            imem_access_req__write_data),
@@ -147,7 +149,8 @@ module tb_riscv_minimal
         .trace__rfw_rd(trace__rfw_rd),
         .trace__rfw_data_valid(trace__rfw_data_valid),
         .trace__rfw_retire(trace__rfw_retire),
-        .trace__instr_data(trace__instr_data),
+        .trace__instruction__data(trace__instruction__data),
+        .trace__instruction__mode(trace__instruction__mode),
         .trace__instr_pc(trace__instr_pc),
         .trace__instr_valid(trace__instr_valid),
         .reset_n(reset_n)         );

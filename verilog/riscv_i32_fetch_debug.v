@@ -31,7 +31,8 @@ module riscv_i32_fetch_debug
     debug_control__data,
     pipeline_trace__instr_valid,
     pipeline_trace__instr_pc,
-    pipeline_trace__instr_data,
+    pipeline_trace__instruction__mode,
+    pipeline_trace__instruction__data,
     pipeline_trace__rfw_retire,
     pipeline_trace__rfw_data_valid,
     pipeline_trace__rfw_rd,
@@ -79,7 +80,8 @@ module riscv_i32_fetch_debug
     input [31:0]debug_control__data;
     input pipeline_trace__instr_valid;
     input [31:0]pipeline_trace__instr_pc;
-    input [31:0]pipeline_trace__instr_data;
+    input [2:0]pipeline_trace__instruction__mode;
+    input [31:0]pipeline_trace__instruction__data;
     input pipeline_trace__rfw_retire;
     input pipeline_trace__rfw_data_valid;
     input [4:0]pipeline_trace__rfw_rd;

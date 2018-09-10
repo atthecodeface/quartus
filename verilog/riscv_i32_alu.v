@@ -39,6 +39,7 @@ module riscv_i32_alu
     idecode__memory_width,
     idecode__illegal,
     idecode__is_compressed,
+    idecode__ext__dummy,
 
     alu_result__result,
     alu_result__arith_result,
@@ -72,6 +73,7 @@ module riscv_i32_alu
     input [1:0]idecode__memory_width;
     input idecode__illegal;
     input idecode__is_compressed;
+    input idecode__ext__dummy;
 
     //b Outputs
     output [31:0]alu_result__result;
