@@ -56,6 +56,13 @@ module tb_riscv_i32mc_pipeline3
     reg [1:0]clk_divider;
 
     //b Internal combinatorials
+    reg irqs__nmi;
+    reg irqs__meip;
+    reg irqs__seip;
+    reg irqs__ueip;
+    reg irqs__mtip;
+    reg irqs__msip;
+    reg [63:0]irqs__time;
     reg riscv_config__i32c;
     reg riscv_config__e32;
     reg riscv_config__i32m;
@@ -322,6 +329,13 @@ module tb_riscv_i32mc_pipeline3
         .ifetch_resp__valid(rv_imem_access_resp__valid),
         .dmem_access_resp__read_data(dmem_access_resp__read_data),
         .dmem_access_resp__wait(dmem_access_resp__wait),
+        .irqs__time(irqs__time),
+        .irqs__msip(irqs__msip),
+        .irqs__mtip(irqs__mtip),
+        .irqs__ueip(irqs__ueip),
+        .irqs__seip(irqs__seip),
+        .irqs__meip(irqs__meip),
+        .irqs__nmi(irqs__nmi),
         .reset_n(reset_n),
         .trace__trap(            trace__trap),
         .trace__branch_target(            trace__branch_target),
@@ -570,6 +584,13 @@ module tb_riscv_i32mc_pipeline3
         riscv_config__i32m__var = 1'h1;
         riscv_config__i32m_fuse__var = 1'h1;
         riscv_config__coproc_disable__var = 1'h0;
+        irqs__nmi = 1'h0;
+        irqs__meip = 1'h0;
+        irqs__seip = 1'h0;
+        irqs__ueip = 1'h0;
+        irqs__mtip = 1'h0;
+        irqs__msip = 1'h0;
+        irqs__time = 64'h0;
         riscv_config__i32c = riscv_config__i32c__var;
         riscv_config__e32 = riscv_config__e32__var;
         riscv_config__i32m = riscv_config__i32m__var;

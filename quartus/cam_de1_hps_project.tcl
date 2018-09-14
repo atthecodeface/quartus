@@ -29,6 +29,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_apb.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_master_apb.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_csr.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR//dprintf_4_mux.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_teletext.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/hps_fpga_debug.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext.v

@@ -18,16 +18,84 @@
     //   of the privilege architecture (Nov 2016), with the exception that
     //   MTIME has been removed (as this seems to be the correct thing to do).
     //   
+    //   The privilege specifcation (v1.10) indicates:
+    //   
+    //   * meip is read-only and is derived from the external irq in to this module
+    //   
+    //   * mtip is read-only, cleared by writing to the memory-mapped timer comparator
+    //   
+    //   * msip is read-write in a memory-mapped register somewhere
+    //   
+    //   Hence the irqs structure must provide these three signals
+    //   
+    //   
+    //   Minimal CSRs as only machine mode and debug mode are supported.
+    //   In debug mode every register access is supported.
+    //   In machine mode then every register EXCEPT access to ??? is supported.
+    //   
+    //   Given machine mode is the only mode supported:
+    //   
+    //   * there are no SEI and UEI interrupt pins in to this module
+    //   
+    //   * SEIP and UEIP are not supported
+    //   
+    //   * STIP and UTIP are not supported
+    //   
+    //   * SSIP and USIP are not supported
+    //   
+    //   * mstatus.SIE and mstatus.UIE (and previous versions) are hardwired to 0
+    //   
+    //   * mstatus.SPP and mstatus.UPP are hardwired to 0
+    //   
+    //   The mip (machine interrupt pending register) therefore is:
+    //   
+    //   {20b0, MEIP, 3b0, MTIP, 3b0, MSIP, 3b0}
+    //   
+    //   The mie (machine interrupt enable register) is:
+    //   
+    //   {20b0, MEIE, 3b0, MTIE, 3b0, MSIE, 3b0}
+    //   
+    //   
+    //   The instruction to the pipeline to request an interrupt (which is only
+    //   taken if an instruction is in uncommitted in the execution stage) must be generated using the
+    //   execution mode and the interrupt enable bits and the interrupt pending
+    //   bits.
+    //   
+    //   Hence the 'take interrupt' is (mip & mie) != 0 && mstatus.MIE && (current mode >= machine mode) && (current mode != debug mode).
+    //   
+    //   The required priority order is:
+    //   
+    //   external interrupts, software interrupts, timer interrupts
+    //   
+    //   If an instruction has been committed then it may trap, and the trap
+    //   will occur prior to an interrupt which happens after the commit
+    //   point. In this case there will be a trap, and the trapped instruction
+    //   will be fetched, and then an interrupt can be taken.
+    //   
+    //   When an interrupt is taken the following occurs:
+    //   
+    //   * MPP <= current execution mode (must be machine mode, as debug mode is not interruptible)
+    //   
+    //   * mstatus.MPIE <= mstatus.MIE
+    //   
+    //   Note that WFI should wait independent of mstatus.MIE for (mip & mie) != 0 (given machine mode only)
+    //   In debug mode WFI should be a NOP.
+    //   
+    //   WFI may always be a NOP.
+    //   
+    //   
 module riscv_csrs_minimal
 (
     clk,
     clk__enable,
 
+    csr_controls__exec_mode,
     csr_controls__retire,
     csr_controls__timer_inc,
     csr_controls__timer_clear,
     csr_controls__timer_load,
     csr_controls__timer_value,
+    csr_controls__interrupt,
     csr_controls__trap,
     csr_controls__trap_cause,
     csr_controls__trap_pc,
@@ -35,6 +103,13 @@ module riscv_csrs_minimal
     csr_write_data,
     csr_access__access,
     csr_access__address,
+    irqs__nmi,
+    irqs__meip,
+    irqs__seip,
+    irqs__ueip,
+    irqs__mtip,
+    irqs__msip,
+    irqs__time,
     reset_n,
 
     csrs__cycles,
@@ -46,6 +121,9 @@ module riscv_csrs_minimal
     csrs__mtval,
     csrs__mtvec,
     csr_data__read_data,
+    csr_data__take_interrupt,
+    csr_data__interrupt_mode,
+    csr_data__interrupt_cause,
     csr_data__illegal_access
 );
 
@@ -56,11 +134,13 @@ module riscv_csrs_minimal
 
     //b Inputs
         //   Control signals to update the CSRs
+    input [2:0]csr_controls__exec_mode;
     input csr_controls__retire;
     input csr_controls__timer_inc;
     input csr_controls__timer_clear;
     input csr_controls__timer_load;
     input [63:0]csr_controls__timer_value;
+    input csr_controls__interrupt;
     input csr_controls__trap;
     input [3:0]csr_controls__trap_cause;
     input [31:0]csr_controls__trap_pc;
@@ -70,6 +150,14 @@ module riscv_csrs_minimal
         //   RISC-V CSR access, combinatorially decoded
     input [2:0]csr_access__access;
     input [11:0]csr_access__address;
+        //   Interrupts in to the CPU
+    input irqs__nmi;
+    input irqs__meip;
+    input irqs__seip;
+    input irqs__ueip;
+    input irqs__mtip;
+    input irqs__msip;
+    input [63:0]irqs__time;
         //   Active low reset
     input reset_n;
 
@@ -85,6 +173,9 @@ module riscv_csrs_minimal
     output [31:0]csrs__mtvec;
         //   CSR respone (including read data), from the current @a csr_access
     output [31:0]csr_data__read_data;
+    output csr_data__take_interrupt;
+    output [2:0]csr_data__interrupt_mode;
+    output [3:0]csr_data__interrupt_cause;
     output csr_data__illegal_access;
 
 // output components here
@@ -92,6 +183,9 @@ module riscv_csrs_minimal
     //b Output combinatorials
         //   CSR respone (including read data), from the current @a csr_access
     reg [31:0]csr_data__read_data;
+    reg csr_data__take_interrupt;
+    reg [2:0]csr_data__interrupt_mode;
+    reg [3:0]csr_data__interrupt_cause;
     reg csr_data__illegal_access;
 
     //b Output nets
@@ -130,6 +224,9 @@ module riscv_csrs_minimal
     reg csr_write__enable__var;
     reg [31:0]csr_write__data__var;
         csr_data__read_data__var = 32'h0;
+        csr_data__take_interrupt = 1'h0;
+        csr_data__interrupt_mode = 3'h0;
+        csr_data__interrupt_cause = 4'h0;
         csr_data__illegal_access__var = 1'h0;
         csr_data__illegal_access__var = 1'h1;
         case (csr_access__address) //synopsys parallel_case
@@ -304,8 +401,8 @@ module riscv_csrs_minimal
     begin : csr_state_update__code
         if (reset_n==1'b0)
         begin
-            csrs__cycles <= 64'h0;
             csrs__time <= 64'h0;
+            csrs__cycles <= 64'h0;
             csrs__instret <= 64'h0;
             csrs__mepc <= 32'h0;
             csrs__mtvec <= 32'h0;
@@ -315,6 +412,7 @@ module riscv_csrs_minimal
         end
         else if (clk__enable)
         begin
+            csrs__time <= irqs__time;
             csrs__cycles[31:0] <= (csrs__cycles[31:0]+32'h1);
             if ((csrs__cycles[31:0]==32'hffffffff))
             begin
@@ -327,23 +425,6 @@ module riscv_csrs_minimal
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'hb80)))
             begin
                 csrs__cycles[63:32] <= csr_write__data;
-            end //if
-            if ((csr_controls__timer_clear!=1'h0))
-            begin
-                csrs__time <= 64'h0;
-            end //if
-            if ((csr_controls__timer_load!=1'h0))
-            begin
-                csrs__time[31:0] <= csr_controls__timer_value[31:0];
-                csrs__time[63:32] <= csr_controls__timer_value[63:32];
-            end //if
-            if ((csr_controls__timer_inc!=1'h0))
-            begin
-                if ((csrs__time[31:0]==32'hffffffff))
-                begin
-                    csrs__time[63:32] <= (csrs__time[63:32]+32'h1);
-                end //if
-                csrs__time[31:0] <= (csrs__time[31:0]+32'h1);
             end //if
             if ((csr_controls__retire!=1'h0))
             begin

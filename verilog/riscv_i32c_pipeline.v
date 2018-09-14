@@ -56,6 +56,13 @@ module riscv_i32c_pipeline
     ifetch_resp__tag,
     dmem_access_resp__wait,
     dmem_access_resp__read_data,
+    irqs__nmi,
+    irqs__meip,
+    irqs__seip,
+    irqs__ueip,
+    irqs__mtip,
+    irqs__msip,
+    irqs__time,
     reset_n,
 
     trace__instr_valid,
@@ -130,6 +137,14 @@ module riscv_i32c_pipeline
     input [1:0]ifetch_resp__tag;
     input dmem_access_resp__wait;
     input [31:0]dmem_access_resp__read_data;
+        //   Interrupts in to the CPU
+    input irqs__nmi;
+    input irqs__meip;
+    input irqs__seip;
+    input irqs__ueip;
+    input irqs__mtip;
+    input irqs__msip;
+    input [63:0]irqs__time;
     input reset_n;
 
     //b Outputs
@@ -246,11 +261,13 @@ module riscv_i32c_pipeline
     reg [31:0]registers[31:0];
 
     //b Internal combinatorials
+    reg [2:0]csr_controls__exec_mode;
     reg csr_controls__retire;
     reg csr_controls__timer_inc;
     reg csr_controls__timer_clear;
     reg csr_controls__timer_load;
     reg [63:0]csr_controls__timer_value;
+    reg csr_controls__interrupt;
     reg csr_controls__trap;
     reg [3:0]csr_controls__trap_cause;
     reg [31:0]csr_controls__trap_pc;
@@ -307,6 +324,9 @@ module riscv_i32c_pipeline
     wire [31:0]csrs__mtval;
     wire [31:0]csrs__mtvec;
     wire [31:0]csr_data__read_data;
+    wire csr_data__take_interrupt;
+    wire [2:0]csr_data__interrupt_mode;
+    wire [3:0]csr_data__interrupt_cause;
     wire csr_data__illegal_access;
     wire [31:0]decexecrfw_alu_result__result;
     wire [31:0]decexecrfw_alu_result__arith_result;
@@ -447,14 +467,23 @@ module riscv_i32c_pipeline
         .csr_controls__trap_pc(csr_controls__trap_pc),
         .csr_controls__trap_cause(csr_controls__trap_cause),
         .csr_controls__trap(csr_controls__trap),
+        .csr_controls__interrupt(csr_controls__interrupt),
         .csr_controls__timer_value(csr_controls__timer_value),
         .csr_controls__timer_load(csr_controls__timer_load),
         .csr_controls__timer_clear(csr_controls__timer_clear),
         .csr_controls__timer_inc(csr_controls__timer_inc),
         .csr_controls__retire(csr_controls__retire),
+        .csr_controls__exec_mode(csr_controls__exec_mode),
         .csr_write_data(((decexecrfw_combs__idecode__illegal!=1'h0)?{27'h0,decexecrfw_combs__idecode__rs1}:decexecrfw_combs__rs1)),
         .csr_access__address(decexecrfw_combs__csr_access__address),
         .csr_access__access(decexecrfw_combs__csr_access__access),
+        .irqs__time(irqs__time),
+        .irqs__msip(irqs__msip),
+        .irqs__mtip(irqs__mtip),
+        .irqs__ueip(irqs__ueip),
+        .irqs__seip(irqs__seip),
+        .irqs__meip(irqs__meip),
+        .irqs__nmi(irqs__nmi),
         .reset_n(reset_n),
         .csrs__mtvec(            csrs__mtvec),
         .csrs__mtval(            csrs__mtval),
@@ -465,6 +494,9 @@ module riscv_i32c_pipeline
         .csrs__instret(            csrs__instret),
         .csrs__cycles(            csrs__cycles),
         .csr_data__illegal_access(            csr_data__illegal_access),
+        .csr_data__interrupt_cause(            csr_data__interrupt_cause),
+        .csr_data__interrupt_mode(            csr_data__interrupt_mode),
+        .csr_data__take_interrupt(            csr_data__take_interrupt),
         .csr_data__read_data(            csr_data__read_data)         );
     //b instruction_fetch_request combinatorial process
         //   
@@ -610,11 +642,13 @@ module riscv_i32c_pipeline
         end //if
         decexecrfw_combs__rs1 = registers[decexecrfw_combs__idecode__rs1__var];
         decexecrfw_combs__rs2 = registers[decexecrfw_combs__idecode__rs2__var];
+        csr_controls__exec_mode = 3'h0;
         csr_controls__retire__var = 1'h0;
         csr_controls__timer_inc__var = 1'h0;
         csr_controls__timer_clear = 1'h0;
         csr_controls__timer_load = 1'h0;
         csr_controls__timer_value = 64'h0;
+        csr_controls__interrupt = 1'h0;
         csr_controls__trap__var = 1'h0;
         csr_controls__trap_cause__var = 4'h0;
         csr_controls__trap_pc__var = 32'h0;
@@ -860,7 +894,7 @@ module riscv_i32c_pipeline
             decexecrfw_state__illegal_pc <= 1'h0;
             decexecrfw_state__valid_legal <= 1'h0;
             decexecrfw_state__pc <= 32'h0;
-            decexecrfw_state__pc <= 32'h80000000;
+            decexecrfw_state__pc <= 32'h0;
             registers[0] <= 32'h0;
             registers[1] <= 32'h0;
             registers[2] <= 32'h0;

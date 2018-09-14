@@ -11,8 +11,8 @@
 // Verilog option use_always_at_star 1
 // Verilog option clocks_must_have_enables 1
 
-//a Module tb_riscv_i32c_minimal
-module tb_riscv_i32c_minimal
+//a Module tb_riscv_i32_minimal
+module tb_riscv_i32_minimal
 (
     clk,
     clk__enable,
@@ -185,7 +185,7 @@ module tb_riscv_i32c_minimal
         riscv_config__coproc_disable = 1'h0;
         riscv_config__unaligned_mem = 1'h0;
         riscv_config__e32__var = 1'h0;
-        riscv_config__i32c__var = 1'h1;
+        riscv_config__i32c__var = 1'h0;
         irqs__nmi = 1'h0;
         irqs__meip = 1'h0;
         irqs__seip = 1'h0;
@@ -261,4 +261,4 @@ module tb_riscv_i32c_minimal
         end //if
     end //always
 
-endmodule // tb_riscv_i32c_minimal
+endmodule // tb_riscv_i32_minimal

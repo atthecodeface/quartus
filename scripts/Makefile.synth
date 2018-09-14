@@ -27,6 +27,9 @@ help_synth:
 	$H "Makefile.synth"
 	$H "****************************************************************"
 	$H ""
+	$H "To pull and build verilog / roms in from the cdl_hardware directory"
+	$H "  make rebuild_verilog"
+	$H ""
 	$H "To make quartus/modules contents when a qsys file changes or when"
 	$H "the repo is first checked out:"
 	$H "  make regenerate_modules"
@@ -57,6 +60,10 @@ help_synth:
 	$H ""
 	$H "Rerunning timing can be performed with"
 	$H "  make SYNTH_PROJECT=<project> retime"
+	$H ""
+	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram resynth pins fit"
+	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram fpga_update_srams"
+	$H " make SYNTH_PROJECT=cam_de1_hps_project jtag_program2"
 	$H ""
 
 clean: clean_synth
@@ -117,8 +124,8 @@ $(MAKE_TARGETS)/asm.complete: $(MAKE_TARGETS)/fit.complete
 $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/timing.complete
 
-bbc_project_rebuild:
-	(cd ../bbc_cdl; git pull; make clean verilog roms)
+rebuild_verilog:
+	(cd ../bbc_cdl; git pull && make clean && make -j6 verilog && make roms)
 	(cp -r ../bbc_cdl/build/linux/*v verilog)
 	(cp -r ../bbc_cdl/roms/*mif mif)
 
@@ -137,6 +144,9 @@ netlist:
 
 jtag_program:
 	$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus_output/$(SYNTH_PROJECT).sof@2"
+
+jtag_program2:
+	$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus/$(SYNTH_PROJECT).sof@2"
 
 jtag_usb_init:
 	$(QUARTUS_JTAGD)

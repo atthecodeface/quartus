@@ -33,6 +33,13 @@ module riscv_i32c_pipeline2
     ifetch_resp__tag,
     dmem_access_resp__wait,
     dmem_access_resp__read_data,
+    irqs__nmi,
+    irqs__meip,
+    irqs__seip,
+    irqs__ueip,
+    irqs__mtip,
+    irqs__msip,
+    irqs__time,
     reset_n,
 
     trace__instr_valid,
@@ -77,6 +84,14 @@ module riscv_i32c_pipeline2
     input [1:0]ifetch_resp__tag;
     input dmem_access_resp__wait;
     input [31:0]dmem_access_resp__read_data;
+        //   Interrupts in to the CPU
+    input irqs__nmi;
+    input irqs__meip;
+    input irqs__seip;
+    input irqs__ueip;
+    input irqs__mtip;
+    input irqs__msip;
+    input [63:0]irqs__time;
     input reset_n;
 
     //b Outputs
@@ -161,11 +176,13 @@ module riscv_i32c_pipeline2
     reg [31:0]registers[31:0];
 
     //b Internal combinatorials
+    reg [2:0]csr_controls__exec_mode;
     reg csr_controls__retire;
     reg csr_controls__timer_inc;
     reg csr_controls__timer_clear;
     reg csr_controls__timer_load;
     reg [63:0]csr_controls__timer_value;
+    reg csr_controls__interrupt;
     reg csr_controls__trap;
     reg [3:0]csr_controls__trap_cause;
     reg [31:0]csr_controls__trap_pc;
@@ -201,6 +218,9 @@ module riscv_i32c_pipeline2
 
     //b Internal nets
     wire [31:0]csr_data__read_data;
+    wire csr_data__take_interrupt;
+    wire [2:0]csr_data__interrupt_mode;
+    wire [3:0]csr_data__interrupt_cause;
     wire csr_data__illegal_access;
     wire [31:0]decexec_alu_result__result;
     wire [31:0]decexec_alu_result__arith_result;
@@ -341,15 +361,27 @@ module riscv_i32c_pipeline2
         .csr_controls__trap_pc(csr_controls__trap_pc),
         .csr_controls__trap_cause(csr_controls__trap_cause),
         .csr_controls__trap(csr_controls__trap),
+        .csr_controls__interrupt(csr_controls__interrupt),
         .csr_controls__timer_value(csr_controls__timer_value),
         .csr_controls__timer_load(csr_controls__timer_load),
         .csr_controls__timer_clear(csr_controls__timer_clear),
         .csr_controls__timer_inc(csr_controls__timer_inc),
         .csr_controls__retire(csr_controls__retire),
+        .csr_controls__exec_mode(csr_controls__exec_mode),
         .csr_access__address(decexec_combs__csr_access__address),
         .csr_access__access(decexec_combs__csr_access__access),
+        .irqs__time(irqs__time),
+        .irqs__msip(irqs__msip),
+        .irqs__mtip(irqs__mtip),
+        .irqs__ueip(irqs__ueip),
+        .irqs__seip(irqs__seip),
+        .irqs__meip(irqs__meip),
+        .irqs__nmi(irqs__nmi),
         .reset_n(reset_n),
         .csr_data__illegal_access(            csr_data__illegal_access),
+        .csr_data__interrupt_cause(            csr_data__interrupt_cause),
+        .csr_data__interrupt_mode(            csr_data__interrupt_mode),
+        .csr_data__take_interrupt(            csr_data__take_interrupt),
         .csr_data__read_data(            csr_data__read_data)         );
     //b instruction_fetch_stage combinatorial process
         //   
@@ -470,11 +502,13 @@ module riscv_i32c_pipeline2
                 decexec_combs__rs2__var = rfw_combs__write_data;
             end //if
         end //if
+        csr_controls__exec_mode = 3'h0;
         csr_controls__retire__var = 1'h0;
         csr_controls__timer_inc__var = 1'h0;
         csr_controls__timer_clear = 1'h0;
         csr_controls__timer_load = 1'h0;
         csr_controls__timer_value = 64'h0;
+        csr_controls__interrupt = 1'h0;
         csr_controls__trap = 1'h0;
         csr_controls__trap_cause = 4'h0;
         csr_controls__trap_pc = 32'h0;
@@ -582,7 +616,7 @@ module riscv_i32c_pipeline2
             decexec_state__instruction__data <= 32'h0;
             decexec_state__instruction__mode <= 3'h0;
             decexec_state__pc <= 32'h0;
-            decexec_state__pc <= 32'h80000000;
+            decexec_state__pc <= 32'h0;
         end
         else if (clk__enable)
         begin
