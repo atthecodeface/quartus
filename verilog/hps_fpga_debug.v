@@ -285,9 +285,14 @@ module hps_fpga_debug
     reg tt_display_sram_write__enable;
     reg [47:0]tt_display_sram_write__data;
     reg [15:0]tt_display_sram_write__address;
+    reg csr_response__acknowledge;
+    reg csr_response__read_data_valid;
+    reg csr_response__read_data_error;
+    reg [31:0]csr_response__read_data;
         //   Ack for dprintf request from APB target
     reg apb_dprintf_ack;
     reg [15:0]gpio_input;
+    reg [3:0]apb_request_sel;
     reg [31:0]csr_apb_request__paddr;
     reg csr_apb_request__penable;
     reg csr_apb_request__psel;
@@ -324,6 +329,10 @@ module hps_fpga_debug
     wire [7:0]video_bus__red;
     wire [7:0]video_bus__green;
     wire [7:0]video_bus__blue;
+    wire timeout_csr_response__acknowledge;
+    wire timeout_csr_response__read_data_valid;
+    wire timeout_csr_response__read_data_error;
+    wire [31:0]timeout_csr_response__read_data;
     wire tt_framebuffer_csr_response__acknowledge;
     wire tt_framebuffer_csr_response__read_data_valid;
     wire tt_framebuffer_csr_response__read_data_error;
@@ -889,6 +898,20 @@ module hps_fpga_debug
         .video_bus__display_enable(            video_bus__display_enable),
         .video_bus__hsync(            video_bus__hsync),
         .video_bus__vsync(            video_bus__vsync)         );
+    csr_target_timeout csr_timeout(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .csr_timeout(16'h100),
+        .csr_request__data(csr_request__data),
+        .csr_request__address(csr_request__address),
+        .csr_request__select(csr_request__select),
+        .csr_request__read_not_write(csr_request__read_not_write),
+        .csr_request__valid(csr_request__valid),
+        .reset_n(reset_n),
+        .csr_response__read_data(            timeout_csr_response__read_data),
+        .csr_response__read_data_error(            timeout_csr_response__read_data_error),
+        .csr_response__read_data_valid(            timeout_csr_response__read_data_valid),
+        .csr_response__acknowledge(            timeout_csr_response__acknowledge)         );
     //b apb_instances clock process
     always @( posedge clk or negedge reset_n)
     begin : apb_instances__code
@@ -906,10 +929,6 @@ module hps_fpga_debug
             begin
                 apb_processor_request__valid <= 1'h0;
                 apb_processor_completed <= 1'h1;
-            end //if
-            if ((divider[23:0]==24'h0))
-            begin
-                apb_processor_completed <= 1'h0;
             end //if
         end //if
     end //always
@@ -1093,31 +1112,52 @@ module hps_fpga_debug
                 dprintf_req__data_1[5] <= {{{{lw_axi_r__data,16'h2080},6'h0},lw_axi_r__resp},8'h20};
                 dprintf_req__data_2[5] <= {{{{8'h80,7'h0},lw_axi_w__last},8'hff},40'h0};
             end //if
+            if ((apb_request__psel!=1'h0))
+            begin
+                dprintf_req__valid[6] <= 1'h1;
+                dprintf_req__address[6] <= 16'hf0;
+                dprintf_req__data_0[6] <= {{{40'h4150423a80,7'h0},apb_request__pwrite},16'h2087};
+                dprintf_req__data_1[6] <= {apb_request__paddr,32'h20000087};
+                dprintf_req__data_2[6] <= {{apb_request__pwdata,8'hff},24'h0};
+            end //if
+            if ((csr_request__valid!=1'h0))
+            begin
+                dprintf_req__valid[7] <= 1'h1;
+                dprintf_req__address[7] <= 16'h118;
+                dprintf_req__data_0[7] <= {{{40'h4353523a80,7'h0},csr_request__read_not_write},16'h2083};
+                dprintf_req__data_1[7] <= {csr_request__select,48'h200000000083};
+                dprintf_req__data_2[7] <= {csr_request__address,48'h200000000087};
+                dprintf_req__data_3[7] <= {{csr_request__data,8'hff},24'h0};
+            end //if
         end //if
     end //always
 
     //b apb_target_instances combinatorial process
     always @ ( * )//apb_target_instances
     begin: apb_target_instances__comb_code
+    reg [31:0]timer_apb_request__paddr__var;
     reg timer_apb_request__psel__var;
+    reg [31:0]gpio_apb_request__paddr__var;
     reg gpio_apb_request__psel__var;
+    reg [31:0]dprintf_apb_request__paddr__var;
     reg dprintf_apb_request__psel__var;
     reg [31:0]csr_apb_request__paddr__var;
     reg csr_apb_request__psel__var;
     reg [31:0]apb_response__prdata__var;
     reg apb_response__pready__var;
     reg apb_response__perr__var;
-        timer_apb_request__paddr = apb_request__paddr;
+        apb_request_sel = apb_request__paddr[19:16];
+        timer_apb_request__paddr__var = apb_request__paddr;
         timer_apb_request__penable = apb_request__penable;
         timer_apb_request__psel__var = apb_request__psel;
         timer_apb_request__pwrite = apb_request__pwrite;
         timer_apb_request__pwdata = apb_request__pwdata;
-        gpio_apb_request__paddr = apb_request__paddr;
+        gpio_apb_request__paddr__var = apb_request__paddr;
         gpio_apb_request__penable = apb_request__penable;
         gpio_apb_request__psel__var = apb_request__psel;
         gpio_apb_request__pwrite = apb_request__pwrite;
         gpio_apb_request__pwdata = apb_request__pwdata;
-        dprintf_apb_request__paddr = apb_request__paddr;
+        dprintf_apb_request__paddr__var = apb_request__paddr;
         dprintf_apb_request__penable = apb_request__penable;
         dprintf_apb_request__psel__var = apb_request__psel;
         dprintf_apb_request__pwrite = apb_request__pwrite;
@@ -1127,34 +1167,41 @@ module hps_fpga_debug
         csr_apb_request__psel__var = apb_request__psel;
         csr_apb_request__pwrite = apb_request__pwrite;
         csr_apb_request__pwdata = apb_request__pwdata;
-        timer_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request__paddr[31:28]==4'h0));
-        gpio_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request__paddr[31:28]==4'h1));
-        dprintf_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request__paddr[31:28]==4'h2));
-        csr_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request__paddr[31:28]==4'h3));
-        csr_apb_request__paddr__var[31:28] = 4'h0;
+        timer_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        dprintf_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        gpio_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        timer_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h0));
+        gpio_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h1));
+        dprintf_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h2));
+        csr_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h3));
+        csr_apb_request__paddr__var[31:16] = {12'h0,apb_request__paddr[15:12]};
+        csr_apb_request__paddr__var[15:0] = {6'h0,apb_request__paddr[11:2]};
         apb_response__prdata__var = timer_apb_response__prdata;
         apb_response__pready__var = timer_apb_response__pready;
         apb_response__perr__var = timer_apb_response__perr;
-        if ((apb_request__paddr[31:28]==4'h1))
+        if ((apb_request_sel==4'h1))
         begin
             apb_response__prdata__var = gpio_apb_response__prdata;
             apb_response__pready__var = gpio_apb_response__pready;
             apb_response__perr__var = gpio_apb_response__perr;
         end //if
-        if ((apb_request__paddr[31:28]==4'h2))
+        if ((apb_request_sel==4'h2))
         begin
             apb_response__prdata__var = dprintf_apb_response__prdata;
             apb_response__pready__var = dprintf_apb_response__pready;
             apb_response__perr__var = dprintf_apb_response__perr;
         end //if
-        if ((apb_request__paddr[31:28]==4'h3))
+        if ((apb_request_sel==4'h3))
         begin
             apb_response__prdata__var = csr_apb_response__prdata;
             apb_response__pready__var = csr_apb_response__pready;
             apb_response__perr__var = csr_apb_response__perr;
         end //if
+        timer_apb_request__paddr = timer_apb_request__paddr__var;
         timer_apb_request__psel = timer_apb_request__psel__var;
+        gpio_apb_request__paddr = gpio_apb_request__paddr__var;
         gpio_apb_request__psel = gpio_apb_request__psel__var;
+        dprintf_apb_request__paddr = dprintf_apb_request__paddr__var;
         dprintf_apb_request__psel = dprintf_apb_request__psel__var;
         csr_apb_request__paddr = csr_apb_request__paddr__var;
         csr_apb_request__psel = csr_apb_request__psel__var;
@@ -1166,9 +1213,25 @@ module hps_fpga_debug
     //b dprintf_framebuffer_instances__comb combinatorial process
     always @ ( * )//dprintf_framebuffer_instances__comb
     begin: dprintf_framebuffer_instances__comb_code
+    reg csr_response__acknowledge__var;
+    reg csr_response__read_data_valid__var;
+    reg csr_response__read_data_error__var;
+    reg [31:0]csr_response__read_data__var;
         tt_display_sram_write__enable = dprintf_byte__valid;
         tt_display_sram_write__address = dprintf_byte__address;
         tt_display_sram_write__data = {40'h0,dprintf_byte__data};
+        csr_response__acknowledge__var = tt_framebuffer_csr_response__acknowledge;
+        csr_response__read_data_valid__var = tt_framebuffer_csr_response__read_data_valid;
+        csr_response__read_data_error__var = tt_framebuffer_csr_response__read_data_error;
+        csr_response__read_data__var = tt_framebuffer_csr_response__read_data;
+        csr_response__acknowledge__var = csr_response__acknowledge__var | timeout_csr_response__acknowledge;
+        csr_response__read_data_valid__var = csr_response__read_data_valid__var | timeout_csr_response__read_data_valid;
+        csr_response__read_data_error__var = csr_response__read_data_error__var | timeout_csr_response__read_data_error;
+        csr_response__read_data__var = csr_response__read_data__var | timeout_csr_response__read_data;
+        csr_response__acknowledge = csr_response__acknowledge__var;
+        csr_response__read_data_valid = csr_response__read_data_valid__var;
+        csr_response__read_data_error = csr_response__read_data_error__var;
+        csr_response__read_data = csr_response__read_data__var;
     end //always
 
     //b dprintf_framebuffer_instances__posedge_de1_vga_clock_active_low_de1_vga_reset_n clock process
@@ -1205,7 +1268,7 @@ module hps_fpga_debug
                 de1_vga__vs <= video_bus__vsync;
                 de1_vga__hs <= video_bus__hsync;
                 de1_vga__blank_n <= video_bus__display_enable;
-                de1_vga__sync_n <= (video_bus__vsync | video_bus__hsync);
+                de1_vga__sync_n <= !((video_bus__vsync | video_bus__hsync)!=1'h0);
                 de1_vga__red <= {video_bus__red[7:0],2'h0};
                 de1_vga__green <= {video_bus__green[7:0],2'h0};
                 de1_vga__blue <= {video_bus__blue[7:0],2'h0};
@@ -1243,10 +1306,10 @@ module hps_fpga_debug
         end
         else if (clk__enable)
         begin
-            csr_response_r__acknowledge <= tt_framebuffer_csr_response__acknowledge;
-            csr_response_r__read_data_valid <= tt_framebuffer_csr_response__read_data_valid;
-            csr_response_r__read_data_error <= tt_framebuffer_csr_response__read_data_error;
-            csr_response_r__read_data <= tt_framebuffer_csr_response__read_data;
+            csr_response_r__acknowledge <= csr_response__acknowledge;
+            csr_response_r__read_data_valid <= csr_response__read_data_valid;
+            csr_response_r__read_data_error <= csr_response__read_data_error;
+            csr_response_r__read_data <= csr_response__read_data;
         end //if
     end //always
 

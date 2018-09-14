@@ -149,6 +149,7 @@ module apb_processor
     reg [1:0]processor_state__fsm_state;
     reg [31:0]processor_state__address;
     reg [31:0]processor_state__accumulator;
+    reg [31:0]processor_state__increment;
     reg [31:0]processor_state__repeat_count;
         //   State of the ROM-side; request and ROM access
     reg rom_state__busy;
@@ -559,6 +560,8 @@ module apb_processor
             processor_state__address <= 32'h0;
             processor_state__repeat_count <= 32'h0;
             processor_state__accumulator <= 32'h0;
+            processor_state__increment <= 32'h0;
+            processor_state__increment <= 32'h1;
             processor_state__fsm_state <= 2'h0;
             processor_state__fsm_state <= 2'h0;
         end
@@ -579,6 +582,10 @@ module apb_processor
                 3'h2: // req 1
                     begin
                     processor_state__accumulator <= processor_combs__arg_data;
+                    end
+                3'h3: // req 1
+                    begin
+                    processor_state__increment <= processor_combs__arg_data;
                     end
     //synopsys  translate_off
     //pragma coverage off
@@ -604,7 +611,7 @@ module apb_processor
                 begin
                     if ((processor_combs__opcode_subclass[2]!=1'h0))
                     begin
-                        processor_state__address <= (processor_state__address+32'h1);
+                        processor_state__address <= (processor_state__address+processor_state__increment);
                     end //if
                     if (!(apb_request__pwrite!=1'h0))
                     begin

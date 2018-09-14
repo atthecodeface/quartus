@@ -26,6 +26,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_dprintf.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_gpio.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_timer.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_apb.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_timeout.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_master_apb.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_csr.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf.v
