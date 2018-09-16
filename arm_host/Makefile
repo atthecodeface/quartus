@@ -9,9 +9,11 @@ LDFLAGS =  -g -Wall
 CC = $(CROSS_COMPILE)gcc
 ARCH= arm
 
+copy_out: ${TARGET}
+	scp ${TARGET} gavinprivate@10.1.17.75:
 
 build: $(TARGET)
-$(TARGET): main.o 
+$(TARGET): main.o hps_fpga.o
 	$(CC) $(LDFLAGS)   $^ -o $@  
 %.o : src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@

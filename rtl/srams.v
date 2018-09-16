@@ -62,6 +62,7 @@ module se_sram_srw_we8_unused(sram_clock, sram_clock__enable, write_data, addres
           end
      end
 endmodule
+// See http://www.pldworld.com/_altera/html/_sw/q2help/source/mega/mega_file_altsynch_ram.htm
 module se_sram_srw_we8(sram_clock, sram_clock__enable, write_data, address, write_enable, read_not_write, select, data_out );
    parameter address_width=16;
    parameter data_width=32;
@@ -88,7 +89,7 @@ module se_sram_srw_we8(sram_clock, sram_clock__enable, write_data, address, writ
 				.addressstall_b (1'b0),
 				.byteena_b (1'b1),
 				.clock1 (1'b1),
-				.clocken0 (1'b1),
+				.clocken0 (sram_clock__enable),
 				.clocken1 (1'b1),
 				.clocken2 (1'b1),
 				.clocken3 (1'b1),
@@ -99,7 +100,7 @@ module se_sram_srw_we8(sram_clock, sram_clock__enable, write_data, address, writ
 				.wren_b (1'b0));
 	defparam
 		altsyncram_component.byte_size = 8,
-		altsyncram_component.clock_enable_input_a = "BYPASS",
+		altsyncram_component.clock_enable_input_a = "NORMAL",
 		altsyncram_component.clock_enable_output_a = "BYPASS",
 		altsyncram_component.init_file = initfile,
 		altsyncram_component.intended_device_family = "Cyclone V",
@@ -108,7 +109,7 @@ module se_sram_srw_we8(sram_clock, sram_clock__enable, write_data, address, writ
 		altsyncram_component.numwords_a = 16384,
 		altsyncram_component.operation_mode = "SINGLE_PORT",
 		altsyncram_component.outdata_aclr_a = "NONE",
-		altsyncram_component.outdata_reg_a = "CLOCK0",
+		altsyncram_component.outdata_reg_a = "UNREGISTERED",
 		altsyncram_component.power_up_uninitialized = "FALSE",
 		altsyncram_component.read_during_write_mode_port_a = "DONT_CARE",
 		altsyncram_component.widthad_a = 14,

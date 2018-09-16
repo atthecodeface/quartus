@@ -47,6 +47,7 @@ module riscv_i32_minimal
     irqs__mtip,
     irqs__msip,
     irqs__time,
+    proc_reset_n,
     reset_n,
 
     sram_access_resp__ack,
@@ -100,6 +101,7 @@ module riscv_i32_minimal
     input irqs__mtip;
     input irqs__msip;
     input [63:0]irqs__time;
+    input proc_reset_n;
     input reset_n;
 
     //b Outputs
@@ -294,7 +296,7 @@ module riscv_i32_minimal
         .irqs__seip(irqs__seip),
         .irqs__meip(irqs__meip),
         .irqs__nmi(irqs__nmi),
-        .reset_n(reset_n),
+        .reset_n(proc_reset_n),
         .trace__trap(            trace_pipe__trap),
         .trace__branch_target(            trace_pipe__branch_target),
         .trace__branch_taken(            trace_pipe__branch_taken),
@@ -730,7 +732,7 @@ module riscv_i32_minimal
     reg ifetch_resp__valid__var;
     reg [31:0]ifetch_resp__data__var;
     reg [31:0]dmem_access_resp__read_data__var;
-        sram_access_ack__var = 1'h1;
+        sram_access_ack__var = 1'h0;
         mem_access_req__address__var = 32'h0;
         mem_access_req__byte_enable__var = 4'h0;
         mem_access_req__write_enable__var = 1'h0;
@@ -771,7 +773,9 @@ module riscv_i32_minimal
             begin
             if ((sram_access_req_r__valid!=1'h0))
             begin
-                mem_access_req__address__var = sram_access_req_r__address[31:0];
+                mem_access_req__read_enable__var = sram_access_req_r__read_not_write;
+                mem_access_req__write_enable__var = !(sram_access_req_r__read_not_write!=1'h0);
+                mem_access_req__address__var = {sram_access_req_r__address[29:0],2'h0};
                 mem_access_req__byte_enable__var = sram_access_req_r__byte_enable[3:0];
                 mem_access_req__write_data__var = sram_access_req_r__write_data[31:0];
                 sram_access_ack__var = 1'h1;
@@ -849,6 +853,10 @@ module riscv_i32_minimal
         end
         else if (clk__enable)
         begin
+            if ((sram_access_resp__valid!=1'h0))
+            begin
+                sram_access_resp__valid <= 1'h0;
+            end //if
             if ((sram_access_resp__ack!=1'h0))
             begin
                 sram_access_resp__valid <= 1'h1;
@@ -864,7 +872,7 @@ module riscv_i32_minimal
                 sram_access_req_r__address <= sram_access_req__address;
                 sram_access_req_r__write_data <= sram_access_req__write_data;
             end //if
-            if ((sram_access_ack!=1'h0))
+            if (((sram_access_ack!=1'h0)||(sram_access_resp__ack!=1'h0)))
             begin
                 sram_access_req_r__valid <= 1'h0;
             end //if

@@ -282,6 +282,19 @@ module hps_fpga_debug
     reg de1_cl_lcd__backlight;
 
     //b Internal combinatorials
+    reg irqs__nmi;
+    reg irqs__meip;
+    reg irqs__seip;
+    reg irqs__ueip;
+    reg irqs__mtip;
+    reg irqs__msip;
+    reg [63:0]irqs__time;
+    reg riscv_config__i32c;
+    reg riscv_config__e32;
+    reg riscv_config__i32m;
+    reg riscv_config__i32m_fuse;
+    reg riscv_config__coproc_disable;
+    reg riscv_config__unaligned_mem;
     reg tt_display_sram_write__enable;
     reg [47:0]tt_display_sram_write__data;
     reg [15:0]tt_display_sram_write__address;
@@ -292,7 +305,14 @@ module hps_fpga_debug
         //   Ack for dprintf request from APB target
     reg apb_dprintf_ack;
     reg [15:0]gpio_input;
-    reg [3:0]apb_request_sel;
+    reg [31:0]apb_response__prdata;
+    reg apb_response__pready;
+    reg apb_response__perr;
+    reg [31:0]sram_apb_request__paddr;
+    reg sram_apb_request__penable;
+    reg sram_apb_request__psel;
+    reg sram_apb_request__pwrite;
+    reg [31:0]sram_apb_request__pwdata;
     reg [31:0]csr_apb_request__paddr;
     reg csr_apb_request__penable;
     reg csr_apb_request__psel;
@@ -313,11 +333,37 @@ module hps_fpga_debug
     reg timer_apb_request__psel;
     reg timer_apb_request__pwrite;
     reg [31:0]timer_apb_request__pwdata;
-    reg [31:0]apb_response__prdata;
-    reg apb_response__pready;
-    reg apb_response__perr;
+    reg [3:0]apb_request_sel;
 
     //b Internal nets
+    wire sram_access_req__valid;
+    wire [3:0]sram_access_req__id;
+    wire sram_access_req__read_not_write;
+    wire [7:0]sram_access_req__byte_enable;
+    wire [31:0]sram_access_req__address;
+    wire [63:0]sram_access_req__write_data;
+    wire sram_access_resp__ack;
+    wire sram_access_resp__valid;
+    wire [3:0]sram_access_resp__id;
+    wire [63:0]sram_access_resp__data;
+    wire [31:0]data_access_req__address;
+    wire [3:0]data_access_req__byte_enable;
+    wire data_access_req__write_enable;
+    wire data_access_req__read_enable;
+    wire [31:0]data_access_req__write_data;
+    wire data_access_resp__wait;
+    wire [31:0]data_access_resp__read_data;
+    wire riscv_trace__instr_valid;
+    wire [31:0]riscv_trace__instr_pc;
+    wire [2:0]riscv_trace__instruction__mode;
+    wire [31:0]riscv_trace__instruction__data;
+    wire riscv_trace__rfw_retire;
+    wire riscv_trace__rfw_data_valid;
+    wire [4:0]riscv_trace__rfw_rd;
+    wire [31:0]riscv_trace__rfw_data;
+    wire riscv_trace__branch_taken;
+    wire [31:0]riscv_trace__branch_target;
+    wire riscv_trace__trap;
     wire [39:0]apb_rom_data;
     wire apb_rom_request__enable;
     wire [15:0]apb_rom_request__address;
@@ -362,29 +408,29 @@ module hps_fpga_debug
     wire [63:0]apb_dprintf_req__data_1;
     wire [63:0]apb_dprintf_req__data_2;
     wire [63:0]apb_dprintf_req__data_3;
+    wire [31:0]sram_ctrl;
     wire gpio_input_event;
     wire [15:0]gpio_output_enable;
     wire [15:0]gpio_output;
+    wire [2:0]timer_equalled;
+    wire [31:0]riscv_apb_response__prdata;
+    wire riscv_apb_response__pready;
+    wire riscv_apb_response__perr;
     wire [31:0]proc_apb_response__prdata;
     wire proc_apb_response__pready;
     wire proc_apb_response__perr;
     wire [31:0]axi_apb_response__prdata;
     wire axi_apb_response__pready;
     wire axi_apb_response__perr;
-    wire [31:0]proc_apb_request__paddr;
-    wire proc_apb_request__penable;
-    wire proc_apb_request__psel;
-    wire proc_apb_request__pwrite;
-    wire [31:0]proc_apb_request__pwdata;
-    wire [31:0]axi_apb_request__paddr;
-    wire axi_apb_request__penable;
-    wire axi_apb_request__psel;
-    wire axi_apb_request__pwrite;
-    wire [31:0]axi_apb_request__pwdata;
+    wire [31:0]rp_apb_response__prdata;
+    wire rp_apb_response__pready;
+    wire rp_apb_response__perr;
+    wire [31:0]sram_apb_response__prdata;
+    wire sram_apb_response__pready;
+    wire sram_apb_response__perr;
     wire [31:0]csr_apb_response__prdata;
     wire csr_apb_response__pready;
     wire csr_apb_response__perr;
-    wire [2:0]timer_equalled;
     wire [31:0]dprintf_apb_response__prdata;
     wire dprintf_apb_response__pready;
     wire dprintf_apb_response__perr;
@@ -399,9 +445,109 @@ module hps_fpga_debug
     wire apb_request__psel;
     wire apb_request__pwrite;
     wire [31:0]apb_request__pwdata;
+    wire [31:0]rp_apb_request__paddr;
+    wire rp_apb_request__penable;
+    wire rp_apb_request__psel;
+    wire rp_apb_request__pwrite;
+    wire [31:0]rp_apb_request__pwdata;
+    wire [31:0]proc_apb_request__paddr;
+    wire proc_apb_request__penable;
+    wire proc_apb_request__psel;
+    wire proc_apb_request__pwrite;
+    wire [31:0]proc_apb_request__pwdata;
+    wire [31:0]axi_apb_request__paddr;
+    wire axi_apb_request__penable;
+    wire axi_apb_request__psel;
+    wire axi_apb_request__pwrite;
+    wire [31:0]axi_apb_request__pwdata;
+    wire [31:0]riscv_apb_request__paddr;
+    wire riscv_apb_request__penable;
+    wire riscv_apb_request__psel;
+    wire riscv_apb_request__pwrite;
+    wire [31:0]riscv_apb_request__pwdata;
 
     //b Clock gating module instances
     //b Module instances
+    riscv_i32_minimal riscv(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
+        .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
+        .riscv_config__i32m(riscv_config__i32m),
+        .riscv_config__e32(riscv_config__e32),
+        .riscv_config__i32c(riscv_config__i32c),
+        .sram_access_req__write_data(sram_access_req__write_data),
+        .sram_access_req__address(sram_access_req__address),
+        .sram_access_req__byte_enable(sram_access_req__byte_enable),
+        .sram_access_req__read_not_write(sram_access_req__read_not_write),
+        .sram_access_req__id(sram_access_req__id),
+        .sram_access_req__valid(sram_access_req__valid),
+        .data_access_resp__read_data(data_access_resp__read_data),
+        .data_access_resp__wait(data_access_resp__wait),
+        .irqs__time(irqs__time),
+        .irqs__msip(irqs__msip),
+        .irqs__mtip(irqs__mtip),
+        .irqs__ueip(irqs__ueip),
+        .irqs__seip(irqs__seip),
+        .irqs__meip(irqs__meip),
+        .irqs__nmi(irqs__nmi),
+        .reset_n(reset_n),
+        .proc_reset_n((reset_n & sram_ctrl[0])),
+        .trace__trap(            riscv_trace__trap),
+        .trace__branch_target(            riscv_trace__branch_target),
+        .trace__branch_taken(            riscv_trace__branch_taken),
+        .trace__rfw_data(            riscv_trace__rfw_data),
+        .trace__rfw_rd(            riscv_trace__rfw_rd),
+        .trace__rfw_data_valid(            riscv_trace__rfw_data_valid),
+        .trace__rfw_retire(            riscv_trace__rfw_retire),
+        .trace__instruction__data(            riscv_trace__instruction__data),
+        .trace__instruction__mode(            riscv_trace__instruction__mode),
+        .trace__instr_pc(            riscv_trace__instr_pc),
+        .trace__instr_valid(            riscv_trace__instr_valid),
+        .sram_access_resp__data(            sram_access_resp__data),
+        .sram_access_resp__id(            sram_access_resp__id),
+        .sram_access_resp__valid(            sram_access_resp__valid),
+        .sram_access_resp__ack(            sram_access_resp__ack),
+        .data_access_req__write_data(            data_access_req__write_data),
+        .data_access_req__read_enable(            data_access_req__read_enable),
+        .data_access_req__write_enable(            data_access_req__write_enable),
+        .data_access_req__byte_enable(            data_access_req__byte_enable),
+        .data_access_req__address(            data_access_req__address)         );
+    riscv_i32_trace trace(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .trace__trap(riscv_trace__trap),
+        .trace__branch_target(riscv_trace__branch_target),
+        .trace__branch_taken(riscv_trace__branch_taken),
+        .trace__rfw_data(riscv_trace__rfw_data),
+        .trace__rfw_rd(riscv_trace__rfw_rd),
+        .trace__rfw_data_valid(riscv_trace__rfw_data_valid),
+        .trace__rfw_retire(riscv_trace__rfw_retire),
+        .trace__instruction__data(riscv_trace__instruction__data),
+        .trace__instruction__mode(riscv_trace__instruction__mode),
+        .trace__instr_pc(riscv_trace__instr_pc),
+        .trace__instr_valid(riscv_trace__instr_valid),
+        .reset_n(reset_n)         );
+    riscv_i32_minimal_apb rv_apb(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .apb_response__perr(riscv_apb_response__perr),
+        .apb_response__pready(riscv_apb_response__pready),
+        .apb_response__prdata(riscv_apb_response__prdata),
+        .data_access_req__write_data(data_access_req__write_data),
+        .data_access_req__read_enable(data_access_req__read_enable),
+        .data_access_req__write_enable(data_access_req__write_enable),
+        .data_access_req__byte_enable(data_access_req__byte_enable),
+        .data_access_req__address(data_access_req__address),
+        .reset_n(reset_n),
+        .apb_request__pwdata(            riscv_apb_request__pwdata),
+        .apb_request__pwrite(            riscv_apb_request__pwrite),
+        .apb_request__psel(            riscv_apb_request__psel),
+        .apb_request__penable(            riscv_apb_request__penable),
+        .apb_request__paddr(            riscv_apb_request__paddr),
+        .data_access_resp__read_data(            data_access_resp__read_data),
+        .data_access_resp__wait(            data_access_resp__wait)         );
     apb_processor apbp(
         .clk(clk),
         .clk__enable(1'b1),
@@ -486,17 +632,45 @@ module hps_fpga_debug
         .wready(            lw_axi_wready),
         .awready(            lw_axi_awready),
         .arready(            lw_axi_arready)         );
-    apb_master_mux apbmux(
+    apb_master_mux apb_mux_rp(
         .clk(lw_axi_clock_clk),
         .clk__enable(1'b1),
-        .apb_response__perr(apb_response__perr),
-        .apb_response__pready(apb_response__pready),
-        .apb_response__prdata(apb_response__prdata),
+        .apb_response__perr(rp_apb_response__perr),
+        .apb_response__pready(rp_apb_response__pready),
+        .apb_response__prdata(rp_apb_response__prdata),
         .apb_request_1__pwdata(proc_apb_request__pwdata),
         .apb_request_1__pwrite(proc_apb_request__pwrite),
         .apb_request_1__psel(proc_apb_request__psel),
         .apb_request_1__penable(proc_apb_request__penable),
         .apb_request_1__paddr(proc_apb_request__paddr),
+        .apb_request_0__pwdata(riscv_apb_request__pwdata),
+        .apb_request_0__pwrite(riscv_apb_request__pwrite),
+        .apb_request_0__psel(riscv_apb_request__psel),
+        .apb_request_0__penable(riscv_apb_request__penable),
+        .apb_request_0__paddr(riscv_apb_request__paddr),
+        .reset_n(reset_n),
+        .apb_request__pwdata(            rp_apb_request__pwdata),
+        .apb_request__pwrite(            rp_apb_request__pwrite),
+        .apb_request__psel(            rp_apb_request__psel),
+        .apb_request__penable(            rp_apb_request__penable),
+        .apb_request__paddr(            rp_apb_request__paddr),
+        .apb_response_1__perr(            proc_apb_response__perr),
+        .apb_response_1__pready(            proc_apb_response__pready),
+        .apb_response_1__prdata(            proc_apb_response__prdata),
+        .apb_response_0__perr(            riscv_apb_response__perr),
+        .apb_response_0__pready(            riscv_apb_response__pready),
+        .apb_response_0__prdata(            riscv_apb_response__prdata)         );
+    apb_master_mux apb_mux_ap(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .apb_response__perr(apb_response__perr),
+        .apb_response__pready(apb_response__pready),
+        .apb_response__prdata(apb_response__prdata),
+        .apb_request_1__pwdata(rp_apb_request__pwdata),
+        .apb_request_1__pwrite(rp_apb_request__pwrite),
+        .apb_request_1__psel(rp_apb_request__psel),
+        .apb_request_1__penable(rp_apb_request__penable),
+        .apb_request_1__paddr(rp_apb_request__paddr),
         .apb_request_0__pwdata(axi_apb_request__pwdata),
         .apb_request_0__pwrite(axi_apb_request__pwrite),
         .apb_request_0__psel(axi_apb_request__psel),
@@ -508,9 +682,9 @@ module hps_fpga_debug
         .apb_request__psel(            apb_request__psel),
         .apb_request__penable(            apb_request__penable),
         .apb_request__paddr(            apb_request__paddr),
-        .apb_response_1__perr(            proc_apb_response__perr),
-        .apb_response_1__pready(            proc_apb_response__pready),
-        .apb_response_1__prdata(            proc_apb_response__prdata),
+        .apb_response_1__perr(            rp_apb_response__perr),
+        .apb_response_1__pready(            rp_apb_response__pready),
+        .apb_response_1__prdata(            rp_apb_response__prdata),
         .apb_response_0__perr(            axi_apb_response__perr),
         .apb_response_0__pready(            axi_apb_response__pready),
         .apb_response_0__prdata(            axi_apb_response__prdata)         );
@@ -789,6 +963,29 @@ module hps_fpga_debug
         .req__valid(            mux_dprintf_req__valid[9]),
         .ack_b(            mux_dprintf_ack[10]),
         .ack_a(            dprintf_ack[9])         );
+    apb_target_sram_interface sram_if(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .sram_access_resp__data(sram_access_resp__data),
+        .sram_access_resp__id(sram_access_resp__id),
+        .sram_access_resp__valid(sram_access_resp__valid),
+        .sram_access_resp__ack(sram_access_resp__ack),
+        .apb_request__pwdata(sram_apb_request__pwdata),
+        .apb_request__pwrite(sram_apb_request__pwrite),
+        .apb_request__psel(sram_apb_request__psel),
+        .apb_request__penable(sram_apb_request__penable),
+        .apb_request__paddr(sram_apb_request__paddr),
+        .reset_n(reset_n),
+        .sram_access_req__write_data(            sram_access_req__write_data),
+        .sram_access_req__address(            sram_access_req__address),
+        .sram_access_req__byte_enable(            sram_access_req__byte_enable),
+        .sram_access_req__read_not_write(            sram_access_req__read_not_write),
+        .sram_access_req__id(            sram_access_req__id),
+        .sram_access_req__valid(            sram_access_req__valid),
+        .sram_ctrl(            sram_ctrl),
+        .apb_response__perr(            sram_apb_response__perr),
+        .apb_response__pready(            sram_apb_response__pready),
+        .apb_response__prdata(            sram_apb_response__prdata)         );
     apb_target_dprintf apb_dprintf(
         .clk(lw_axi_clock_clk),
         .clk__enable(1'b1),
@@ -912,9 +1109,33 @@ module hps_fpga_debug
         .csr_response__read_data_error(            timeout_csr_response__read_data_error),
         .csr_response__read_data_valid(            timeout_csr_response__read_data_valid),
         .csr_response__acknowledge(            timeout_csr_response__acknowledge)         );
-    //b apb_instances clock process
+    //b riscv_instance combinatorial process
+    always @ ( * )//riscv_instance
+    begin: riscv_instance__comb_code
+    reg riscv_config__i32c__var;
+    reg riscv_config__e32__var;
+        riscv_config__i32c__var = 1'h0;
+        riscv_config__e32__var = 1'h0;
+        riscv_config__i32m = 1'h0;
+        riscv_config__i32m_fuse = 1'h0;
+        riscv_config__coproc_disable = 1'h0;
+        riscv_config__unaligned_mem = 1'h0;
+        riscv_config__e32__var = 1'h0;
+        riscv_config__i32c__var = 1'h1;
+        irqs__nmi = 1'h0;
+        irqs__meip = 1'h0;
+        irqs__seip = 1'h0;
+        irqs__ueip = 1'h0;
+        irqs__mtip = 1'h0;
+        irqs__msip = 1'h0;
+        irqs__time = 64'h0;
+        riscv_config__i32c = riscv_config__i32c__var;
+        riscv_config__e32 = riscv_config__e32__var;
+    end //always
+
+    //b apb_master_instances clock process
     always @( posedge clk or negedge reset_n)
-    begin : apb_instances__code
+    begin : apb_master_instances__code
         if (reset_n==1'b0)
         begin
             apb_processor_request__address <= 16'h0;
@@ -931,6 +1152,101 @@ module hps_fpga_debug
                 apb_processor_completed <= 1'h1;
             end //if
         end //if
+    end //always
+
+    //b apb_multiplexing_decode combinatorial process
+    always @ ( * )//apb_multiplexing_decode
+    begin: apb_multiplexing_decode__comb_code
+    reg [31:0]timer_apb_request__paddr__var;
+    reg timer_apb_request__psel__var;
+    reg [31:0]gpio_apb_request__paddr__var;
+    reg gpio_apb_request__psel__var;
+    reg [31:0]dprintf_apb_request__paddr__var;
+    reg dprintf_apb_request__psel__var;
+    reg [31:0]csr_apb_request__paddr__var;
+    reg csr_apb_request__psel__var;
+    reg [31:0]sram_apb_request__paddr__var;
+    reg sram_apb_request__psel__var;
+    reg [31:0]apb_response__prdata__var;
+    reg apb_response__pready__var;
+    reg apb_response__perr__var;
+        apb_request_sel = apb_request__paddr[19:16];
+        timer_apb_request__paddr__var = apb_request__paddr;
+        timer_apb_request__penable = apb_request__penable;
+        timer_apb_request__psel__var = apb_request__psel;
+        timer_apb_request__pwrite = apb_request__pwrite;
+        timer_apb_request__pwdata = apb_request__pwdata;
+        gpio_apb_request__paddr__var = apb_request__paddr;
+        gpio_apb_request__penable = apb_request__penable;
+        gpio_apb_request__psel__var = apb_request__psel;
+        gpio_apb_request__pwrite = apb_request__pwrite;
+        gpio_apb_request__pwdata = apb_request__pwdata;
+        dprintf_apb_request__paddr__var = apb_request__paddr;
+        dprintf_apb_request__penable = apb_request__penable;
+        dprintf_apb_request__psel__var = apb_request__psel;
+        dprintf_apb_request__pwrite = apb_request__pwrite;
+        dprintf_apb_request__pwdata = apb_request__pwdata;
+        csr_apb_request__paddr__var = apb_request__paddr;
+        csr_apb_request__penable = apb_request__penable;
+        csr_apb_request__psel__var = apb_request__psel;
+        csr_apb_request__pwrite = apb_request__pwrite;
+        csr_apb_request__pwdata = apb_request__pwdata;
+        sram_apb_request__paddr__var = apb_request__paddr;
+        sram_apb_request__penable = apb_request__penable;
+        sram_apb_request__psel__var = apb_request__psel;
+        sram_apb_request__pwrite = apb_request__pwrite;
+        sram_apb_request__pwdata = apb_request__pwdata;
+        timer_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        dprintf_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        gpio_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        sram_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        timer_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h0));
+        gpio_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h1));
+        dprintf_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h2));
+        csr_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h3));
+        sram_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h4));
+        csr_apb_request__paddr__var[31:16] = {12'h0,apb_request__paddr[15:12]};
+        csr_apb_request__paddr__var[15:0] = {6'h0,apb_request__paddr[11:2]};
+        apb_response__prdata__var = timer_apb_response__prdata;
+        apb_response__pready__var = timer_apb_response__pready;
+        apb_response__perr__var = timer_apb_response__perr;
+        if ((apb_request_sel==4'h1))
+        begin
+            apb_response__prdata__var = gpio_apb_response__prdata;
+            apb_response__pready__var = gpio_apb_response__pready;
+            apb_response__perr__var = gpio_apb_response__perr;
+        end //if
+        if ((apb_request_sel==4'h2))
+        begin
+            apb_response__prdata__var = dprintf_apb_response__prdata;
+            apb_response__pready__var = dprintf_apb_response__pready;
+            apb_response__perr__var = dprintf_apb_response__perr;
+        end //if
+        if ((apb_request_sel==4'h3))
+        begin
+            apb_response__prdata__var = csr_apb_response__prdata;
+            apb_response__pready__var = csr_apb_response__pready;
+            apb_response__perr__var = csr_apb_response__perr;
+        end //if
+        if ((apb_request_sel==4'h4))
+        begin
+            apb_response__prdata__var = sram_apb_response__prdata;
+            apb_response__pready__var = sram_apb_response__pready;
+            apb_response__perr__var = sram_apb_response__perr;
+        end //if
+        timer_apb_request__paddr = timer_apb_request__paddr__var;
+        timer_apb_request__psel = timer_apb_request__psel__var;
+        gpio_apb_request__paddr = gpio_apb_request__paddr__var;
+        gpio_apb_request__psel = gpio_apb_request__psel__var;
+        dprintf_apb_request__paddr = dprintf_apb_request__paddr__var;
+        dprintf_apb_request__psel = dprintf_apb_request__psel__var;
+        csr_apb_request__paddr = csr_apb_request__paddr__var;
+        csr_apb_request__psel = csr_apb_request__psel__var;
+        sram_apb_request__paddr = sram_apb_request__paddr__var;
+        sram_apb_request__psel = sram_apb_request__psel__var;
+        apb_response__prdata = apb_response__prdata__var;
+        apb_response__pready = apb_response__pready__var;
+        apb_response__perr = apb_response__perr__var;
     end //always
 
     //b dprintf_requesting__comb combinatorial process
@@ -1129,85 +1445,32 @@ module hps_fpga_debug
                 dprintf_req__data_2[7] <= {csr_request__address,48'h200000000087};
                 dprintf_req__data_3[7] <= {{csr_request__data,8'hff},24'h0};
             end //if
+            if ((sram_access_req__valid!=1'h0))
+            begin
+                dprintf_req__valid[8] <= 1'h1;
+                dprintf_req__address[8] <= 16'h140;
+                dprintf_req__data_0[8] <= {{{40'h53524d3a83,4'h0},sram_access_req__id},16'h2080};
+                dprintf_req__data_1[8] <= {{7'h0,sram_access_req__read_not_write},56'h20000000000087};
+                dprintf_req__data_2[8] <= {sram_access_req__address,32'h20000087};
+                dprintf_req__data_3[8] <= {{{sram_access_req__write_data[31:0],16'h2080},sram_access_req__byte_enable},8'hff};
+            end //if
+            if ((riscv_trace__instr_valid!=1'h0))
+            begin
+                dprintf_req__valid[9] <= 1'h1;
+                dprintf_req__address[9] <= 16'h168;
+                dprintf_req__data_0[9] <= {32'h5256493a,32'h87};
+                dprintf_req__data_1[9] <= {riscv_trace__instr_pc,32'h200087};
+                dprintf_req__data_2[9] <= {{riscv_trace__instruction__data,8'hff},24'h0};
+            end //if
+            if ((riscv_apb_request__psel!=1'h0))
+            begin
+                dprintf_req__valid[10] <= 1'h1;
+                dprintf_req__address[10] <= 16'h190;
+                dprintf_req__data_0[10] <= {{{40'h4150423a80,7'h0},riscv_apb_request__pwrite},16'h2087};
+                dprintf_req__data_1[10] <= {riscv_apb_request__paddr,32'h20000087};
+                dprintf_req__data_2[10] <= {{riscv_apb_request__pwdata,8'hff},24'h0};
+            end //if
         end //if
-    end //always
-
-    //b apb_target_instances combinatorial process
-    always @ ( * )//apb_target_instances
-    begin: apb_target_instances__comb_code
-    reg [31:0]timer_apb_request__paddr__var;
-    reg timer_apb_request__psel__var;
-    reg [31:0]gpio_apb_request__paddr__var;
-    reg gpio_apb_request__psel__var;
-    reg [31:0]dprintf_apb_request__paddr__var;
-    reg dprintf_apb_request__psel__var;
-    reg [31:0]csr_apb_request__paddr__var;
-    reg csr_apb_request__psel__var;
-    reg [31:0]apb_response__prdata__var;
-    reg apb_response__pready__var;
-    reg apb_response__perr__var;
-        apb_request_sel = apb_request__paddr[19:16];
-        timer_apb_request__paddr__var = apb_request__paddr;
-        timer_apb_request__penable = apb_request__penable;
-        timer_apb_request__psel__var = apb_request__psel;
-        timer_apb_request__pwrite = apb_request__pwrite;
-        timer_apb_request__pwdata = apb_request__pwdata;
-        gpio_apb_request__paddr__var = apb_request__paddr;
-        gpio_apb_request__penable = apb_request__penable;
-        gpio_apb_request__psel__var = apb_request__psel;
-        gpio_apb_request__pwrite = apb_request__pwrite;
-        gpio_apb_request__pwdata = apb_request__pwdata;
-        dprintf_apb_request__paddr__var = apb_request__paddr;
-        dprintf_apb_request__penable = apb_request__penable;
-        dprintf_apb_request__psel__var = apb_request__psel;
-        dprintf_apb_request__pwrite = apb_request__pwrite;
-        dprintf_apb_request__pwdata = apb_request__pwdata;
-        csr_apb_request__paddr__var = apb_request__paddr;
-        csr_apb_request__penable = apb_request__penable;
-        csr_apb_request__psel__var = apb_request__psel;
-        csr_apb_request__pwrite = apb_request__pwrite;
-        csr_apb_request__pwdata = apb_request__pwdata;
-        timer_apb_request__paddr__var = (apb_request__paddr>>64'h2);
-        dprintf_apb_request__paddr__var = (apb_request__paddr>>64'h2);
-        gpio_apb_request__paddr__var = (apb_request__paddr>>64'h2);
-        timer_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h0));
-        gpio_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h1));
-        dprintf_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h2));
-        csr_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h3));
-        csr_apb_request__paddr__var[31:16] = {12'h0,apb_request__paddr[15:12]};
-        csr_apb_request__paddr__var[15:0] = {6'h0,apb_request__paddr[11:2]};
-        apb_response__prdata__var = timer_apb_response__prdata;
-        apb_response__pready__var = timer_apb_response__pready;
-        apb_response__perr__var = timer_apb_response__perr;
-        if ((apb_request_sel==4'h1))
-        begin
-            apb_response__prdata__var = gpio_apb_response__prdata;
-            apb_response__pready__var = gpio_apb_response__pready;
-            apb_response__perr__var = gpio_apb_response__perr;
-        end //if
-        if ((apb_request_sel==4'h2))
-        begin
-            apb_response__prdata__var = dprintf_apb_response__prdata;
-            apb_response__pready__var = dprintf_apb_response__pready;
-            apb_response__perr__var = dprintf_apb_response__perr;
-        end //if
-        if ((apb_request_sel==4'h3))
-        begin
-            apb_response__prdata__var = csr_apb_response__prdata;
-            apb_response__pready__var = csr_apb_response__pready;
-            apb_response__perr__var = csr_apb_response__perr;
-        end //if
-        timer_apb_request__paddr = timer_apb_request__paddr__var;
-        timer_apb_request__psel = timer_apb_request__psel__var;
-        gpio_apb_request__paddr = gpio_apb_request__paddr__var;
-        gpio_apb_request__psel = gpio_apb_request__psel__var;
-        dprintf_apb_request__paddr = dprintf_apb_request__paddr__var;
-        dprintf_apb_request__psel = dprintf_apb_request__psel__var;
-        csr_apb_request__paddr = csr_apb_request__paddr__var;
-        csr_apb_request__psel = csr_apb_request__psel__var;
-        apb_response__prdata = apb_response__prdata__var;
-        apb_response__pready = apb_response__pready__var;
-        apb_response__perr = apb_response__perr__var;
     end //always
 
     //b dprintf_framebuffer_instances__comb combinatorial process

@@ -25,6 +25,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_processor.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_dprintf.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_gpio.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_timer.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_sram_interface.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_apb.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_timeout.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_master_apb.v
@@ -32,8 +33,16 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_csr.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR//dprintf_4_mux.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_teletext.v
-set_global_assignment -name VERILOG_FILE $VERILOG_DIR/hps_fpga_debug.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_trace.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_decode.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32c_decode.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_alu.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_csrs_minimal.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32c_pipeline.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_minimal.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_minimal_apb.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/hps_fpga_debug.v
 
 #set fpga_hier "fpga_0\|io"
 set fpga_hier "fpga_0"
