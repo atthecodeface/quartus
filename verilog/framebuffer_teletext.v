@@ -28,6 +28,7 @@ module framebuffer_teletext
     csr_request__select,
     csr_request__address,
     csr_request__data,
+    csr_select_in,
     display_sram_write__enable,
     display_sram_write__data,
     display_sram_write__address,
@@ -62,6 +63,7 @@ module framebuffer_teletext
     input [15:0]csr_request__select;
     input [15:0]csr_request__address;
     input [31:0]csr_request__data;
+    input [15:0]csr_select_in;
     input display_sram_write__enable;
     input [47:0]display_sram_write__data;
     input [15:0]display_sram_write__address;
@@ -135,6 +137,7 @@ module framebuffer_teletext
     reg [9:0]csrs__video__v_back_porch;
     reg [9:0]csrs__video__v_display;
     reg [9:0]csrs__video__v_front_porch;
+    reg [15:0]csr_select;
 
     //b Internal combinatorials
     reg [7:0]pixel_combs__red;
@@ -221,7 +224,7 @@ module framebuffer_teletext
     csr_target_csr csri(
         .clk(csr_clk),
         .clk__enable(1'b1),
-        .csr_select(16'h4),
+        .csr_select(csr_select),
         .csr_access_data(csr_read_data),
         .csr_request__data(csr_request__data),
         .csr_request__address(csr_request__address),
@@ -621,6 +624,7 @@ module framebuffer_teletext
     begin : csr_interface_logic__posedge_csr_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
+            csr_select <= 16'h4;
             csrs__sram_base_address <= 16'h0;
             csrs__sram_words_per_line <= 16'h0;
             csrs__sram_words_per_line <= 16'h28;
@@ -639,6 +643,10 @@ module framebuffer_teletext
         end
         else if (csr_clk__enable)
         begin
+            if ((csr_select_in!=16'h0))
+            begin
+                csr_select <= csr_select_in;
+            end //if
             csrs__sram_base_address <= csrs__sram_base_address;
             csrs__sram_words_per_line <= csrs__sram_words_per_line;
             csrs__video__h_back_porch <= csrs__video__h_back_porch;

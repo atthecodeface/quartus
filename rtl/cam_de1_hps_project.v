@@ -432,10 +432,10 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    wire         de1_vga_clock;
    wire         de1_vga_reset_n;
    pll_lcd video_clk_gen( .refclk(clk_50), .rst(!reset_n), .outclk_0(video_clk), .locked(video_clk_locked) );
-   assign de1_cl_lcd__clock  = !video_clk;
-   //assign de1_cl_lcd_reset_n   = reset_n && video_clk_locked;
-   assign de1_vga_clock     = !video_clk;
-   assign de1_vga_reset_n   = reset_n && video_clk_locked;
+   assign de1_cl_lcd__clock    = !video_clk;
+   assign de1_cl_lcd_reset_n   = reset_n && video_clk_locked;
+   assign de1_vga_clock        = !video_clk;
+   assign de1_vga_reset_n      = reset_n && video_clk_locked;
    
   
    wire         de1_ps2_in__clk;
@@ -734,6 +734,7 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
     .de1_vga__red(de1_vga__r),
     .de1_vga__green(de1_vga__g),
     .de1_vga__blue(de1_vga__b),
+    .de1_cl_lcd_reset_n(de1_cl_lcd_reset_n),
     .de1_cl_lcd__vsync_n(de1_cl_lcd__vsync_n),
     .de1_cl_lcd__hsync_n(de1_cl_lcd__hsync_n),
     .de1_cl_lcd__display_enable(de1_cl_lcd__display_enable),

@@ -31,6 +31,7 @@ module hps_fpga_debug
     de1_ps2b_in__clk,
     de1_ps2_in__data,
     de1_ps2_in__clk,
+    de1_cl_lcd_reset_n,
     de1_cl_inputs_status__sr_data,
     de1_cl_inputs_status__left_rotary__direction_pin,
     de1_cl_inputs_status__left_rotary__transition_pin,
@@ -133,6 +134,7 @@ module hps_fpga_debug
     input de1_ps2b_in__clk;
     input de1_ps2_in__data;
     input de1_ps2_in__clk;
+    input de1_cl_lcd_reset_n;
     input de1_cl_inputs_status__sr_data;
     input de1_cl_inputs_status__left_rotary__direction_pin;
     input de1_cl_inputs_status__left_rotary__transition_pin;
@@ -251,7 +253,14 @@ module hps_fpga_debug
     wire lw_axi_arready;
 
     //b Internal and output registers
+    reg [31:0]lcd_counters[3:0];
+    reg [3:0]lcd_seconds_sr;
+    reg [31:0]vga_counters[3:0];
+    reg [3:0]vga_seconds_sr;
+    reg [31:0]riscv_last_pc;
     reg [15:0]counter;
+    reg [7:0]seconds;
+    reg divider_reset;
     reg [31:0]divider;
     reg apb_processor_completed;
     reg apb_processor_request__valid;
@@ -260,12 +269,12 @@ module hps_fpga_debug
     reg csr_response_r__read_data_valid;
     reg csr_response_r__read_data_error;
     reg [31:0]csr_response_r__read_data;
-    reg [11:0]dprintf_req__valid;
-    reg [15:0]dprintf_req__address[11:0];
-    reg [63:0]dprintf_req__data_0[11:0];
-    reg [63:0]dprintf_req__data_1[11:0];
-    reg [63:0]dprintf_req__data_2[11:0];
-    reg [63:0]dprintf_req__data_3[11:0];
+    reg [15:0]dprintf_req__valid;
+    reg [15:0]dprintf_req__address[15:0];
+    reg [63:0]dprintf_req__data_0[15:0];
+    reg [63:0]dprintf_req__data_1[15:0];
+    reg [63:0]dprintf_req__data_2[15:0];
+    reg [63:0]dprintf_req__data_3[15:0];
     reg de1_vga__vs;
     reg de1_vga__hs;
     reg de1_vga__blank_n;
@@ -336,6 +345,7 @@ module hps_fpga_debug
     reg [3:0]apb_request_sel;
 
     //b Internal nets
+    wire [6:0]de1_hex_leds[5:0];
     wire sram_access_req__valid;
     wire [3:0]sram_access_req__id;
     wire sram_access_req__read_not_write;
@@ -369,20 +379,30 @@ module hps_fpga_debug
     wire [15:0]apb_rom_request__address;
     wire apb_processor_response__acknowledge;
     wire apb_processor_response__rom_busy;
-    wire video_bus__vsync;
-    wire video_bus__hsync;
-    wire video_bus__display_enable;
-    wire [7:0]video_bus__red;
-    wire [7:0]video_bus__green;
-    wire [7:0]video_bus__blue;
+    wire lcd_video_bus__vsync;
+    wire lcd_video_bus__hsync;
+    wire lcd_video_bus__display_enable;
+    wire [7:0]lcd_video_bus__red;
+    wire [7:0]lcd_video_bus__green;
+    wire [7:0]lcd_video_bus__blue;
+    wire vga_video_bus__vsync;
+    wire vga_video_bus__hsync;
+    wire vga_video_bus__display_enable;
+    wire [7:0]vga_video_bus__red;
+    wire [7:0]vga_video_bus__green;
+    wire [7:0]vga_video_bus__blue;
     wire timeout_csr_response__acknowledge;
     wire timeout_csr_response__read_data_valid;
     wire timeout_csr_response__read_data_error;
     wire [31:0]timeout_csr_response__read_data;
-    wire tt_framebuffer_csr_response__acknowledge;
-    wire tt_framebuffer_csr_response__read_data_valid;
-    wire tt_framebuffer_csr_response__read_data_error;
-    wire [31:0]tt_framebuffer_csr_response__read_data;
+    wire tt_vga_framebuffer_csr_response__acknowledge;
+    wire tt_vga_framebuffer_csr_response__read_data_valid;
+    wire tt_vga_framebuffer_csr_response__read_data_error;
+    wire [31:0]tt_vga_framebuffer_csr_response__read_data;
+    wire tt_lcd_framebuffer_csr_response__acknowledge;
+    wire tt_lcd_framebuffer_csr_response__read_data_valid;
+    wire tt_lcd_framebuffer_csr_response__read_data_error;
+    wire [31:0]tt_lcd_framebuffer_csr_response__read_data;
     wire csr_request__valid;
     wire csr_request__read_not_write;
     wire [15:0]csr_request__select;
@@ -392,15 +412,15 @@ module hps_fpga_debug
     wire [7:0]dprintf_byte__data;
     wire [15:0]dprintf_byte__address;
         //   Dprintf request after multiplexing
-    wire [10:0]mux_dprintf_req__valid;
-    wire [15:0]mux_dprintf_req__address[10:0];
-    wire [63:0]mux_dprintf_req__data_0[10:0];
-    wire [63:0]mux_dprintf_req__data_1[10:0];
-    wire [63:0]mux_dprintf_req__data_2[10:0];
-    wire [63:0]mux_dprintf_req__data_3[10:0];
+    wire [14:0]mux_dprintf_req__valid;
+    wire [15:0]mux_dprintf_req__address[14:0];
+    wire [63:0]mux_dprintf_req__data_0[14:0];
+    wire [63:0]mux_dprintf_req__data_1[14:0];
+    wire [63:0]mux_dprintf_req__data_2[14:0];
+    wire [63:0]mux_dprintf_req__data_3[14:0];
         //   Ack for dprintf request after multiplexing
-    wire [10:0]mux_dprintf_ack;
-    wire [11:0]dprintf_ack;
+    wire [14:0]mux_dprintf_ack;
+    wire [15:0]dprintf_ack;
         //   Dprintf request from APB target
     wire apb_dprintf_req__valid;
     wire [15:0]apb_dprintf_req__address;
@@ -691,28 +711,28 @@ module hps_fpga_debug
     dprintf_4_mux tdm_n(
         .clk(clk),
         .clk__enable(1'b1),
-        .ack(mux_dprintf_ack[10]),
-        .req_b__data_3(dprintf_req__data_3[11]),
-        .req_b__data_2(dprintf_req__data_2[11]),
-        .req_b__data_1(dprintf_req__data_1[11]),
-        .req_b__data_0(dprintf_req__data_0[11]),
-        .req_b__address(dprintf_req__address[11]),
-        .req_b__valid(dprintf_req__valid[11]),
-        .req_a__data_3(dprintf_req__data_3[10]),
-        .req_a__data_2(dprintf_req__data_2[10]),
-        .req_a__data_1(dprintf_req__data_1[10]),
-        .req_a__data_0(dprintf_req__data_0[10]),
-        .req_a__address(dprintf_req__address[10]),
-        .req_a__valid(dprintf_req__valid[10]),
+        .ack(mux_dprintf_ack[14]),
+        .req_b__data_3(dprintf_req__data_3[15]),
+        .req_b__data_2(dprintf_req__data_2[15]),
+        .req_b__data_1(dprintf_req__data_1[15]),
+        .req_b__data_0(dprintf_req__data_0[15]),
+        .req_b__address(dprintf_req__address[15]),
+        .req_b__valid(dprintf_req__valid[15]),
+        .req_a__data_3(dprintf_req__data_3[14]),
+        .req_a__data_2(dprintf_req__data_2[14]),
+        .req_a__data_1(dprintf_req__data_1[14]),
+        .req_a__data_0(dprintf_req__data_0[14]),
+        .req_a__address(dprintf_req__address[14]),
+        .req_a__valid(dprintf_req__valid[14]),
         .reset_n(reset_n),
-        .req__data_3(            mux_dprintf_req__data_3[10]),
-        .req__data_2(            mux_dprintf_req__data_2[10]),
-        .req__data_1(            mux_dprintf_req__data_1[10]),
-        .req__data_0(            mux_dprintf_req__data_0[10]),
-        .req__address(            mux_dprintf_req__address[10]),
-        .req__valid(            mux_dprintf_req__valid[10]),
-        .ack_b(            dprintf_ack[11]),
-        .ack_a(            dprintf_ack[10])         );
+        .req__data_3(            mux_dprintf_req__data_3[14]),
+        .req__data_2(            mux_dprintf_req__data_2[14]),
+        .req__data_1(            mux_dprintf_req__data_1[14]),
+        .req__data_0(            mux_dprintf_req__data_0[14]),
+        .req__address(            mux_dprintf_req__address[14]),
+        .req__valid(            mux_dprintf_req__valid[14]),
+        .ack_b(            dprintf_ack[15]),
+        .ack_a(            dprintf_ack[14])         );
     dprintf_4_mux tdm___0(
         .clk(clk),
         .clk__enable(1'b1),
@@ -963,6 +983,106 @@ module hps_fpga_debug
         .req__valid(            mux_dprintf_req__valid[9]),
         .ack_b(            mux_dprintf_ack[10]),
         .ack_a(            dprintf_ack[9])         );
+    dprintf_4_mux tdm___10(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .ack(mux_dprintf_ack[10]),
+        .req_b__data_3(mux_dprintf_req__data_3[11]),
+        .req_b__data_2(mux_dprintf_req__data_2[11]),
+        .req_b__data_1(mux_dprintf_req__data_1[11]),
+        .req_b__data_0(mux_dprintf_req__data_0[11]),
+        .req_b__address(mux_dprintf_req__address[11]),
+        .req_b__valid(mux_dprintf_req__valid[11]),
+        .req_a__data_3(dprintf_req__data_3[10]),
+        .req_a__data_2(dprintf_req__data_2[10]),
+        .req_a__data_1(dprintf_req__data_1[10]),
+        .req_a__data_0(dprintf_req__data_0[10]),
+        .req_a__address(dprintf_req__address[10]),
+        .req_a__valid(dprintf_req__valid[10]),
+        .reset_n(reset_n),
+        .req__data_3(            mux_dprintf_req__data_3[10]),
+        .req__data_2(            mux_dprintf_req__data_2[10]),
+        .req__data_1(            mux_dprintf_req__data_1[10]),
+        .req__data_0(            mux_dprintf_req__data_0[10]),
+        .req__address(            mux_dprintf_req__address[10]),
+        .req__valid(            mux_dprintf_req__valid[10]),
+        .ack_b(            mux_dprintf_ack[11]),
+        .ack_a(            dprintf_ack[10])         );
+    dprintf_4_mux tdm___11(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .ack(mux_dprintf_ack[11]),
+        .req_b__data_3(mux_dprintf_req__data_3[12]),
+        .req_b__data_2(mux_dprintf_req__data_2[12]),
+        .req_b__data_1(mux_dprintf_req__data_1[12]),
+        .req_b__data_0(mux_dprintf_req__data_0[12]),
+        .req_b__address(mux_dprintf_req__address[12]),
+        .req_b__valid(mux_dprintf_req__valid[12]),
+        .req_a__data_3(dprintf_req__data_3[11]),
+        .req_a__data_2(dprintf_req__data_2[11]),
+        .req_a__data_1(dprintf_req__data_1[11]),
+        .req_a__data_0(dprintf_req__data_0[11]),
+        .req_a__address(dprintf_req__address[11]),
+        .req_a__valid(dprintf_req__valid[11]),
+        .reset_n(reset_n),
+        .req__data_3(            mux_dprintf_req__data_3[11]),
+        .req__data_2(            mux_dprintf_req__data_2[11]),
+        .req__data_1(            mux_dprintf_req__data_1[11]),
+        .req__data_0(            mux_dprintf_req__data_0[11]),
+        .req__address(            mux_dprintf_req__address[11]),
+        .req__valid(            mux_dprintf_req__valid[11]),
+        .ack_b(            mux_dprintf_ack[12]),
+        .ack_a(            dprintf_ack[11])         );
+    dprintf_4_mux tdm___12(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .ack(mux_dprintf_ack[12]),
+        .req_b__data_3(mux_dprintf_req__data_3[13]),
+        .req_b__data_2(mux_dprintf_req__data_2[13]),
+        .req_b__data_1(mux_dprintf_req__data_1[13]),
+        .req_b__data_0(mux_dprintf_req__data_0[13]),
+        .req_b__address(mux_dprintf_req__address[13]),
+        .req_b__valid(mux_dprintf_req__valid[13]),
+        .req_a__data_3(dprintf_req__data_3[12]),
+        .req_a__data_2(dprintf_req__data_2[12]),
+        .req_a__data_1(dprintf_req__data_1[12]),
+        .req_a__data_0(dprintf_req__data_0[12]),
+        .req_a__address(dprintf_req__address[12]),
+        .req_a__valid(dprintf_req__valid[12]),
+        .reset_n(reset_n),
+        .req__data_3(            mux_dprintf_req__data_3[12]),
+        .req__data_2(            mux_dprintf_req__data_2[12]),
+        .req__data_1(            mux_dprintf_req__data_1[12]),
+        .req__data_0(            mux_dprintf_req__data_0[12]),
+        .req__address(            mux_dprintf_req__address[12]),
+        .req__valid(            mux_dprintf_req__valid[12]),
+        .ack_b(            mux_dprintf_ack[13]),
+        .ack_a(            dprintf_ack[12])         );
+    dprintf_4_mux tdm___13(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .ack(mux_dprintf_ack[13]),
+        .req_b__data_3(mux_dprintf_req__data_3[14]),
+        .req_b__data_2(mux_dprintf_req__data_2[14]),
+        .req_b__data_1(mux_dprintf_req__data_1[14]),
+        .req_b__data_0(mux_dprintf_req__data_0[14]),
+        .req_b__address(mux_dprintf_req__address[14]),
+        .req_b__valid(mux_dprintf_req__valid[14]),
+        .req_a__data_3(dprintf_req__data_3[13]),
+        .req_a__data_2(dprintf_req__data_2[13]),
+        .req_a__data_1(dprintf_req__data_1[13]),
+        .req_a__data_0(dprintf_req__data_0[13]),
+        .req_a__address(dprintf_req__address[13]),
+        .req_a__valid(dprintf_req__valid[13]),
+        .reset_n(reset_n),
+        .req__data_3(            mux_dprintf_req__data_3[13]),
+        .req__data_2(            mux_dprintf_req__data_2[13]),
+        .req__data_1(            mux_dprintf_req__data_1[13]),
+        .req__data_0(            mux_dprintf_req__data_0[13]),
+        .req__address(            mux_dprintf_req__address[13]),
+        .req__valid(            mux_dprintf_req__valid[13]),
+        .ack_b(            mux_dprintf_ack[14]),
+        .ack_a(            dprintf_ack[13])         );
     apb_target_sram_interface sram_if(
         .clk(clk),
         .clk__enable(1'b1),
@@ -1069,7 +1189,34 @@ module hps_fpga_debug
         .dprintf_byte__data(            dprintf_byte__data),
         .dprintf_byte__valid(            dprintf_byte__valid),
         .dprintf_ack(            mux_dprintf_ack[0])         );
-    framebuffer_teletext ftb(
+    framebuffer_teletext ftb_lcd(
+        .video_clk(de1_cl_lcd_clock),
+        .video_clk__enable(1'b1),
+        .sram_clk(lw_axi_clock_clk),
+        .sram_clk__enable(1'b1),
+        .csr_clk(lw_axi_clock_clk),
+        .csr_clk__enable(1'b1),
+        .csr_request__data(csr_request__data),
+        .csr_request__address(csr_request__address),
+        .csr_request__select(csr_request__select),
+        .csr_request__read_not_write(csr_request__read_not_write),
+        .csr_request__valid(csr_request__valid),
+        .csr_select_in(16'h3),
+        .display_sram_write__address(tt_display_sram_write__address),
+        .display_sram_write__data(tt_display_sram_write__data),
+        .display_sram_write__enable(tt_display_sram_write__enable),
+        .reset_n(reset_n),
+        .csr_response__read_data(            tt_lcd_framebuffer_csr_response__read_data),
+        .csr_response__read_data_error(            tt_lcd_framebuffer_csr_response__read_data_error),
+        .csr_response__read_data_valid(            tt_lcd_framebuffer_csr_response__read_data_valid),
+        .csr_response__acknowledge(            tt_lcd_framebuffer_csr_response__acknowledge),
+        .video_bus__blue(            lcd_video_bus__blue),
+        .video_bus__green(            lcd_video_bus__green),
+        .video_bus__red(            lcd_video_bus__red),
+        .video_bus__display_enable(            lcd_video_bus__display_enable),
+        .video_bus__hsync(            lcd_video_bus__hsync),
+        .video_bus__vsync(            lcd_video_bus__vsync)         );
+    framebuffer_teletext ftb_vga(
         .video_clk(de1_vga_clock),
         .video_clk__enable(1'b1),
         .sram_clk(lw_axi_clock_clk),
@@ -1081,20 +1228,21 @@ module hps_fpga_debug
         .csr_request__select(csr_request__select),
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
+        .csr_select_in(16'h4),
         .display_sram_write__address(tt_display_sram_write__address),
         .display_sram_write__data(tt_display_sram_write__data),
         .display_sram_write__enable(tt_display_sram_write__enable),
         .reset_n(reset_n),
-        .csr_response__read_data(            tt_framebuffer_csr_response__read_data),
-        .csr_response__read_data_error(            tt_framebuffer_csr_response__read_data_error),
-        .csr_response__read_data_valid(            tt_framebuffer_csr_response__read_data_valid),
-        .csr_response__acknowledge(            tt_framebuffer_csr_response__acknowledge),
-        .video_bus__blue(            video_bus__blue),
-        .video_bus__green(            video_bus__green),
-        .video_bus__red(            video_bus__red),
-        .video_bus__display_enable(            video_bus__display_enable),
-        .video_bus__hsync(            video_bus__hsync),
-        .video_bus__vsync(            video_bus__vsync)         );
+        .csr_response__read_data(            tt_vga_framebuffer_csr_response__read_data),
+        .csr_response__read_data_error(            tt_vga_framebuffer_csr_response__read_data_error),
+        .csr_response__read_data_valid(            tt_vga_framebuffer_csr_response__read_data_valid),
+        .csr_response__acknowledge(            tt_vga_framebuffer_csr_response__acknowledge),
+        .video_bus__blue(            vga_video_bus__blue),
+        .video_bus__green(            vga_video_bus__green),
+        .video_bus__red(            vga_video_bus__red),
+        .video_bus__display_enable(            vga_video_bus__display_enable),
+        .video_bus__hsync(            vga_video_bus__hsync),
+        .video_bus__vsync(            vga_video_bus__vsync)         );
     csr_target_timeout csr_timeout(
         .clk(lw_axi_clock_clk),
         .clk__enable(1'b1),
@@ -1109,6 +1257,24 @@ module hps_fpga_debug
         .csr_response__read_data_error(            timeout_csr_response__read_data_error),
         .csr_response__read_data_valid(            timeout_csr_response__read_data_valid),
         .csr_response__acknowledge(            timeout_csr_response__acknowledge)         );
+    led_seven_segment h___0(
+        .hex(riscv_last_pc[3:0]),
+        .leds(            de1_hex_leds[0])         );
+    led_seven_segment h___1(
+        .hex(riscv_last_pc[7:4]),
+        .leds(            de1_hex_leds[1])         );
+    led_seven_segment h___2(
+        .hex(riscv_last_pc[11:8]),
+        .leds(            de1_hex_leds[2])         );
+    led_seven_segment h___3(
+        .hex(riscv_last_pc[15:12]),
+        .leds(            de1_hex_leds[3])         );
+    led_seven_segment h___4(
+        .hex(riscv_last_pc[19:16]),
+        .leds(            de1_hex_leds[4])         );
+    led_seven_segment h___5(
+        .hex(riscv_last_pc[23:20]),
+        .leds(            de1_hex_leds[5])         );
     //b riscv_instance combinatorial process
     always @ ( * )//riscv_instance
     begin: riscv_instance__comb_code
@@ -1272,6 +1438,10 @@ module hps_fpga_debug
             dprintf_req__valid[9] <= 1'h0; // Should this be a bit vector?
             dprintf_req__valid[10] <= 1'h0; // Should this be a bit vector?
             dprintf_req__valid[11] <= 1'h0; // Should this be a bit vector?
+            dprintf_req__valid[12] <= 1'h0; // Should this be a bit vector?
+            dprintf_req__valid[13] <= 1'h0; // Should this be a bit vector?
+            dprintf_req__valid[14] <= 1'h0; // Should this be a bit vector?
+            dprintf_req__valid[15] <= 1'h0; // Should this be a bit vector?
             dprintf_req__address[0] <= 16'h0;
             dprintf_req__address[1] <= 16'h0;
             dprintf_req__address[2] <= 16'h0;
@@ -1284,6 +1454,10 @@ module hps_fpga_debug
             dprintf_req__address[9] <= 16'h0;
             dprintf_req__address[10] <= 16'h0;
             dprintf_req__address[11] <= 16'h0;
+            dprintf_req__address[12] <= 16'h0;
+            dprintf_req__address[13] <= 16'h0;
+            dprintf_req__address[14] <= 16'h0;
+            dprintf_req__address[15] <= 16'h0;
             dprintf_req__data_0[0] <= 64'h0;
             dprintf_req__data_0[1] <= 64'h0;
             dprintf_req__data_0[2] <= 64'h0;
@@ -1296,6 +1470,10 @@ module hps_fpga_debug
             dprintf_req__data_0[9] <= 64'h0;
             dprintf_req__data_0[10] <= 64'h0;
             dprintf_req__data_0[11] <= 64'h0;
+            dprintf_req__data_0[12] <= 64'h0;
+            dprintf_req__data_0[13] <= 64'h0;
+            dprintf_req__data_0[14] <= 64'h0;
+            dprintf_req__data_0[15] <= 64'h0;
             dprintf_req__data_1[0] <= 64'h0;
             dprintf_req__data_1[1] <= 64'h0;
             dprintf_req__data_1[2] <= 64'h0;
@@ -1308,6 +1486,10 @@ module hps_fpga_debug
             dprintf_req__data_1[9] <= 64'h0;
             dprintf_req__data_1[10] <= 64'h0;
             dprintf_req__data_1[11] <= 64'h0;
+            dprintf_req__data_1[12] <= 64'h0;
+            dprintf_req__data_1[13] <= 64'h0;
+            dprintf_req__data_1[14] <= 64'h0;
+            dprintf_req__data_1[15] <= 64'h0;
             dprintf_req__data_2[0] <= 64'h0;
             dprintf_req__data_2[1] <= 64'h0;
             dprintf_req__data_2[2] <= 64'h0;
@@ -1320,6 +1502,10 @@ module hps_fpga_debug
             dprintf_req__data_2[9] <= 64'h0;
             dprintf_req__data_2[10] <= 64'h0;
             dprintf_req__data_2[11] <= 64'h0;
+            dprintf_req__data_2[12] <= 64'h0;
+            dprintf_req__data_2[13] <= 64'h0;
+            dprintf_req__data_2[14] <= 64'h0;
+            dprintf_req__data_2[15] <= 64'h0;
             dprintf_req__data_3[0] <= 64'h0;
             dprintf_req__data_3[1] <= 64'h0;
             dprintf_req__data_3[2] <= 64'h0;
@@ -1332,6 +1518,10 @@ module hps_fpga_debug
             dprintf_req__data_3[9] <= 64'h0;
             dprintf_req__data_3[10] <= 64'h0;
             dprintf_req__data_3[11] <= 64'h0;
+            dprintf_req__data_3[12] <= 64'h0;
+            dprintf_req__data_3[13] <= 64'h0;
+            dprintf_req__data_3[14] <= 64'h0;
+            dprintf_req__data_3[15] <= 64'h0;
         end
         else if (clk__enable)
         begin
@@ -1382,6 +1572,22 @@ module hps_fpga_debug
             if ((dprintf_ack[11]!=1'h0))
             begin
                 dprintf_req__valid[11] <= 1'h0;
+            end //if
+            if ((dprintf_ack[12]!=1'h0))
+            begin
+                dprintf_req__valid[12] <= 1'h0;
+            end //if
+            if ((dprintf_ack[13]!=1'h0))
+            begin
+                dprintf_req__valid[13] <= 1'h0;
+            end //if
+            if ((dprintf_ack[14]!=1'h0))
+            begin
+                dprintf_req__valid[14] <= 1'h0;
+            end //if
+            if ((dprintf_ack[15]!=1'h0))
+            begin
+                dprintf_req__valid[15] <= 1'h0;
             end //if
             dprintf_req__valid[0] <= apb_dprintf_req__valid;
             dprintf_req__address[0] <= apb_dprintf_req__address;
@@ -1470,6 +1676,24 @@ module hps_fpga_debug
                 dprintf_req__data_1[10] <= {riscv_apb_request__paddr,32'h20000087};
                 dprintf_req__data_2[10] <= {{riscv_apb_request__pwdata,8'hff},24'h0};
             end //if
+            if ((divider_reset!=1'h0))
+            begin
+                dprintf_req__valid[11] <= 1'h1;
+                dprintf_req__address[11] <= 16'h1b8;
+                dprintf_req__data_0[11] <= {32'h5647413a,32'h87};
+                dprintf_req__data_1[11] <= {vga_counters[0],32'h20000087};
+                dprintf_req__data_2[11] <= {vga_counters[1],32'h20000087};
+                dprintf_req__data_3[11] <= {{vga_counters[2],8'hff},24'h0};
+            end //if
+            if ((divider_reset!=1'h0))
+            begin
+                dprintf_req__valid[12] <= 1'h1;
+                dprintf_req__address[12] <= 16'h1e0;
+                dprintf_req__data_0[12] <= {32'h4c43443a,32'h87};
+                dprintf_req__data_1[12] <= {lcd_counters[0],32'h20000087};
+                dprintf_req__data_2[12] <= {lcd_counters[1],32'h20000087};
+                dprintf_req__data_3[12] <= {{lcd_counters[2],8'hff},24'h0};
+            end //if
         end //if
     end //always
 
@@ -1483,10 +1707,14 @@ module hps_fpga_debug
         tt_display_sram_write__enable = dprintf_byte__valid;
         tt_display_sram_write__address = dprintf_byte__address;
         tt_display_sram_write__data = {40'h0,dprintf_byte__data};
-        csr_response__acknowledge__var = tt_framebuffer_csr_response__acknowledge;
-        csr_response__read_data_valid__var = tt_framebuffer_csr_response__read_data_valid;
-        csr_response__read_data_error__var = tt_framebuffer_csr_response__read_data_error;
-        csr_response__read_data__var = tt_framebuffer_csr_response__read_data;
+        csr_response__acknowledge__var = tt_vga_framebuffer_csr_response__acknowledge;
+        csr_response__read_data_valid__var = tt_vga_framebuffer_csr_response__read_data_valid;
+        csr_response__read_data_error__var = tt_vga_framebuffer_csr_response__read_data_error;
+        csr_response__read_data__var = tt_vga_framebuffer_csr_response__read_data;
+        csr_response__acknowledge__var = csr_response__acknowledge__var | tt_lcd_framebuffer_csr_response__acknowledge;
+        csr_response__read_data_valid__var = csr_response__read_data_valid__var | tt_lcd_framebuffer_csr_response__read_data_valid;
+        csr_response__read_data_error__var = csr_response__read_data_error__var | tt_lcd_framebuffer_csr_response__read_data_error;
+        csr_response__read_data__var = csr_response__read_data__var | tt_lcd_framebuffer_csr_response__read_data;
         csr_response__acknowledge__var = csr_response__acknowledge__var | timeout_csr_response__acknowledge;
         csr_response__read_data_valid__var = csr_response__read_data_valid__var | timeout_csr_response__read_data_valid;
         csr_response__read_data_error__var = csr_response__read_data_error__var | timeout_csr_response__read_data_error;
@@ -1495,66 +1723,6 @@ module hps_fpga_debug
         csr_response__read_data_valid = csr_response__read_data_valid__var;
         csr_response__read_data_error = csr_response__read_data_error__var;
         csr_response__read_data = csr_response__read_data__var;
-    end //always
-
-    //b dprintf_framebuffer_instances__posedge_de1_vga_clock_active_low_de1_vga_reset_n clock process
-    always @( posedge de1_vga_clock or negedge de1_vga_reset_n)
-    begin : dprintf_framebuffer_instances__posedge_de1_vga_clock_active_low_de1_vga_reset_n__code
-        if (de1_vga_reset_n==1'b0)
-        begin
-            de1_cl_lcd__vsync_n <= 1'h0;
-            de1_cl_lcd__hsync_n <= 1'h0;
-            de1_cl_lcd__display_enable <= 1'h0;
-            de1_cl_lcd__red <= 6'h0;
-            de1_cl_lcd__green <= 7'h0;
-            de1_cl_lcd__blue <= 6'h0;
-            de1_cl_lcd__backlight <= 1'h0;
-            de1_vga__vs <= 1'h0;
-            de1_vga__hs <= 1'h0;
-            de1_vga__blank_n <= 1'h0;
-            de1_vga__sync_n <= 1'h0;
-            de1_vga__red <= 10'h0;
-            de1_vga__green <= 10'h0;
-            de1_vga__blue <= 10'h0;
-        end
-        else if (de1_vga_clock__enable)
-        begin
-            if ((1'h0!=64'h0))
-            begin
-                de1_cl_lcd__vsync_n <= 1'h0;
-                de1_cl_lcd__hsync_n <= 1'h0;
-                de1_cl_lcd__display_enable <= 1'h0;
-                de1_cl_lcd__red <= 6'h0;
-                de1_cl_lcd__green <= 7'h0;
-                de1_cl_lcd__blue <= 6'h0;
-                de1_cl_lcd__backlight <= 1'h0;
-                de1_vga__vs <= video_bus__vsync;
-                de1_vga__hs <= video_bus__hsync;
-                de1_vga__blank_n <= video_bus__display_enable;
-                de1_vga__sync_n <= !((video_bus__vsync | video_bus__hsync)!=1'h0);
-                de1_vga__red <= {video_bus__red[7:0],2'h0};
-                de1_vga__green <= {video_bus__green[7:0],2'h0};
-                de1_vga__blue <= {video_bus__blue[7:0],2'h0};
-            end //if
-            else
-            
-            begin
-                de1_vga__vs <= 1'h0;
-                de1_vga__hs <= 1'h0;
-                de1_vga__blank_n <= 1'h0;
-                de1_vga__sync_n <= 1'h0;
-                de1_vga__red <= 10'h0;
-                de1_vga__green <= 10'h0;
-                de1_vga__blue <= 10'h0;
-                de1_cl_lcd__vsync_n <= !(video_bus__vsync!=1'h0);
-                de1_cl_lcd__hsync_n <= !(video_bus__hsync!=1'h0);
-                de1_cl_lcd__display_enable <= video_bus__display_enable;
-                de1_cl_lcd__red <= video_bus__red[7:2];
-                de1_cl_lcd__green <= video_bus__green[7:1];
-                de1_cl_lcd__blue <= video_bus__blue[7:2];
-                de1_cl_lcd__backlight <= 1'h1;
-            end //else
-        end //if
     end //always
 
     //b dprintf_framebuffer_instances__posedge_clk_active_low_reset_n clock process
@@ -1576,19 +1744,118 @@ module hps_fpga_debug
         end //if
     end //always
 
+    //b dprintf_framebuffer_instances__posedge_de1_vga_clock_active_low_de1_vga_reset_n clock process
+    always @( posedge de1_vga_clock or negedge de1_vga_reset_n)
+    begin : dprintf_framebuffer_instances__posedge_de1_vga_clock_active_low_de1_vga_reset_n__code
+        if (de1_vga_reset_n==1'b0)
+        begin
+            de1_vga__vs <= 1'h0;
+            de1_vga__hs <= 1'h0;
+            de1_vga__blank_n <= 1'h0;
+            de1_vga__sync_n <= 1'h0;
+            de1_vga__red <= 10'h0;
+            de1_vga__green <= 10'h0;
+            de1_vga__blue <= 10'h0;
+            vga_counters[0] <= 32'h0;
+            vga_counters[1] <= 32'h0;
+            vga_counters[2] <= 32'h0;
+            vga_counters[3] <= 32'h0;
+            vga_seconds_sr <= 4'h0;
+        end
+        else if (de1_vga_clock__enable)
+        begin
+            de1_vga__vs <= vga_video_bus__vsync;
+            de1_vga__hs <= vga_video_bus__hsync;
+            de1_vga__blank_n <= vga_video_bus__display_enable;
+            de1_vga__sync_n <= !((vga_video_bus__vsync | vga_video_bus__hsync)!=1'h0);
+            de1_vga__red <= {vga_video_bus__red[7:0],2'h0};
+            de1_vga__green <= {vga_video_bus__green[7:0],2'h0};
+            de1_vga__blue <= {vga_video_bus__blue[7:0],2'h0};
+            if ((vga_video_bus__vsync!=1'h0))
+            begin
+                vga_counters[0] <= (vga_counters[0]+32'h1);
+            end //if
+            if ((vga_video_bus__hsync!=1'h0))
+            begin
+                vga_counters[1] <= (vga_counters[1]+32'h1);
+            end //if
+            if ((vga_video_bus__display_enable!=1'h0))
+            begin
+                vga_counters[2] <= (vga_counters[2]+32'h1);
+            end //if
+            vga_seconds_sr <= {seconds[0],vga_seconds_sr[3:1]};
+            if ((vga_seconds_sr[0]!=vga_seconds_sr[1]))
+            begin
+                vga_counters[0] <= 32'h0;
+                vga_counters[1] <= 32'h0;
+                vga_counters[2] <= 32'h0;
+                vga_counters[3] <= 32'h0;
+            end //if
+        end //if
+    end //always
+
+    //b dprintf_framebuffer_instances__posedge_de1_cl_lcd_clock_active_low_de1_cl_lcd_reset_n clock process
+    always @( posedge de1_cl_lcd_clock or negedge de1_cl_lcd_reset_n)
+    begin : dprintf_framebuffer_instances__posedge_de1_cl_lcd_clock_active_low_de1_cl_lcd_reset_n__code
+        if (de1_cl_lcd_reset_n==1'b0)
+        begin
+            lcd_seconds_sr <= 4'h0;
+            de1_cl_lcd__vsync_n <= 1'h0;
+            de1_cl_lcd__hsync_n <= 1'h0;
+            de1_cl_lcd__display_enable <= 1'h0;
+            de1_cl_lcd__red <= 6'h0;
+            de1_cl_lcd__green <= 7'h0;
+            de1_cl_lcd__blue <= 6'h0;
+            de1_cl_lcd__backlight <= 1'h0;
+            lcd_counters[0] <= 32'h0;
+            lcd_counters[1] <= 32'h0;
+            lcd_counters[2] <= 32'h0;
+            lcd_counters[3] <= 32'h0;
+        end
+        else if (de1_cl_lcd_clock__enable)
+        begin
+            lcd_seconds_sr <= {seconds[0],lcd_seconds_sr[3:1]};
+            de1_cl_lcd__vsync_n <= !(lcd_video_bus__vsync!=1'h0);
+            de1_cl_lcd__hsync_n <= !(lcd_video_bus__hsync!=1'h0);
+            de1_cl_lcd__display_enable <= lcd_video_bus__display_enable;
+            de1_cl_lcd__red <= lcd_video_bus__red[7:2];
+            de1_cl_lcd__green <= lcd_video_bus__green[7:1];
+            de1_cl_lcd__blue <= lcd_video_bus__blue[7:2];
+            de1_cl_lcd__backlight <= 1'h1;
+            lcd_seconds_sr <= {seconds[0],lcd_seconds_sr[3:1]};
+            if ((lcd_video_bus__vsync!=1'h0))
+            begin
+                lcd_counters[0] <= (lcd_counters[0]+32'h1);
+            end //if
+            if ((lcd_video_bus__hsync!=1'h0))
+            begin
+                lcd_counters[1] <= (lcd_counters[1]+32'h1);
+            end //if
+            if ((lcd_video_bus__display_enable!=1'h0))
+            begin
+                lcd_counters[2] <= (lcd_counters[2]+32'h1);
+            end //if
+            if ((lcd_seconds_sr[0]!=lcd_seconds_sr[1]))
+            begin
+                lcd_counters[0] <= 32'h0;
+                lcd_counters[1] <= 32'h0;
+                lcd_counters[2] <= 32'h0;
+                lcd_counters[3] <= 32'h0;
+            end //if
+        end //if
+    end //always
+
     //b stubs__comb combinatorial process
     always @ ( * )//stubs__comb
     begin: stubs__comb_code
-    reg [9:0]de1_leds__leds__var;
         gpio_input = 16'h0;
-        de1_leds__leds__var = 10'h0;
-        de1_leds__h0 = 7'h0;
-        de1_leds__h1 = 7'h0;
-        de1_leds__h2 = 7'h0;
-        de1_leds__h3 = 7'h0;
-        de1_leds__h4 = 7'h0;
-        de1_leds__h5 = 7'h0;
-        de1_leds__leds__var = counter[9:0];
+        de1_leds__leds = counter[9:0];
+        de1_leds__h0 = de1_hex_leds[0];
+        de1_leds__h1 = de1_hex_leds[1];
+        de1_leds__h2 = de1_hex_leds[2];
+        de1_leds__h3 = de1_hex_leds[3];
+        de1_leds__h4 = de1_hex_leds[4];
+        de1_leds__h5 = de1_hex_leds[5];
         de1_cl_led_data_pin = 1'h0;
         de1_cl_inputs_control__sr_clock = 1'h0;
         de1_cl_inputs_control__sr_shift = 1'h0;
@@ -1597,7 +1864,6 @@ module hps_fpga_debug
         de1_ps2b_out__data = 1'h0;
         de1_ps2b_out__clk = 1'h0;
         de1_irda_txd = 1'h0;
-        de1_leds__leds = de1_leds__leds__var;
     end //always
 
     //b stubs__posedge_clk_active_low_reset_n clock process
@@ -1606,11 +1872,21 @@ module hps_fpga_debug
         if (reset_n==1'b0)
         begin
             divider <= 32'h0;
+            divider_reset <= 1'h0;
+            seconds <= 8'h0;
             counter <= 16'h0;
+            riscv_last_pc <= 32'h0;
         end
         else if (clk__enable)
         begin
             divider <= (divider+32'h1);
+            divider_reset <= 1'h0;
+            if ((divider==32'h2faf080))
+            begin
+                divider <= 32'h0;
+                divider_reset <= 1'h1;
+                seconds <= (seconds+8'h1);
+            end //if
             if ((de1_switches[4:2]==3'h0))
             begin
                 counter <= (counter+16'h1);
@@ -1638,6 +1914,10 @@ module hps_fpga_debug
             if (((de1_switches[4:2]==3'h6)&&(tt_display_sram_write__enable!=1'h0)))
             begin
                 counter <= (counter+16'h1);
+            end //if
+            if ((riscv_trace__instr_valid!=1'h0))
+            begin
+                riscv_last_pc <= riscv_trace__instr_pc;
             end //if
         end //if
     end //always
