@@ -376,7 +376,7 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    wire               reset_n;
    assign reset_n = de1_switches[0];
   
-   wire         vgao_clk;
+   wire         vga_clk;
    wire         vga_clk_locked;
    wire         lcdo_clk;
    wire         lcd_clk_locked;
@@ -389,6 +389,7 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    assign de1_cl_lcd__clock    = !lcd_clk;
    assign de1_cl_lcd_reset_n   = reset_n && lcd_clk_locked;
    assign de1_vga_clock        = !vga_clk;
+   assign de1_vga__clk         = vga_clk;
    assign de1_vga_reset_n      = reset_n && vga_clk_locked;
    
   

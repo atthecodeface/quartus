@@ -257,6 +257,8 @@ module hps_fpga_debug
     reg [3:0]lcd_seconds_sr;
     reg [31:0]vga_counters[3:0];
     reg [3:0]vga_seconds_sr;
+    reg [11:0]vga_hsync_counter;
+    reg [3:0]vga_vsync_counter;
     reg [31:0]riscv_last_pc;
     reg [15:0]counter;
     reg [7:0]seconds;
@@ -1893,8 +1895,10 @@ module hps_fpga_debug
     begin : dprintf_framebuffer_instances__posedge_de1_vga_clock_active_low_de1_vga_reset_n__code
         if (de1_vga_reset_n==1'b0)
         begin
-            de1_vga__vs <= 1'h0;
             de1_vga__hs <= 1'h0;
+            vga_hsync_counter <= 12'h0;
+            de1_vga__vs <= 1'h0;
+            vga_vsync_counter <= 4'h0;
             de1_vga__blank_n <= 1'h0;
             de1_vga__sync_n <= 1'h0;
             de1_vga__red <= 10'h0;
@@ -1908,10 +1912,30 @@ module hps_fpga_debug
         end
         else if (de1_vga_clock__enable)
         begin
-            de1_vga__vs <= vga_video_bus__vsync;
-            de1_vga__hs <= vga_video_bus__hsync;
+            de1_vga__hs <= 1'h1;
+            if ((vga_hsync_counter!=12'h0))
+            begin
+                de1_vga__hs <= 1'h0;
+                vga_hsync_counter <= (vga_hsync_counter-12'h1);
+            end //if
+            if ((vga_video_bus__hsync!=1'h0))
+            begin
+                de1_vga__hs <= 1'h0;
+                vga_hsync_counter <= 12'h6e;
+                de1_vga__vs <= 1'h1;
+                if ((vga_vsync_counter!=4'h0))
+                begin
+                    de1_vga__vs <= 1'h0;
+                    vga_vsync_counter <= (vga_vsync_counter-4'h1);
+                end //if
+            end //if
+            if ((vga_video_bus__vsync!=1'h0))
+            begin
+                de1_vga__vs <= 1'h0;
+                vga_vsync_counter <= 4'h1;
+            end //if
             de1_vga__blank_n <= vga_video_bus__display_enable;
-            de1_vga__sync_n <= !((vga_video_bus__vsync | vga_video_bus__hsync)!=1'h0);
+            de1_vga__sync_n <= (de1_vga__vs & de1_vga__hs);
             de1_vga__red <= {vga_video_bus__red[7:0],2'h0};
             de1_vga__green <= {vga_video_bus__green[7:0],2'h0};
             de1_vga__blue <= {vga_video_bus__blue[7:0],2'h0};
