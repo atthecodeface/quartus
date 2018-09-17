@@ -6,7 +6,20 @@ set VERILOG_DIR    $env(VERILOG_DIR)
 set QUARTUS_OUTPUT $env(QUARTUS_OUTPUT)
 set QUARTUS_DIR    $env(QUARTUS_DIR)
 
+#a Project globals
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY $QUARTUS_OUTPUT
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+
 #a Source files
+
 source pins.tcl
 source hps.tcl
 source de1.tcl
@@ -25,15 +38,21 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_processor.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_dprintf.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_gpio.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_timer.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_led_ws2812.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_sram_interface.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_de1_cl_inputs.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/hysteresis_switch.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/de1_cl_controls.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_apb.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_timeout.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_master_apb.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_csr.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf_4_mux.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_timing.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_teletext.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/led_seven_segment.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/led_ws2812_chain.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_trace.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_decode.v

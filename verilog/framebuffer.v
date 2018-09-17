@@ -177,6 +177,7 @@ module framebuffer
     wire video_timing__display_required;
     wire video_timing__will_display_enable;
     wire video_timing__display_enable;
+    wire video_timing__v_frame_last_line;
         //   CSR access for this module
     wire csr_access__valid;
     wire csr_access__read_not_write;
@@ -211,6 +212,7 @@ module framebuffer
         .csr_response__read_data_error(            csr_response_timing__read_data_error),
         .csr_response__read_data_valid(            csr_response_timing__read_data_valid),
         .csr_response__acknowledge(            csr_response_timing__acknowledge),
+        .video_timing__v_frame_last_line(            video_timing__v_frame_last_line),
         .video_timing__display_enable(            video_timing__display_enable),
         .video_timing__will_display_enable(            video_timing__will_display_enable),
         .video_timing__display_required(            video_timing__display_required),

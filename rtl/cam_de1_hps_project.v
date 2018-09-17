@@ -7,94 +7,44 @@ module  pll_lcd_0002(
 	input wire rst,
 
 	// interface 'outclk0'
-	output wire outclk_0,
+	output wire[1:0] outclk,
 
 	// interface 'locked'
-	output wire locked
+	output wire[1:0] locked
 );
 
-	altera_pll #(
-		.fractional_vco_multiplier("false"),
-		.reference_clock_frequency("50.0 MHz"),
-		.operation_mode("direct"),
-		.number_of_clocks(1),
-		.output_clock_frequency0("9.000000 MHz"),
-		.phase_shift0("0 ps"),
-		.duty_cycle0(50),
-		.output_clock_frequency1("0 MHz"),
-		.phase_shift1("0 ps"),
-		.duty_cycle1(50),
-		.output_clock_frequency2("0 MHz"),
-		.phase_shift2("0 ps"),
-		.duty_cycle2(50),
-		.output_clock_frequency3("0 MHz"),
-		.phase_shift3("0 ps"),
-		.duty_cycle3(50),
-		.output_clock_frequency4("0 MHz"),
-		.phase_shift4("0 ps"),
-		.duty_cycle4(50),
-		.output_clock_frequency5("0 MHz"),
-		.phase_shift5("0 ps"),
-		.duty_cycle5(50),
-		.output_clock_frequency6("0 MHz"),
-		.phase_shift6("0 ps"),
-		.duty_cycle6(50),
-		.output_clock_frequency7("0 MHz"),
-		.phase_shift7("0 ps"),
-		.duty_cycle7(50),
-		.output_clock_frequency8("0 MHz"),
-		.phase_shift8("0 ps"),
-		.duty_cycle8(50),
-		.output_clock_frequency9("0 MHz"),
-		.phase_shift9("0 ps"),
-		.duty_cycle9(50),
-		.output_clock_frequency10("0 MHz"),
-		.phase_shift10("0 ps"),
-		.duty_cycle10(50),
-		.output_clock_frequency11("0 MHz"),
-		.phase_shift11("0 ps"),
-		.duty_cycle11(50),
-		.output_clock_frequency12("0 MHz"),
-		.phase_shift12("0 ps"),
-		.duty_cycle12(50),
-		.output_clock_frequency13("0 MHz"),
-		.phase_shift13("0 ps"),
-		.duty_cycle13(50),
-		.output_clock_frequency14("0 MHz"),
-		.phase_shift14("0 ps"),
-		.duty_cycle14(50),
-		.output_clock_frequency15("0 MHz"),
-		.phase_shift15("0 ps"),
-		.duty_cycle15(50),
-		.output_clock_frequency16("0 MHz"),
-		.phase_shift16("0 ps"),
-		.duty_cycle16(50),
-		.output_clock_frequency17("0 MHz"),
-		.phase_shift17("0 ps"),
-		.duty_cycle17(50),
-		.pll_type("General"),
-		.pll_subtype("General")
-	) altera_pll_i (
-		.rst	(rst),
-		.outclk	({outclk_0}),
-		.locked	(locked),
-		.fboutclk	( ),
-		.fbclk	(1'b0),
-		.refclk	(refclk)
-	);
 endmodule
 module pll_lcd (
 		input  wire  refclk,   //  refclk.clk
 		input  wire  rst,      //   reset.reset
 		output wire  outclk_0, // outclk0.clk
-		output wire  locked    //  locked.export
+		output wire  locked_0,    //  locked.export
+		output wire  outclk_1, // outclk0.clk
+		output wire  locked_1    //  locked.export
 	);
 
-	pll_lcd_0002 pll_lcd_inst (
-		.refclk   (refclk),   //  refclk.clk
-		.rst      (rst),      //   reset.reset
-		.outclk_0 (outclk_0), // outclk0.clk
-		.locked   (locked)    //  locked.export
+   wire [1:0]        outclk;
+   wire              locked;
+   
+   assign outclk_0 = outclk[0];
+   assign outclk_1 = outclk[1];
+   assign locked_0 = locked;
+   assign locked_1 = locked;
+   
+	altera_pll #(
+		.fractional_vco_multiplier("false"),
+		.reference_clock_frequency("50.0 MHz"),
+		.operation_mode("direct"),
+		.number_of_clocks(2),
+		.output_clock_frequency0("9.000000 MHz"),
+		.output_clock_frequency1("27 MHz"),
+		.pll_type("General"),
+		.pll_subtype("General")
+	) altera_pll_i (
+		.rst	(rst),
+		.outclk	(outclk),
+		.locked	(locked),
+		.refclk	(refclk)
 	);
 
 endmodule
@@ -426,16 +376,20 @@ module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    wire               reset_n;
    assign reset_n = de1_switches[0];
   
-   wire         video_clk;
-   wire         video_clk_locked;
+   wire         vgao_clk;
+   wire         vga_clk_locked;
+   wire         lcdo_clk;
+   wire         lcd_clk_locked;
    wire         de1_cl_lcd__clock;
    wire         de1_vga_clock;
    wire         de1_vga_reset_n;
-   pll_lcd video_clk_gen( .refclk(clk_50), .rst(!reset_n), .outclk_0(video_clk), .locked(video_clk_locked) );
-   assign de1_cl_lcd__clock    = !video_clk;
-   assign de1_cl_lcd_reset_n   = reset_n && video_clk_locked;
-   assign de1_vga_clock        = !video_clk;
-   assign de1_vga_reset_n      = reset_n && video_clk_locked;
+   pll_lcd video_clk_gen( .refclk(clk_50), .rst(!reset_n),
+                          .outclk_0(lcd_clk), .locked_0(lcd_clk_locked),
+                          .outclk_1(vga_clk), .locked_1(vga_clk_locked) );
+   assign de1_cl_lcd__clock    = !lcd_clk;
+   assign de1_cl_lcd_reset_n   = reset_n && lcd_clk_locked;
+   assign de1_vga_clock        = !vga_clk;
+   assign de1_vga_reset_n      = reset_n && vga_clk_locked;
    
   
    wire         de1_ps2_in__clk;

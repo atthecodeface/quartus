@@ -234,10 +234,10 @@ module hps_fpga_debug
     reg [6:0]de1_leds__h4;
     reg [6:0]de1_leds__h5;
     reg de1_cl_led_data_pin;
-    reg de1_cl_inputs_control__sr_clock;
-    reg de1_cl_inputs_control__sr_shift;
 
     //b Output nets
+    wire de1_cl_inputs_control__sr_clock;
+    wire de1_cl_inputs_control__sr_shift;
     wire lw_axi_r__valid;
     wire [11:0]lw_axi_r__id;
     wire [31:0]lw_axi_r__data;
@@ -275,6 +275,7 @@ module hps_fpga_debug
     reg [63:0]dprintf_req__data_1[15:0];
     reg [63:0]dprintf_req__data_2[15:0];
     reg [63:0]dprintf_req__data_3[15:0];
+    reg [15:0]gpio_input;
     reg de1_vga__vs;
     reg de1_vga__hs;
     reg de1_vga__blank_n;
@@ -313,7 +314,6 @@ module hps_fpga_debug
     reg [31:0]csr_response__read_data;
         //   Ack for dprintf request from APB target
     reg apb_dprintf_ack;
-    reg [15:0]gpio_input;
     reg [31:0]apb_response__prdata;
     reg apb_response__pready;
     reg apb_response__perr;
@@ -332,6 +332,16 @@ module hps_fpga_debug
     reg dprintf_apb_request__psel;
     reg dprintf_apb_request__pwrite;
     reg [31:0]dprintf_apb_request__pwdata;
+    reg [31:0]inputs_apb_request__paddr;
+    reg inputs_apb_request__penable;
+    reg inputs_apb_request__psel;
+    reg inputs_apb_request__pwrite;
+    reg [31:0]inputs_apb_request__pwdata;
+    reg [31:0]led_chain_apb_request__paddr;
+    reg led_chain_apb_request__penable;
+    reg led_chain_apb_request__psel;
+    reg led_chain_apb_request__pwrite;
+    reg [31:0]led_chain_apb_request__pwdata;
     reg [31:0]gpio_apb_request__paddr;
     reg gpio_apb_request__penable;
     reg gpio_apb_request__psel;
@@ -433,6 +443,26 @@ module hps_fpga_debug
     wire [15:0]gpio_output_enable;
     wire [15:0]gpio_output;
     wire [2:0]timer_equalled;
+    wire led_chain;
+        //   
+    wire de1_cl_user_inputs__updated_switches;
+    wire de1_cl_user_inputs__diamond__a;
+    wire de1_cl_user_inputs__diamond__b;
+    wire de1_cl_user_inputs__diamond__x;
+    wire de1_cl_user_inputs__diamond__y;
+    wire de1_cl_user_inputs__joystick__u;
+    wire de1_cl_user_inputs__joystick__d;
+    wire de1_cl_user_inputs__joystick__l;
+    wire de1_cl_user_inputs__joystick__r;
+    wire de1_cl_user_inputs__joystick__c;
+    wire de1_cl_user_inputs__left_dial__pressed;
+    wire de1_cl_user_inputs__left_dial__direction;
+    wire de1_cl_user_inputs__left_dial__direction_pulse;
+    wire de1_cl_user_inputs__right_dial__pressed;
+    wire de1_cl_user_inputs__right_dial__direction;
+    wire de1_cl_user_inputs__right_dial__direction_pulse;
+    wire de1_cl_user_inputs__touchpanel_irq;
+    wire de1_cl_user_inputs__temperature_alarm;
     wire [31:0]riscv_apb_response__prdata;
     wire riscv_apb_response__pready;
     wire riscv_apb_response__perr;
@@ -454,6 +484,12 @@ module hps_fpga_debug
     wire [31:0]dprintf_apb_response__prdata;
     wire dprintf_apb_response__pready;
     wire dprintf_apb_response__perr;
+    wire [31:0]inputs_apb_response__prdata;
+    wire inputs_apb_response__pready;
+    wire inputs_apb_response__perr;
+    wire [31:0]led_chain_apb_response__prdata;
+    wire led_chain_apb_response__pready;
+    wire led_chain_apb_response__perr;
     wire [31:0]gpio_apb_response__prdata;
     wire gpio_apb_response__pready;
     wire gpio_apb_response__perr;
@@ -1154,6 +1190,50 @@ module hps_fpga_debug
         .apb_response__perr(            gpio_apb_response__perr),
         .apb_response__pready(            gpio_apb_response__pready),
         .apb_response__prdata(            gpio_apb_response__prdata)         );
+    apb_target_led_ws2812 led_ws2812(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .divider_400ns_in(8'h13),
+        .apb_request__pwdata(led_chain_apb_request__pwdata),
+        .apb_request__pwrite(led_chain_apb_request__pwrite),
+        .apb_request__psel(led_chain_apb_request__psel),
+        .apb_request__penable(led_chain_apb_request__penable),
+        .apb_request__paddr(led_chain_apb_request__paddr),
+        .reset_n(reset_n),
+        .led_chain(            led_chain),
+        .apb_response__perr(            led_chain_apb_response__perr),
+        .apb_response__pready(            led_chain_apb_response__pready),
+        .apb_response__prdata(            led_chain_apb_response__prdata)         );
+    apb_target_de1_cl_inputs de1_cl_inputs(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .user_inputs__temperature_alarm(de1_cl_user_inputs__temperature_alarm),
+        .user_inputs__touchpanel_irq(de1_cl_user_inputs__touchpanel_irq),
+        .user_inputs__right_dial__direction_pulse(de1_cl_user_inputs__right_dial__direction_pulse),
+        .user_inputs__right_dial__direction(de1_cl_user_inputs__right_dial__direction),
+        .user_inputs__right_dial__pressed(de1_cl_user_inputs__right_dial__pressed),
+        .user_inputs__left_dial__direction_pulse(de1_cl_user_inputs__left_dial__direction_pulse),
+        .user_inputs__left_dial__direction(de1_cl_user_inputs__left_dial__direction),
+        .user_inputs__left_dial__pressed(de1_cl_user_inputs__left_dial__pressed),
+        .user_inputs__joystick__c(de1_cl_user_inputs__joystick__c),
+        .user_inputs__joystick__r(de1_cl_user_inputs__joystick__r),
+        .user_inputs__joystick__l(de1_cl_user_inputs__joystick__l),
+        .user_inputs__joystick__d(de1_cl_user_inputs__joystick__d),
+        .user_inputs__joystick__u(de1_cl_user_inputs__joystick__u),
+        .user_inputs__diamond__y(de1_cl_user_inputs__diamond__y),
+        .user_inputs__diamond__x(de1_cl_user_inputs__diamond__x),
+        .user_inputs__diamond__b(de1_cl_user_inputs__diamond__b),
+        .user_inputs__diamond__a(de1_cl_user_inputs__diamond__a),
+        .user_inputs__updated_switches(de1_cl_user_inputs__updated_switches),
+        .apb_request__pwdata(inputs_apb_request__pwdata),
+        .apb_request__pwrite(inputs_apb_request__pwrite),
+        .apb_request__psel(inputs_apb_request__psel),
+        .apb_request__penable(inputs_apb_request__penable),
+        .apb_request__paddr(inputs_apb_request__paddr),
+        .reset_n(reset_n),
+        .apb_response__perr(            inputs_apb_response__perr),
+        .apb_response__pready(            inputs_apb_response__pready),
+        .apb_response__prdata(            inputs_apb_response__prdata)         );
     csr_master_apb master(
         .clk(clk),
         .clk__enable(1'b1),
@@ -1201,7 +1281,7 @@ module hps_fpga_debug
         .csr_request__select(csr_request__select),
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
-        .csr_select_in(16'h3),
+        .csr_select_in(16'h2),
         .display_sram_write__address(tt_display_sram_write__address),
         .display_sram_write__data(tt_display_sram_write__data),
         .display_sram_write__enable(tt_display_sram_write__enable),
@@ -1275,6 +1355,36 @@ module hps_fpga_debug
     led_seven_segment h___5(
         .hex(riscv_last_pc[23:20]),
         .leds(            de1_hex_leds[5])         );
+    de1_cl_controls input_ctls(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .sr_divider(8'h31),
+        .inputs_status__right_rotary__transition_pin(de1_cl_inputs_status__right_rotary__transition_pin),
+        .inputs_status__right_rotary__direction_pin(de1_cl_inputs_status__right_rotary__direction_pin),
+        .inputs_status__left_rotary__transition_pin(de1_cl_inputs_status__left_rotary__transition_pin),
+        .inputs_status__left_rotary__direction_pin(de1_cl_inputs_status__left_rotary__direction_pin),
+        .inputs_status__sr_data(de1_cl_inputs_status__sr_data),
+        .reset_n(reset_n),
+        .user_inputs__temperature_alarm(            de1_cl_user_inputs__temperature_alarm),
+        .user_inputs__touchpanel_irq(            de1_cl_user_inputs__touchpanel_irq),
+        .user_inputs__right_dial__direction_pulse(            de1_cl_user_inputs__right_dial__direction_pulse),
+        .user_inputs__right_dial__direction(            de1_cl_user_inputs__right_dial__direction),
+        .user_inputs__right_dial__pressed(            de1_cl_user_inputs__right_dial__pressed),
+        .user_inputs__left_dial__direction_pulse(            de1_cl_user_inputs__left_dial__direction_pulse),
+        .user_inputs__left_dial__direction(            de1_cl_user_inputs__left_dial__direction),
+        .user_inputs__left_dial__pressed(            de1_cl_user_inputs__left_dial__pressed),
+        .user_inputs__joystick__c(            de1_cl_user_inputs__joystick__c),
+        .user_inputs__joystick__r(            de1_cl_user_inputs__joystick__r),
+        .user_inputs__joystick__l(            de1_cl_user_inputs__joystick__l),
+        .user_inputs__joystick__d(            de1_cl_user_inputs__joystick__d),
+        .user_inputs__joystick__u(            de1_cl_user_inputs__joystick__u),
+        .user_inputs__diamond__y(            de1_cl_user_inputs__diamond__y),
+        .user_inputs__diamond__x(            de1_cl_user_inputs__diamond__x),
+        .user_inputs__diamond__b(            de1_cl_user_inputs__diamond__b),
+        .user_inputs__diamond__a(            de1_cl_user_inputs__diamond__a),
+        .user_inputs__updated_switches(            de1_cl_user_inputs__updated_switches),
+        .inputs_control__sr_shift(            de1_cl_inputs_control__sr_shift),
+        .inputs_control__sr_clock(            de1_cl_inputs_control__sr_clock)         );
     //b riscv_instance combinatorial process
     always @ ( * )//riscv_instance
     begin: riscv_instance__comb_code
@@ -1327,6 +1437,10 @@ module hps_fpga_debug
     reg timer_apb_request__psel__var;
     reg [31:0]gpio_apb_request__paddr__var;
     reg gpio_apb_request__psel__var;
+    reg [31:0]led_chain_apb_request__paddr__var;
+    reg led_chain_apb_request__psel__var;
+    reg [31:0]inputs_apb_request__paddr__var;
+    reg inputs_apb_request__psel__var;
     reg [31:0]dprintf_apb_request__paddr__var;
     reg dprintf_apb_request__psel__var;
     reg [31:0]csr_apb_request__paddr__var;
@@ -1347,6 +1461,16 @@ module hps_fpga_debug
         gpio_apb_request__psel__var = apb_request__psel;
         gpio_apb_request__pwrite = apb_request__pwrite;
         gpio_apb_request__pwdata = apb_request__pwdata;
+        led_chain_apb_request__paddr__var = apb_request__paddr;
+        led_chain_apb_request__penable = apb_request__penable;
+        led_chain_apb_request__psel__var = apb_request__psel;
+        led_chain_apb_request__pwrite = apb_request__pwrite;
+        led_chain_apb_request__pwdata = apb_request__pwdata;
+        inputs_apb_request__paddr__var = apb_request__paddr;
+        inputs_apb_request__penable = apb_request__penable;
+        inputs_apb_request__psel__var = apb_request__psel;
+        inputs_apb_request__pwrite = apb_request__pwrite;
+        inputs_apb_request__pwdata = apb_request__pwdata;
         dprintf_apb_request__paddr__var = apb_request__paddr;
         dprintf_apb_request__penable = apb_request__penable;
         dprintf_apb_request__psel__var = apb_request__psel;
@@ -1363,14 +1487,18 @@ module hps_fpga_debug
         sram_apb_request__pwrite = apb_request__pwrite;
         sram_apb_request__pwdata = apb_request__pwdata;
         timer_apb_request__paddr__var = (apb_request__paddr>>64'h2);
-        dprintf_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         gpio_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        led_chain_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        inputs_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        dprintf_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         sram_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         timer_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h0));
         gpio_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h1));
         dprintf_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h2));
         csr_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h3));
         sram_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h4));
+        led_chain_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h5));
+        inputs_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h6));
         csr_apb_request__paddr__var[31:16] = {12'h0,apb_request__paddr[15:12]};
         csr_apb_request__paddr__var[15:0] = {6'h0,apb_request__paddr[11:2]};
         apb_response__prdata__var = timer_apb_response__prdata;
@@ -1400,10 +1528,26 @@ module hps_fpga_debug
             apb_response__pready__var = sram_apb_response__pready;
             apb_response__perr__var = sram_apb_response__perr;
         end //if
+        if ((apb_request_sel==4'h5))
+        begin
+            apb_response__prdata__var = led_chain_apb_response__prdata;
+            apb_response__pready__var = led_chain_apb_response__pready;
+            apb_response__perr__var = led_chain_apb_response__perr;
+        end //if
+        if ((apb_request_sel==4'h6))
+        begin
+            apb_response__prdata__var = inputs_apb_response__prdata;
+            apb_response__pready__var = inputs_apb_response__pready;
+            apb_response__perr__var = inputs_apb_response__perr;
+        end //if
         timer_apb_request__paddr = timer_apb_request__paddr__var;
         timer_apb_request__psel = timer_apb_request__psel__var;
         gpio_apb_request__paddr = gpio_apb_request__paddr__var;
         gpio_apb_request__psel = gpio_apb_request__psel__var;
+        led_chain_apb_request__paddr = led_chain_apb_request__paddr__var;
+        led_chain_apb_request__psel = led_chain_apb_request__psel__var;
+        inputs_apb_request__paddr = inputs_apb_request__paddr__var;
+        inputs_apb_request__psel = inputs_apb_request__psel__var;
         dprintf_apb_request__paddr = dprintf_apb_request__paddr__var;
         dprintf_apb_request__psel = dprintf_apb_request__psel__var;
         csr_apb_request__paddr = csr_apb_request__paddr__var;
@@ -1848,7 +1992,6 @@ module hps_fpga_debug
     //b stubs__comb combinatorial process
     always @ ( * )//stubs__comb
     begin: stubs__comb_code
-        gpio_input = 16'h0;
         de1_leds__leds = counter[9:0];
         de1_leds__h0 = de1_hex_leds[0];
         de1_leds__h1 = de1_hex_leds[1];
@@ -1856,9 +1999,7 @@ module hps_fpga_debug
         de1_leds__h3 = de1_hex_leds[3];
         de1_leds__h4 = de1_hex_leds[4];
         de1_leds__h5 = de1_hex_leds[5];
-        de1_cl_led_data_pin = 1'h0;
-        de1_cl_inputs_control__sr_clock = 1'h0;
-        de1_cl_inputs_control__sr_shift = 1'h0;
+        de1_cl_led_data_pin = !(led_chain!=1'h0);
         de1_ps2_out__data = 1'h0;
         de1_ps2_out__clk = 1'h0;
         de1_ps2b_out__data = 1'h0;
@@ -1876,6 +2017,7 @@ module hps_fpga_debug
             seconds <= 8'h0;
             counter <= 16'h0;
             riscv_last_pc <= 32'h0;
+            gpio_input <= 16'h0;
         end
         else if (clk__enable)
         begin
@@ -1919,6 +2061,10 @@ module hps_fpga_debug
             begin
                 riscv_last_pc <= riscv_trace__instr_pc;
             end //if
+            gpio_input <= 16'h0;
+            gpio_input[3:0] <= de1_keys;
+            gpio_input[13:4] <= de1_switches;
+            gpio_input[14] <= de1_irda_rxd;
         end //if
     end //always
 

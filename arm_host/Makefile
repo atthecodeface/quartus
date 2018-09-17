@@ -1,5 +1,9 @@
 #
-TARGET = ../new
+BIN = bin
+
+BINS  = ${BIN}/run_riscv
+BINS += ${BIN}/peek
+BINS += ${BIN}/poke
 
 #
 CROSS_COMPILE = /soc_eds/DS-5/sw/gcc/bin/arm-linux-gnueabihf-
@@ -9,12 +13,20 @@ LDFLAGS =  -g -Wall
 CC = $(CROSS_COMPILE)gcc
 ARCH= arm
 
-copy_out: ${TARGET}
-	scp ${TARGET} gavinprivate@10.1.17.75:
+copy_out: ${BINS}
+	scp -r ${BINS} gavinprivate@10.1.17.75:arm_host_bin
 
-build: $(TARGET)
-$(TARGET): main.o hps_fpga.o
+build: ${BINS}
+
+${BIN}/run_riscv: main.o hps_fpga.o
 	$(CC) $(LDFLAGS)   $^ -o $@  
+
+${BIN}/peek: peek.o hps_fpga.o
+	$(CC) $(LDFLAGS)   $^ -o $@  
+
+${BIN}/poke: poke.o hps_fpga.o
+	$(CC) $(LDFLAGS)   $^ -o $@  
+
 %.o : src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 

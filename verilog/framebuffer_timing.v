@@ -41,7 +41,8 @@ module framebuffer_timing
     video_timing__v_displaying,
     video_timing__display_required,
     video_timing__will_display_enable,
-    video_timing__display_enable
+    video_timing__display_enable,
+    video_timing__v_frame_last_line
 );
 
     //b Clocks
@@ -78,6 +79,7 @@ module framebuffer_timing
     output video_timing__display_required;
     output video_timing__will_display_enable;
     output video_timing__display_enable;
+    output video_timing__v_frame_last_line;
 
 // output components here
 
@@ -90,6 +92,7 @@ module framebuffer_timing
     reg video_timing__display_required;
     reg video_timing__will_display_enable;
     reg video_timing__display_enable;
+    reg video_timing__v_frame_last_line;
 
     //b Output nets
         //   Pipelined CSR response interface to control the module
@@ -337,6 +340,7 @@ module framebuffer_timing
         video_timing__display_required = video_state__pixel_data_required;
         video_timing__display_enable = video_state__display_enable;
         video_timing__will_display_enable = video_combs__will_display_pixels;
+        video_timing__v_frame_last_line = video_combs__v_frame_last_line;
     end //always
 
     //b csr_interface_logic__comb combinatorial process

@@ -41,8 +41,8 @@ void *hps_fpga_open(void) {
 
     hps_fpga.lw_axi_base = (void *)(((uint32_t)hps_fpga.virtual_base) + LW_FPGA);
 	
-    fprintf(stderr, "virtual_base  %08x\n", (uint32_t)hps_fpga.virtual_base );
-    fprintf(stderr, "lw_axi_base  %08x\n", (uint32_t)hps_fpga.lw_axi_base );
+    //fprintf(stderr, "virtual_base  %08x\n", (uint32_t)hps_fpga.virtual_base );
+    //fprintf(stderr, "lw_axi_base  %08x\n", (uint32_t)hps_fpga.lw_axi_base );
     return hps_fpga.lw_axi_base;
 }
 

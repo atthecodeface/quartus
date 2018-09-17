@@ -63,7 +63,7 @@ help_synth:
 	$H ""
 	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram resynth pins fit"
 	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram fpga_update_srams"
-	$H " make SYNTH_PROJECT=cam_de1_hps_project jtag_program2"
+	$H " make SYNTH_PROJECT=cam_de1_hps_project jtag_program"
 	$H ""
 
 clean: clean_synth
@@ -71,6 +71,7 @@ clean: clean_synth
 clean_synth:
 	rm -f $(MAKE_TARGETS)/synth.complete $(MAKE_TARGETS)/timing.complete $(MAKE_TARGETS)/fit.complete
 	rm -rf $(QUARTUS_OUTPUT) $(QUARTUS_DB) $(QUARTUS_IDB)
+	mkdir -p $(QUARTUS_OUTPUT) 
 
 .PHONY:synth fit timing
 synth: $(MAKE_TARGETS)/synth.complete
@@ -89,7 +90,7 @@ dts : $(SYNTH_PROJECT).dts
 	$(DTS.DTC) -I dts -O dtb -o $@ $<
 
 pins:
-	(cd $(QUARTUS_DIR); $(QUARTUS_STA) -t modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(SYNTH_PROJECT))
+	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_STA) -t modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/pins.log
 
 fit: $(MAKE_TARGETS)/fit.complete
 
@@ -113,16 +114,16 @@ $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTU
 	date >> $(QUARTUS_DIR)/modules/regenerate_date
 
 $(MAKE_TARGETS)/synth.complete: $(SCRIPTS_DIR)/synth.tcl
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/synth.complete
+	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT) )' $(QUARTUS_OUTPUT)/synth.log && date > $(MAKE_TARGETS)/synth.complete
 
 $(MAKE_TARGETS)/fit.complete: $(MAKE_TARGETS)/synth.complete
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/fit.complete
+	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/fit.log && date > $(MAKE_TARGETS)/fit.complete
 
 $(MAKE_TARGETS)/asm.complete: $(MAKE_TARGETS)/fit.complete
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/asm.complete
+	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/asm.log && date > $(MAKE_TARGETS)/asm.complete
 
 $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT)) && date > $(MAKE_TARGETS)/timing.complete
+	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/timing.log && date > $(MAKE_TARGETS)/timing.complete
 
 rebuild_verilog:
 	(cd ../bbc_cdl; git pull && make clean && make -j6 verilog && make roms)
@@ -144,9 +145,6 @@ netlist:
 
 jtag_program:
 	$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus_output/$(SYNTH_PROJECT).sof@2"
-
-jtag_program2:
-	$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus/$(SYNTH_PROJECT).sof@2"
 
 jtag_usb_init:
 	$(QUARTUS_JTAGD)
