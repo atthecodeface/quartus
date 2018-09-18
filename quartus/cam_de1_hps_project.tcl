@@ -38,9 +38,11 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_processor.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_dprintf.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_gpio.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_timer.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_ps2_host.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_led_ws2812.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_sram_interface.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_target_de1_cl_inputs.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/ps2_host.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/hysteresis_switch.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/de1_cl_controls.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/csr_target_apb.v

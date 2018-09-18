@@ -4,6 +4,8 @@ BIN = bin
 BINS  = ${BIN}/run_riscv
 BINS += ${BIN}/peek
 BINS += ${BIN}/poke
+BINS += ${BIN}/remote
+BINS += ${BIN}/ps2_term
 
 #
 CROSS_COMPILE = /soc_eds/DS-5/sw/gcc/bin/arm-linux-gnueabihf-
@@ -25,6 +27,12 @@ ${BIN}/peek: peek.o hps_fpga.o
 	$(CC) $(LDFLAGS)   $^ -o $@  
 
 ${BIN}/poke: poke.o hps_fpga.o
+	$(CC) $(LDFLAGS)   $^ -o $@  
+
+${BIN}/ps2_term: ps2_term.o hps_fpga.o ps2.o teletext.o
+	$(CC) $(LDFLAGS)   $^ -o $@  
+
+${BIN}/remote: remote.o hps_fpga.o
 	$(CC) $(LDFLAGS)   $^ -o $@  
 
 %.o : src/%.c

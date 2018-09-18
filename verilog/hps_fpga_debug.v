@@ -78,6 +78,8 @@ module hps_fpga_debug
     de1_vga__red,
     de1_vga__green,
     de1_vga__blue,
+    de1_ps2_out__data,
+    de1_ps2_out__clk,
     de1_cl_lcd__vsync_n,
     de1_cl_lcd__hsync_n,
     de1_cl_lcd__display_enable,
@@ -88,8 +90,6 @@ module hps_fpga_debug
     de1_irda_txd,
     de1_ps2b_out__data,
     de1_ps2b_out__clk,
-    de1_ps2_out__data,
-    de1_ps2_out__clk,
     de1_leds__leds,
     de1_leds__h0,
     de1_leds__h1,
@@ -182,6 +182,8 @@ module hps_fpga_debug
     output [9:0]de1_vga__red;
     output [9:0]de1_vga__green;
     output [9:0]de1_vga__blue;
+    output de1_ps2_out__data;
+    output de1_ps2_out__clk;
     output de1_cl_lcd__vsync_n;
     output de1_cl_lcd__hsync_n;
     output de1_cl_lcd__display_enable;
@@ -192,8 +194,6 @@ module hps_fpga_debug
     output de1_irda_txd;
     output de1_ps2b_out__data;
     output de1_ps2b_out__clk;
-    output de1_ps2_out__data;
-    output de1_ps2_out__clk;
     output [9:0]de1_leds__leds;
     output [6:0]de1_leds__h0;
     output [6:0]de1_leds__h1;
@@ -224,8 +224,6 @@ module hps_fpga_debug
     reg de1_irda_txd;
     reg de1_ps2b_out__data;
     reg de1_ps2b_out__clk;
-    reg de1_ps2_out__data;
-    reg de1_ps2_out__clk;
     reg [9:0]de1_leds__leds;
     reg [6:0]de1_leds__h0;
     reg [6:0]de1_leds__h1;
@@ -260,6 +258,8 @@ module hps_fpga_debug
     reg [11:0]vga_hsync_counter;
     reg [3:0]vga_vsync_counter;
     reg [31:0]riscv_last_pc;
+    reg ps2_in__data;
+    reg ps2_in__clk;
     reg [15:0]counter;
     reg [7:0]seconds;
     reg divider_reset;
@@ -285,6 +285,8 @@ module hps_fpga_debug
     reg [9:0]de1_vga__red;
     reg [9:0]de1_vga__green;
     reg [9:0]de1_vga__blue;
+    reg de1_ps2_out__data;
+    reg de1_ps2_out__clk;
     reg de1_cl_lcd__vsync_n;
     reg de1_cl_lcd__hsync_n;
     reg de1_cl_lcd__display_enable;
@@ -294,6 +296,10 @@ module hps_fpga_debug
     reg de1_cl_lcd__backlight;
 
     //b Internal combinatorials
+    reg fb_sram_access_resp__ack;
+    reg fb_sram_access_resp__valid;
+    reg [3:0]fb_sram_access_resp__id;
+    reg [63:0]fb_sram_access_resp__data;
     reg irqs__nmi;
     reg irqs__meip;
     reg irqs__seip;
@@ -307,6 +313,9 @@ module hps_fpga_debug
     reg riscv_config__i32m_fuse;
     reg riscv_config__coproc_disable;
     reg riscv_config__unaligned_mem;
+    reg fb_display_sram_write__enable;
+    reg [47:0]fb_display_sram_write__data;
+    reg [15:0]fb_display_sram_write__address;
     reg tt_display_sram_write__enable;
     reg [47:0]tt_display_sram_write__data;
     reg [15:0]tt_display_sram_write__address;
@@ -319,11 +328,21 @@ module hps_fpga_debug
     reg [31:0]apb_response__prdata;
     reg apb_response__pready;
     reg apb_response__perr;
-    reg [31:0]sram_apb_request__paddr;
-    reg sram_apb_request__penable;
-    reg sram_apb_request__psel;
-    reg sram_apb_request__pwrite;
-    reg [31:0]sram_apb_request__pwdata;
+    reg [31:0]ps2_apb_request__paddr;
+    reg ps2_apb_request__penable;
+    reg ps2_apb_request__psel;
+    reg ps2_apb_request__pwrite;
+    reg [31:0]ps2_apb_request__pwdata;
+    reg [31:0]fb_sram_apb_request__paddr;
+    reg fb_sram_apb_request__penable;
+    reg fb_sram_apb_request__psel;
+    reg fb_sram_apb_request__pwrite;
+    reg [31:0]fb_sram_apb_request__pwdata;
+    reg [31:0]rv_sram_apb_request__paddr;
+    reg rv_sram_apb_request__penable;
+    reg rv_sram_apb_request__psel;
+    reg rv_sram_apb_request__pwrite;
+    reg [31:0]rv_sram_apb_request__pwdata;
     reg [31:0]csr_apb_request__paddr;
     reg csr_apb_request__penable;
     reg csr_apb_request__psel;
@@ -358,23 +377,31 @@ module hps_fpga_debug
 
     //b Internal nets
     wire [6:0]de1_hex_leds[5:0];
-    wire sram_access_req__valid;
-    wire [3:0]sram_access_req__id;
-    wire sram_access_req__read_not_write;
-    wire [7:0]sram_access_req__byte_enable;
-    wire [31:0]sram_access_req__address;
-    wire [63:0]sram_access_req__write_data;
-    wire sram_access_resp__ack;
-    wire sram_access_resp__valid;
-    wire [3:0]sram_access_resp__id;
-    wire [63:0]sram_access_resp__data;
+    wire ps2_out__data;
+    wire ps2_out__clk;
+    wire fb_sram_access_req__valid;
+    wire [3:0]fb_sram_access_req__id;
+    wire fb_sram_access_req__read_not_write;
+    wire [7:0]fb_sram_access_req__byte_enable;
+    wire [31:0]fb_sram_access_req__address;
+    wire [63:0]fb_sram_access_req__write_data;
+    wire rv_sram_access_resp__ack;
+    wire rv_sram_access_resp__valid;
+    wire [3:0]rv_sram_access_resp__id;
+    wire [63:0]rv_sram_access_resp__data;
+    wire rv_sram_access_req__valid;
+    wire [3:0]rv_sram_access_req__id;
+    wire rv_sram_access_req__read_not_write;
+    wire [7:0]rv_sram_access_req__byte_enable;
+    wire [31:0]rv_sram_access_req__address;
+    wire [63:0]rv_sram_access_req__write_data;
+    wire data_access_resp__wait;
+    wire [31:0]data_access_resp__read_data;
     wire [31:0]data_access_req__address;
     wire [3:0]data_access_req__byte_enable;
     wire data_access_req__write_enable;
     wire data_access_req__read_enable;
     wire [31:0]data_access_req__write_data;
-    wire data_access_resp__wait;
-    wire [31:0]data_access_resp__read_data;
     wire riscv_trace__instr_valid;
     wire [31:0]riscv_trace__instr_pc;
     wire [2:0]riscv_trace__instruction__mode;
@@ -440,7 +467,8 @@ module hps_fpga_debug
     wire [63:0]apb_dprintf_req__data_1;
     wire [63:0]apb_dprintf_req__data_2;
     wire [63:0]apb_dprintf_req__data_3;
-    wire [31:0]sram_ctrl;
+    wire [31:0]fb_sram_ctrl;
+    wire [31:0]rv_sram_ctrl;
     wire gpio_input_event;
     wire [15:0]gpio_output_enable;
     wire [15:0]gpio_output;
@@ -477,9 +505,15 @@ module hps_fpga_debug
     wire [31:0]rp_apb_response__prdata;
     wire rp_apb_response__pready;
     wire rp_apb_response__perr;
-    wire [31:0]sram_apb_response__prdata;
-    wire sram_apb_response__pready;
-    wire sram_apb_response__perr;
+    wire [31:0]ps2_apb_response__prdata;
+    wire ps2_apb_response__pready;
+    wire ps2_apb_response__perr;
+    wire [31:0]fb_sram_apb_response__prdata;
+    wire fb_sram_apb_response__pready;
+    wire fb_sram_apb_response__perr;
+    wire [31:0]rv_sram_apb_response__prdata;
+    wire rv_sram_apb_response__pready;
+    wire rv_sram_apb_response__perr;
     wire [31:0]csr_apb_response__prdata;
     wire csr_apb_response__pready;
     wire csr_apb_response__perr;
@@ -535,12 +569,12 @@ module hps_fpga_debug
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
         .riscv_config__i32c(riscv_config__i32c),
-        .sram_access_req__write_data(sram_access_req__write_data),
-        .sram_access_req__address(sram_access_req__address),
-        .sram_access_req__byte_enable(sram_access_req__byte_enable),
-        .sram_access_req__read_not_write(sram_access_req__read_not_write),
-        .sram_access_req__id(sram_access_req__id),
-        .sram_access_req__valid(sram_access_req__valid),
+        .sram_access_req__write_data(rv_sram_access_req__write_data),
+        .sram_access_req__address(rv_sram_access_req__address),
+        .sram_access_req__byte_enable(rv_sram_access_req__byte_enable),
+        .sram_access_req__read_not_write(rv_sram_access_req__read_not_write),
+        .sram_access_req__id(rv_sram_access_req__id),
+        .sram_access_req__valid(rv_sram_access_req__valid),
         .data_access_resp__read_data(data_access_resp__read_data),
         .data_access_resp__wait(data_access_resp__wait),
         .irqs__time(irqs__time),
@@ -551,7 +585,7 @@ module hps_fpga_debug
         .irqs__meip(irqs__meip),
         .irqs__nmi(irqs__nmi),
         .reset_n(reset_n),
-        .proc_reset_n((reset_n & sram_ctrl[0])),
+        .proc_reset_n((reset_n & rv_sram_ctrl[0])),
         .trace__trap(            riscv_trace__trap),
         .trace__branch_target(            riscv_trace__branch_target),
         .trace__branch_taken(            riscv_trace__branch_taken),
@@ -563,10 +597,10 @@ module hps_fpga_debug
         .trace__instruction__mode(            riscv_trace__instruction__mode),
         .trace__instr_pc(            riscv_trace__instr_pc),
         .trace__instr_valid(            riscv_trace__instr_valid),
-        .sram_access_resp__data(            sram_access_resp__data),
-        .sram_access_resp__id(            sram_access_resp__id),
-        .sram_access_resp__valid(            sram_access_resp__valid),
-        .sram_access_resp__ack(            sram_access_resp__ack),
+        .sram_access_resp__data(            rv_sram_access_resp__data),
+        .sram_access_resp__id(            rv_sram_access_resp__id),
+        .sram_access_resp__valid(            rv_sram_access_resp__valid),
+        .sram_access_resp__ack(            rv_sram_access_resp__ack),
         .data_access_req__write_data(            data_access_req__write_data),
         .data_access_req__read_enable(            data_access_req__read_enable),
         .data_access_req__write_enable(            data_access_req__write_enable),
@@ -1121,29 +1155,52 @@ module hps_fpga_debug
         .req__valid(            mux_dprintf_req__valid[13]),
         .ack_b(            mux_dprintf_ack[14]),
         .ack_a(            dprintf_ack[13])         );
-    apb_target_sram_interface sram_if(
+    apb_target_sram_interface rv_sram_if(
         .clk(clk),
         .clk__enable(1'b1),
-        .sram_access_resp__data(sram_access_resp__data),
-        .sram_access_resp__id(sram_access_resp__id),
-        .sram_access_resp__valid(sram_access_resp__valid),
-        .sram_access_resp__ack(sram_access_resp__ack),
-        .apb_request__pwdata(sram_apb_request__pwdata),
-        .apb_request__pwrite(sram_apb_request__pwrite),
-        .apb_request__psel(sram_apb_request__psel),
-        .apb_request__penable(sram_apb_request__penable),
-        .apb_request__paddr(sram_apb_request__paddr),
+        .sram_access_resp__data(rv_sram_access_resp__data),
+        .sram_access_resp__id(rv_sram_access_resp__id),
+        .sram_access_resp__valid(rv_sram_access_resp__valid),
+        .sram_access_resp__ack(rv_sram_access_resp__ack),
+        .apb_request__pwdata(rv_sram_apb_request__pwdata),
+        .apb_request__pwrite(rv_sram_apb_request__pwrite),
+        .apb_request__psel(rv_sram_apb_request__psel),
+        .apb_request__penable(rv_sram_apb_request__penable),
+        .apb_request__paddr(rv_sram_apb_request__paddr),
         .reset_n(reset_n),
-        .sram_access_req__write_data(            sram_access_req__write_data),
-        .sram_access_req__address(            sram_access_req__address),
-        .sram_access_req__byte_enable(            sram_access_req__byte_enable),
-        .sram_access_req__read_not_write(            sram_access_req__read_not_write),
-        .sram_access_req__id(            sram_access_req__id),
-        .sram_access_req__valid(            sram_access_req__valid),
-        .sram_ctrl(            sram_ctrl),
-        .apb_response__perr(            sram_apb_response__perr),
-        .apb_response__pready(            sram_apb_response__pready),
-        .apb_response__prdata(            sram_apb_response__prdata)         );
+        .sram_access_req__write_data(            rv_sram_access_req__write_data),
+        .sram_access_req__address(            rv_sram_access_req__address),
+        .sram_access_req__byte_enable(            rv_sram_access_req__byte_enable),
+        .sram_access_req__read_not_write(            rv_sram_access_req__read_not_write),
+        .sram_access_req__id(            rv_sram_access_req__id),
+        .sram_access_req__valid(            rv_sram_access_req__valid),
+        .sram_ctrl(            rv_sram_ctrl),
+        .apb_response__perr(            rv_sram_apb_response__perr),
+        .apb_response__pready(            rv_sram_apb_response__pready),
+        .apb_response__prdata(            rv_sram_apb_response__prdata)         );
+    apb_target_sram_interface fb_sram_if(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .sram_access_resp__data(fb_sram_access_resp__data),
+        .sram_access_resp__id(fb_sram_access_resp__id),
+        .sram_access_resp__valid(fb_sram_access_resp__valid),
+        .sram_access_resp__ack(fb_sram_access_resp__ack),
+        .apb_request__pwdata(fb_sram_apb_request__pwdata),
+        .apb_request__pwrite(fb_sram_apb_request__pwrite),
+        .apb_request__psel(fb_sram_apb_request__psel),
+        .apb_request__penable(fb_sram_apb_request__penable),
+        .apb_request__paddr(fb_sram_apb_request__paddr),
+        .reset_n(reset_n),
+        .sram_access_req__write_data(            fb_sram_access_req__write_data),
+        .sram_access_req__address(            fb_sram_access_req__address),
+        .sram_access_req__byte_enable(            fb_sram_access_req__byte_enable),
+        .sram_access_req__read_not_write(            fb_sram_access_req__read_not_write),
+        .sram_access_req__id(            fb_sram_access_req__id),
+        .sram_access_req__valid(            fb_sram_access_req__valid),
+        .sram_ctrl(            fb_sram_ctrl),
+        .apb_response__perr(            fb_sram_apb_response__perr),
+        .apb_response__pready(            fb_sram_apb_response__pready),
+        .apb_response__prdata(            fb_sram_apb_response__prdata)         );
     apb_target_dprintf apb_dprintf(
         .clk(lw_axi_clock_clk),
         .clk__enable(1'b1),
@@ -1236,6 +1293,22 @@ module hps_fpga_debug
         .apb_response__perr(            inputs_apb_response__perr),
         .apb_response__pready(            inputs_apb_response__pready),
         .apb_response__prdata(            inputs_apb_response__prdata)         );
+    apb_target_ps2_host ps2_if(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .ps2_in__clk(ps2_in__clk),
+        .ps2_in__data(ps2_in__data),
+        .apb_request__pwdata(ps2_apb_request__pwdata),
+        .apb_request__pwrite(ps2_apb_request__pwrite),
+        .apb_request__psel(ps2_apb_request__psel),
+        .apb_request__penable(ps2_apb_request__penable),
+        .apb_request__paddr(ps2_apb_request__paddr),
+        .reset_n(reset_n),
+        .ps2_out__clk(            ps2_out__clk),
+        .ps2_out__data(            ps2_out__data),
+        .apb_response__perr(            ps2_apb_response__perr),
+        .apb_response__pready(            ps2_apb_response__pready),
+        .apb_response__prdata(            ps2_apb_response__prdata)         );
     csr_master_apb master(
         .clk(clk),
         .clk__enable(1'b1),
@@ -1311,9 +1384,9 @@ module hps_fpga_debug
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
         .csr_select_in(16'h4),
-        .display_sram_write__address(tt_display_sram_write__address),
-        .display_sram_write__data(tt_display_sram_write__data),
-        .display_sram_write__enable(tt_display_sram_write__enable),
+        .display_sram_write__address(fb_display_sram_write__address),
+        .display_sram_write__data(fb_display_sram_write__data),
+        .display_sram_write__enable(fb_display_sram_write__enable),
         .reset_n(reset_n),
         .csr_response__read_data(            tt_vga_framebuffer_csr_response__read_data),
         .csr_response__read_data_error(            tt_vga_framebuffer_csr_response__read_data_error),
@@ -1447,8 +1520,12 @@ module hps_fpga_debug
     reg dprintf_apb_request__psel__var;
     reg [31:0]csr_apb_request__paddr__var;
     reg csr_apb_request__psel__var;
-    reg [31:0]sram_apb_request__paddr__var;
-    reg sram_apb_request__psel__var;
+    reg [31:0]rv_sram_apb_request__paddr__var;
+    reg rv_sram_apb_request__psel__var;
+    reg [31:0]fb_sram_apb_request__paddr__var;
+    reg fb_sram_apb_request__psel__var;
+    reg [31:0]ps2_apb_request__paddr__var;
+    reg ps2_apb_request__psel__var;
     reg [31:0]apb_response__prdata__var;
     reg apb_response__pready__var;
     reg apb_response__perr__var;
@@ -1483,24 +1560,38 @@ module hps_fpga_debug
         csr_apb_request__psel__var = apb_request__psel;
         csr_apb_request__pwrite = apb_request__pwrite;
         csr_apb_request__pwdata = apb_request__pwdata;
-        sram_apb_request__paddr__var = apb_request__paddr;
-        sram_apb_request__penable = apb_request__penable;
-        sram_apb_request__psel__var = apb_request__psel;
-        sram_apb_request__pwrite = apb_request__pwrite;
-        sram_apb_request__pwdata = apb_request__pwdata;
+        rv_sram_apb_request__paddr__var = apb_request__paddr;
+        rv_sram_apb_request__penable = apb_request__penable;
+        rv_sram_apb_request__psel__var = apb_request__psel;
+        rv_sram_apb_request__pwrite = apb_request__pwrite;
+        rv_sram_apb_request__pwdata = apb_request__pwdata;
+        fb_sram_apb_request__paddr__var = apb_request__paddr;
+        fb_sram_apb_request__penable = apb_request__penable;
+        fb_sram_apb_request__psel__var = apb_request__psel;
+        fb_sram_apb_request__pwrite = apb_request__pwrite;
+        fb_sram_apb_request__pwdata = apb_request__pwdata;
+        ps2_apb_request__paddr__var = apb_request__paddr;
+        ps2_apb_request__penable = apb_request__penable;
+        ps2_apb_request__psel__var = apb_request__psel;
+        ps2_apb_request__pwrite = apb_request__pwrite;
+        ps2_apb_request__pwdata = apb_request__pwdata;
         timer_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         gpio_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         led_chain_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         inputs_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         dprintf_apb_request__paddr__var = (apb_request__paddr>>64'h2);
-        sram_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        rv_sram_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        fb_sram_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        ps2_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         timer_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h0));
         gpio_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h1));
         dprintf_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h2));
         csr_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h3));
-        sram_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h4));
+        rv_sram_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h4));
         led_chain_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h5));
         inputs_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h6));
+        fb_sram_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h7));
+        ps2_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h8));
         csr_apb_request__paddr__var[31:16] = {12'h0,apb_request__paddr[15:12]};
         csr_apb_request__paddr__var[15:0] = {6'h0,apb_request__paddr[11:2]};
         apb_response__prdata__var = timer_apb_response__prdata;
@@ -1526,9 +1617,9 @@ module hps_fpga_debug
         end //if
         if ((apb_request_sel==4'h4))
         begin
-            apb_response__prdata__var = sram_apb_response__prdata;
-            apb_response__pready__var = sram_apb_response__pready;
-            apb_response__perr__var = sram_apb_response__perr;
+            apb_response__prdata__var = rv_sram_apb_response__prdata;
+            apb_response__pready__var = rv_sram_apb_response__pready;
+            apb_response__perr__var = rv_sram_apb_response__perr;
         end //if
         if ((apb_request_sel==4'h5))
         begin
@@ -1542,6 +1633,18 @@ module hps_fpga_debug
             apb_response__pready__var = inputs_apb_response__pready;
             apb_response__perr__var = inputs_apb_response__perr;
         end //if
+        if ((apb_request_sel==4'h7))
+        begin
+            apb_response__prdata__var = fb_sram_apb_response__prdata;
+            apb_response__pready__var = fb_sram_apb_response__pready;
+            apb_response__perr__var = fb_sram_apb_response__perr;
+        end //if
+        if ((apb_request_sel==4'h8))
+        begin
+            apb_response__prdata__var = ps2_apb_response__prdata;
+            apb_response__pready__var = ps2_apb_response__pready;
+            apb_response__perr__var = ps2_apb_response__perr;
+        end //if
         timer_apb_request__paddr = timer_apb_request__paddr__var;
         timer_apb_request__psel = timer_apb_request__psel__var;
         gpio_apb_request__paddr = gpio_apb_request__paddr__var;
@@ -1554,8 +1657,12 @@ module hps_fpga_debug
         dprintf_apb_request__psel = dprintf_apb_request__psel__var;
         csr_apb_request__paddr = csr_apb_request__paddr__var;
         csr_apb_request__psel = csr_apb_request__psel__var;
-        sram_apb_request__paddr = sram_apb_request__paddr__var;
-        sram_apb_request__psel = sram_apb_request__psel__var;
+        rv_sram_apb_request__paddr = rv_sram_apb_request__paddr__var;
+        rv_sram_apb_request__psel = rv_sram_apb_request__psel__var;
+        fb_sram_apb_request__paddr = fb_sram_apb_request__paddr__var;
+        fb_sram_apb_request__psel = fb_sram_apb_request__psel__var;
+        ps2_apb_request__paddr = ps2_apb_request__paddr__var;
+        ps2_apb_request__psel = ps2_apb_request__psel__var;
         apb_response__prdata = apb_response__prdata__var;
         apb_response__pready = apb_response__pready__var;
         apb_response__perr = apb_response__perr__var;
@@ -1797,14 +1904,14 @@ module hps_fpga_debug
                 dprintf_req__data_2[7] <= {csr_request__address,48'h200000000087};
                 dprintf_req__data_3[7] <= {{csr_request__data,8'hff},24'h0};
             end //if
-            if ((sram_access_req__valid!=1'h0))
+            if ((rv_sram_access_req__valid!=1'h0))
             begin
                 dprintf_req__valid[8] <= 1'h1;
                 dprintf_req__address[8] <= 16'h140;
-                dprintf_req__data_0[8] <= {{{40'h53524d3a83,4'h0},sram_access_req__id},16'h2080};
-                dprintf_req__data_1[8] <= {{7'h0,sram_access_req__read_not_write},56'h20000000000087};
-                dprintf_req__data_2[8] <= {sram_access_req__address,32'h20000087};
-                dprintf_req__data_3[8] <= {{{sram_access_req__write_data[31:0],16'h2080},sram_access_req__byte_enable},8'hff};
+                dprintf_req__data_0[8] <= {{{40'h53524d3a83,4'h0},rv_sram_access_req__id},16'h2080};
+                dprintf_req__data_1[8] <= {{7'h0,rv_sram_access_req__read_not_write},56'h20000000000087};
+                dprintf_req__data_2[8] <= {rv_sram_access_req__address,32'h20000087};
+                dprintf_req__data_3[8] <= {{{rv_sram_access_req__write_data[31:0],16'h2080},rv_sram_access_req__byte_enable},8'hff};
             end //if
             if ((riscv_trace__instr_valid!=1'h0))
             begin
@@ -1843,9 +1950,27 @@ module hps_fpga_debug
         end //if
     end //always
 
+    //b apb_target_instances clock process
+    always @( posedge clk or negedge reset_n)
+    begin : apb_target_instances__code
+        if (reset_n==1'b0)
+        begin
+            ps2_in__data <= 1'hffffffffffffffff;
+            ps2_in__clk <= 1'hffffffffffffffff;
+        end
+        else if (clk__enable)
+        begin
+            ps2_in__data <= de1_ps2_in__data;
+            ps2_in__clk <= de1_ps2_in__clk;
+        end //if
+    end //always
+
     //b dprintf_framebuffer_instances__comb combinatorial process
     always @ ( * )//dprintf_framebuffer_instances__comb
     begin: dprintf_framebuffer_instances__comb_code
+    reg fb_sram_access_resp__ack__var;
+    reg fb_sram_access_resp__valid__var;
+    reg [3:0]fb_sram_access_resp__id__var;
     reg csr_response__acknowledge__var;
     reg csr_response__read_data_valid__var;
     reg csr_response__read_data_error__var;
@@ -1853,6 +1978,16 @@ module hps_fpga_debug
         tt_display_sram_write__enable = dprintf_byte__valid;
         tt_display_sram_write__address = dprintf_byte__address;
         tt_display_sram_write__data = {40'h0,dprintf_byte__data};
+        fb_display_sram_write__enable = ((fb_sram_access_req__valid!=1'h0)&&!(fb_sram_access_req__read_not_write!=1'h0));
+        fb_display_sram_write__address = fb_sram_access_req__address[15:0];
+        fb_display_sram_write__data = {40'h0,fb_sram_access_req__write_data[7:0]};
+        fb_sram_access_resp__ack__var = 1'h0;
+        fb_sram_access_resp__valid__var = 1'h0;
+        fb_sram_access_resp__id__var = 4'h0;
+        fb_sram_access_resp__data = 64'h0;
+        fb_sram_access_resp__ack__var = fb_sram_access_req__valid;
+        fb_sram_access_resp__valid__var = fb_sram_access_req__valid;
+        fb_sram_access_resp__id__var = fb_sram_access_req__id;
         csr_response__acknowledge__var = tt_vga_framebuffer_csr_response__acknowledge;
         csr_response__read_data_valid__var = tt_vga_framebuffer_csr_response__read_data_valid;
         csr_response__read_data_error__var = tt_vga_framebuffer_csr_response__read_data_error;
@@ -1865,6 +2000,9 @@ module hps_fpga_debug
         csr_response__read_data_valid__var = csr_response__read_data_valid__var | timeout_csr_response__read_data_valid;
         csr_response__read_data_error__var = csr_response__read_data_error__var | timeout_csr_response__read_data_error;
         csr_response__read_data__var = csr_response__read_data__var | timeout_csr_response__read_data;
+        fb_sram_access_resp__ack = fb_sram_access_resp__ack__var;
+        fb_sram_access_resp__valid = fb_sram_access_resp__valid__var;
+        fb_sram_access_resp__id = fb_sram_access_resp__id__var;
         csr_response__acknowledge = csr_response__acknowledge__var;
         csr_response__read_data_valid = csr_response__read_data_valid__var;
         csr_response__read_data_error = csr_response__read_data_error__var;
@@ -1936,6 +2074,10 @@ module hps_fpga_debug
             end //if
             de1_vga__blank_n <= vga_video_bus__display_enable;
             de1_vga__sync_n <= (de1_vga__vs & de1_vga__hs);
+            if ((de1_switches[9]!=1'h0))
+            begin
+                de1_vga__sync_n <= de1_switches[8];
+            end //if
             de1_vga__red <= {vga_video_bus__red[7:0],2'h0};
             de1_vga__green <= {vga_video_bus__green[7:0],2'h0};
             de1_vga__blue <= {vga_video_bus__blue[7:0],2'h0};
@@ -2024,8 +2166,6 @@ module hps_fpga_debug
         de1_leds__h4 = de1_hex_leds[4];
         de1_leds__h5 = de1_hex_leds[5];
         de1_cl_led_data_pin = !(led_chain!=1'h0);
-        de1_ps2_out__data = 1'h0;
-        de1_ps2_out__clk = 1'h0;
         de1_ps2b_out__data = 1'h0;
         de1_ps2b_out__clk = 1'h0;
         de1_irda_txd = 1'h0;
@@ -2042,6 +2182,8 @@ module hps_fpga_debug
             counter <= 16'h0;
             riscv_last_pc <= 32'h0;
             gpio_input <= 16'h0;
+            de1_ps2_out__data <= 1'hffffffffffffffff;
+            de1_ps2_out__clk <= 1'hffffffffffffffff;
         end
         else if (clk__enable)
         begin
@@ -2089,6 +2231,8 @@ module hps_fpga_debug
             gpio_input[3:0] <= de1_keys;
             gpio_input[13:4] <= de1_switches;
             gpio_input[14] <= de1_irda_rxd;
+            de1_ps2_out__data <= ps2_out__data;
+            de1_ps2_out__clk <= ps2_out__clk;
         end //if
     end //always
 
