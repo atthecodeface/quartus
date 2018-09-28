@@ -13,6 +13,26 @@
 
 //a Module apb_target_ps2_host
     //   
+    //   Before use, the clock divider must be set up with a write to the state
+    //   
+    //   The state register is
+    //     16;16 = ps2_state.divider_3us (number of ticks to get approx 3us)
+    //        15 = 0
+    //      3;12 = fifo_wptr
+    //        11 = 0
+    //       3;8 = fifo_rptr
+    //       2;6 = 0
+    //         5 = fifo full
+    //         4 = fifo empty
+    //         3 = fifo overflow occurred since last read
+    //         2 = PS2 timeout occurred since last read
+    //         1 = PS2 protocol error occurred since last read
+    //         0 = PS2 parity error occurred since last read
+    //   
+    //   The fifo register is:
+    //        31 = Fifo empty (data invalid)
+    //     23; 8 = 0
+    //      8; 0 = PS2 Rx data
     //   
     //   
 module apb_target_ps2_host
@@ -93,13 +113,18 @@ module apb_target_ps2_host
     reg [2:0]access;
 
     //b Internal combinatorials
+    reg ps2_rx_data__valid;
+    reg [7:0]ps2_rx_data__data;
+    reg ps2_rx_data__parity_error;
+    reg ps2_rx_data__protocol_error;
+    reg ps2_rx_data__timeout;
 
     //b Internal nets
-    wire ps2_rx_data__valid;
-    wire [7:0]ps2_rx_data__data;
-    wire ps2_rx_data__parity_error;
-    wire ps2_rx_data__protocol_error;
-    wire ps2_rx_data__timeout;
+    wire ps2_rx_data_host__valid;
+    wire [7:0]ps2_rx_data_host__data;
+    wire ps2_rx_data_host__parity_error;
+    wire ps2_rx_data_host__protocol_error;
+    wire ps2_rx_data_host__timeout;
 
     //b Clock gating module instances
     //b Module instances
@@ -110,11 +135,11 @@ module apb_target_ps2_host
         .ps2_in__clk(ps2_in__clk),
         .ps2_in__data(ps2_in__data),
         .reset_n(reset_n),
-        .ps2_rx_data__timeout(            ps2_rx_data__timeout),
-        .ps2_rx_data__protocol_error(            ps2_rx_data__protocol_error),
-        .ps2_rx_data__parity_error(            ps2_rx_data__parity_error),
-        .ps2_rx_data__data(            ps2_rx_data__data),
-        .ps2_rx_data__valid(            ps2_rx_data__valid),
+        .ps2_rx_data__timeout(            ps2_rx_data_host__timeout),
+        .ps2_rx_data__protocol_error(            ps2_rx_data_host__protocol_error),
+        .ps2_rx_data__parity_error(            ps2_rx_data_host__parity_error),
+        .ps2_rx_data__data(            ps2_rx_data_host__data),
+        .ps2_rx_data__valid(            ps2_rx_data_host__valid),
         .ps2_out__clk(            ps2_out__clk),
         .ps2_out__data(            ps2_out__data)         );
     //b apb_interface_logic__comb combinatorial process
@@ -207,11 +232,23 @@ module apb_target_ps2_host
         end //if
     end //always
 
-    //b input_logic clock process
+    //b input_logic__comb combinatorial process
+        //   
+        //       
+    always @ ( * )//input_logic__comb
+    begin: input_logic__comb_code
+        ps2_rx_data__valid = ps2_rx_data_host__valid;
+        ps2_rx_data__data = ps2_rx_data_host__data;
+        ps2_rx_data__parity_error = ps2_rx_data_host__parity_error;
+        ps2_rx_data__protocol_error = ps2_rx_data_host__protocol_error;
+        ps2_rx_data__timeout = ps2_rx_data_host__timeout;
+    end //always
+
+    //b input_logic__posedge_clk_active_low_reset_n clock process
         //   
         //       
     always @( posedge clk or negedge reset_n)
-    begin : input_logic__code
+    begin : input_logic__posedge_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             ps2_state__divider_3us <= 16'h0;

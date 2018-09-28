@@ -655,6 +655,7 @@ module bbc_micro_de1_cl_io
         .csr_request__select(csr_request__select),
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
+        .csr_select_in(16'h0),
         .display_sram_write__address(tt_display_sram_write__address),
         .display_sram_write__data(tt_display_sram_write__data),
         .display_sram_write__enable(tt_display_sram_write__enable),

@@ -183,7 +183,7 @@ module framebuffer_teletext
         .write_data_0(sram_state__write_request__data[7:0]),
         .address_0(sram_state__write_request__address[13:0]),
         .read_not_write_0(1'h0),
-        .select_0(((sram_state__write_request__enable!=1'h0)&&(sram_state__write_request__address[15:14]==2'h0))),
+        .select_0(sram_state__write_request__enable),
         .data_out_1(            pixel_read_data)         );
     teletext tt(
         .clk(video_clk),
