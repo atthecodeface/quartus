@@ -61,7 +61,7 @@ help_synth:
 	$H "Rerunning timing can be performed with"
 	$H "  make SYNTH_PROJECT=<project> retime"
 	$H ""
-	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram resynth pins fit"
+	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram resynth pins fit timing"
 	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram fpga_update_srams"
 	$H " make SYNTH_PROJECT=cam_de1_hps_project jtag_program"
 	$H ""
@@ -126,8 +126,9 @@ $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
 	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/timing.log && date > $(MAKE_TARGETS)/timing.complete
 
 rebuild_verilog:
-	(cd ../bbc_cdl; git pull && make clean && make -j6 verilog && make roms)
+	(cd ../bbc_cdl; git pull && make clean && make -j6 verilog)
 	(cp -r ../bbc_cdl/build/linux/*v verilog)
+	(cd ../bbc_cdl; make roms)
 	(cp -r ../bbc_cdl/roms/*mif mif)
 
 fpga_update_srams:
@@ -144,7 +145,8 @@ netlist:
 	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog $(SYNTH_PROJECT) -c $(SYNTH_PROJECT))
 
 jtag_program:
-	$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus_output/$(SYNTH_PROJECT).sof@2"
+	#$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus_output/$(SYNTH_PROJECT).sof@2"
+	$(QUARTUS_PGM) -m jtag -o "P;quartus_output/$(SYNTH_PROJECT).sof@2"
 
 jtag_usb_init:
 	$(QUARTUS_JTAGD)

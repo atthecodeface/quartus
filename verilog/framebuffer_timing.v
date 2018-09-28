@@ -361,11 +361,11 @@ module framebuffer_timing
             end
         4'h1: // req 1
             begin
-            csr_read_data__var = {{{6'h0,csrs__h_back_porch},6'h0},csrs__h_front_porch};
+            csr_read_data__var = {{{6'h0,csrs__h_front_porch},6'h0},csrs__h_back_porch};
             end
         4'h2: // req 1
             begin
-            csr_read_data__var = {{{6'h0,csrs__v_back_porch},6'h0},csrs__v_front_porch};
+            csr_read_data__var = {{{6'h0,csrs__v_front_porch},6'h0},csrs__v_back_porch};
             end
         //synopsys  translate_off
         //pragma coverage off
