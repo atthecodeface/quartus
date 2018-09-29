@@ -31,8 +31,10 @@ pin_lvttl_signal A8 de2_i2c__sdat
 pin_2_5v_signal {G18 F22 E17 L26 L25 J22 H22}     de2_hex0
 pin_2_5v_signal {M24 Y22 W21 W22 W25 U23 U24 }    de2_hex1
 pin_2_5v_signal {AA25 AA26 Y25 W26 Y26 W27 W28 }  de2_hex2
-pin_2_5v_signal  {V21 U21}                 de1_hex3 0 # 0/1 are 2.5
-pin_lvttl_signal {AB20 AA21 AD24 AF23 Y19} de1_hex3 2 # 2-6 are 3.3
+# 0/1 are 2.5
+pin_2_5v_signal  {V21 U21}                 de1_hex3 0
+# 2-6 are 3.3
+pin_lvttl_signal {AB20 AA21 AD24 AF23 Y19} de1_hex3 2
 pin_lvttl_signal {AB19 AA19 AG21 AH21 AE19 AF19 AE18} de2_hex4
 pin_lvttl_signal {AD18 AC18 AB18 AH19 AG19 AF18 AH18} de2_hex5
 pin_lvttl_signal {AA17 AB16 AA16 AB17 AB15 AA15 AC17} de2_hex6

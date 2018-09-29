@@ -119,6 +119,14 @@ module de2_project ( clk_50, clk2_50, clk3_50,
 
    input         de2_irda__rxd;
 
+   output        de2_lcd__enable;
+   output        de2_lcd__rs;
+   output        de2_lcd__read_write;
+   output [7:0]  de2_lcd__data;
+   output        de2_lcd__on;
+   output        de2_lcd__backlight;
+   
+
    inout       de2_ps2_clk;
    inout       de2_ps2_dat;
    inout       de2_ps2_b_clk;
@@ -251,57 +259,55 @@ module de2_project ( clk_50, clk2_50, clk3_50,
                 .clk__enable(1'b1),
                 .reset_n(reset_n),
 
-                .de2_aud__bclk(de2_aud__bclk),
-                .de2_aud__bclk__enable(1'b1),
-                .de2_aud__adc_dat(de2_aud__adc_dat),
-                .de2_aud__adc_lrc(de2_aud__adc_lrc),
-                .de2_aud__dac_dat(de2_aud__dac_dat),
-                .de2_aud__dac_lrc(de2_aud__dac_lrc),
+                .de2_audio_bclk(de2_aud__bclk),
+                .de2_audio_bclk__enable(1'b1),
+                .de2_audio_adc__data(de2_aud__adc_dat),
+                .de2_audio_adc__lrc(de2_aud__adc_lrc),
+                .de2_audio_dac__data(de2_aud__dac_dat),
+                .de2_audio_dac__lrc(de2_aud__dac_lrc),
                 
                 .de2_eep_i2c__sclk(de2_eep_i2c__sclk),
                 .de2_eep_i2c__sdat(de2_eep_i2c__sdat),
                 
                 .de2_i2c__sclk(de2_i2c__sclk),
                 .de2_i2c__sdat(de2_i2c__sdat),
-                
 
-                .de2_hex0(de2_leds__hex0),
-                .de2_hex1(de2_leds__hex1),
-                .de2_hex2(de2_leds__hex2),
-                .de2_hex3(de2_leds__hex3),
-                .de2_hex4(de2_leds__hex4),
-                .de2_hex5(de2_leds__hex5),
-                .de2_hex6(de2_leds__hex6),
-                .de2_hex7(de2_leds__hex7),
+                .de2_leds__h0(de2_leds__hex0),
+                .de2_leds__h1(de2_leds__hex1),
+                .de2_leds__h2(de2_leds__hex2),
+                .de2_leds__h3(de2_leds__hex3),
+                .de2_leds__h4(de2_leds__hex4),
+                .de2_leds__h5(de2_leds__hex5),
+                .de2_leds__h6(de2_leds__hex6),
+                .de2_leds__h7(de2_leds__hex7),
+                .de2_leds__ledg(de2_ledg),
+                .de2_leds__ledr(de2_ledr),
                 
-                .de2_keys(de2_keys),
-                .de2_switches(de2_switches),
-                .de2_ledg(de2_ledg),
-                .de2_ledr(de2_ledr),
-                
+                .de2_inputs__keys(de2_keys),
+                .de2_inputs__switches(de2_switches),
 
                 .de2_irda__rxd(de2_irda__rxd),
-                
 
                 .de2_lcd__enable(de2_lcd__enable),
                 .de2_lcd__rs(de2_lcd__rs),
                 .de2_lcd__read_write(de2_lcd__read_write),
                 .de2_lcd__data(de2_lcd__data),
-                
                 .de2_lcd__on(de2_lcd__on),
                 .de2_lcd__backlight(de2_lcd__backlight),
-                
 
-                .de2_ps2_dat(de2_ps2_dat),
-                .de2_ps2_clk(de2_ps2_clk),
+                .de2_ps2_in__dat(de2_ps2_in__dat),
+                .de2_ps2_in__clk(de2_ps2_in__clk),
+                .de2_ps2_out__dat(de2_ps2_out__dat),
+                .de2_ps2_out__clk(de2_ps2_out__clk),
                 
-                .de2_ps2_b_dat(de2_ps2_b_dat),
-                .de2_ps2_b_clk(de2_ps2_b_clk),
+                .de2_ps2b_in__dat(de2_ps2b_in__dat),
+                .de2_ps2b_in__clk(de2_ps2b_in__clk),
+                .de2_ps2b_out__dat(de2_ps2b_out__dat),
+                .de2_ps2b_out__clk(de2_ps2b_out__clk),
                 
 
                 .de2_sma_clkin(de2_sma_clkin),
                 .de2_sma_clkout(de2_sma_clkout),
-                
 
                 .de2_sd__clk(de2_sd__clk),
                 .de2_sd__cmd(de2_sd__cmd),
@@ -314,13 +320,11 @@ module de2_project ( clk_50, clk2_50, clk3_50,
                 .de2_td__hs(de2_td__hs),
                 .de2_td__reset_n(de2_td__reset_n),
                 .de2_td__vs(de2_td__vs),
-                
 
                 .de2_uart__txd(de2_uart__txd),
                 .de2_uart__rxd(de2_uart__rxd),
                 .de2_uart__cts(de2_uart__cts),
                 .de2_uart__rts(de2_uart__rts),
-                
 
                 .de2_vga__b(de2_vga__b),
                 .de2_vga__blank_n(de2_vga__blank_n),
@@ -335,76 +339,59 @@ module de2_project ( clk_50, clk2_50, clk3_50,
                 .de2_sdr__clk(de2_sdr__clk),
                 .de2_sdr__cke(de2_sdr__cke),
                 .de2_sdr__cs_n(de2_sdr__cs_n),
-                
                 .de2_sdr__ras_n(de2_sdr__ras_n),
                 .de2_sdr__cas_n(de2_sdr__cas_n),
                 .de2_sdr__we_n(de2_sdr__we_n),
-                
                 .de2_sdr__addr(de2_sdr__addr),
                 .de2_sdr__ba(de2_sdr__ba),
-                
                 .de2_sdr__dq(de2_sdr__dq),
                 .de2_sdr__dqm(de2_sdr__dqm),
                 
-
                 .de2_sram__ce_n(de2_sram__ce_n),
                 .de2_sram__oe_n(de2_sram__oe_n),
                 .de2_sram__we_n(de2_sram__we_n),
-                
                 .de2_sram__lb_n(de2_sram__lb_n),
                 .de2_sram__ub_n(de2_sram__ub_n),
-                
                 .de2_sram__addr(de2_sram__addr),
                 .de2_sram__dq(de2_sram__dq),
                 
-
                 .de2_flash__reset_n(de2_flash__reset_n),
-                
                 .de2_flash__ce_n(de2_flash__ce_n),
                 .de2_flash__oe_n(de2_flash__oe_n),
                 .de2_flash__we_n(de2_flash__we_n),
                 .de2_flash__wp_n(de2_flash__wp_n),
                 .de2_flash__ready(de2_flash__ready),
-                
                 .de2_flash__addr(de2_flash__addr),
                 .de2_flash__dq(de2_flash__dq),
-                
 
                 .de2_gpio(de2_gpio),
-                
 
                 .de2_eth0__gtx_clk(de2_eth0__gtx_clk),
                 .de2_eth0__int_n(de2_eth0__int_n),
                 .de2_eth0__reset_n(de2_eth0__reset_n),
                 .de2_eth0__mdc(de2_eth0__mdc),
                 .de2_eth0__mdio(de2_eth0__mdio),
-                
                 .de2_eth0__rx_clk(de2_eth0__rx_clk),
                 .de2_eth0__rx_col(de2_eth0__rx_col),
                 .de2_eth0__rx_crs(de2_eth0__rx_crs),
                 .de2_eth0__rx_data(de2_eth0__rx_data),
                 .de2_eth0__rx_dv(de2_eth0__rx_dv),
                 .de2_eth0__rx_er(de2_eth0__rx_er),
-                
                 .de2_eth0__tx_data(de2_eth0__tx_data),
                 .de2_eth0__tx_en(de2_eth0__tx_en),
                 .de2_eth0__tx_er(de2_eth0__tx_er),
-                
 
                 .de2_eth1__gtx_clk(de2_eth1__gtx_clk),
-                
                 .de2_eth1__int_n(de2_eth1__int_n),
                 .de2_eth1__reset_n(de2_eth1__reset_n),
                 .de2_eth1__mdc(de2_eth1__mdc),
                 .de2_eth1__mdio(de2_eth1__mdio),
-                
                 .de2_eth1__rx_clk(de2_eth1__rx_clk),
                 .de2_eth1__rx_col(de2_eth1__rx_col),
                 .de2_eth1__rx_crs(de2_eth1__rx_crs),
                 .de2_eth1__rx_data(de2_eth1__rx_data),
                 .de2_eth1__rx_dv(de2_eth1__rx_dv),
                 .de2_eth1__rx_er(de2_eth1__rx_er),
-                
                 .de2_eth1__tx_data(de2_eth1__tx_data),
                 .de2_eth1__tx_en(de2_eth1__tx_en),
                 .de2_eth1__tx_er(de2_eth1__tx_er),

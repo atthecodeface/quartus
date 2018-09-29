@@ -17,7 +17,7 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set entity    "de1_cl_hps_fpga_debug"
+set entity    "de2_project"
 set_global_assignment -name TOP_LEVEL_ENTITY       $entity
 
 #a Source files
@@ -29,7 +29,7 @@ source $QUARTUS_DIR/boards/de2.tcl
 puts "Sourced TCL files"
 
 set_global_assignment -name SDC_FILE     picorisc.sdc
-set_global_assignment -name VERILOG_MACRO de2_dut_module=banana
+set_global_assignment -name VERILOG_MACRO de2_dut_module=picorisc_de2
 set_global_assignment -name VERILOG_FILE picorisc.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/de2_project.v
@@ -61,7 +61,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_csrs_minimal.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32c_pipeline.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_minimal.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_minimal_apb.v
-set_global_assignment -name VERILOG_FILE $VERILOG_DIR/picorisc.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/picorisc_de2.v
 
 #a Set parameters (e.g. SRAMs)
 
