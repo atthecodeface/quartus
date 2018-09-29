@@ -245,7 +245,7 @@ module de2_project ( clk_50, clk2_50, clk3_50,
 
    assign  de2_aud__xck = 0; // clock out
   
-   de2_dut dut( .de2_vga_clock(de2_vga_clock),
+   `de2_dut_module dut( .de2_vga_clock(de2_vga_clock),
                 .de2_vga_clock__enable(1'b1),
                 .clk(clk_50),
                 .clk__enable(1'b1),
