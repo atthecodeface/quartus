@@ -20,8 +20,7 @@ QUARTUS_SOPC2DTS = $(QUARTUS_ENV)  $(QUARTUS_BIN)/sopc2dts
 QUARTUS_JTAGD =sudo $(QUARTUS_ENV) $(QUARTUS_BIN)/jtagd
 QUARTUS_JTAGCONFIG =$(QUARTUS_ENV) $(QUARTUS_BIN)/jtagconfig
 
-PROJECT ?= cam_de1_hps/riscv
-
+PROJECT ?= de1_cl_hps/hps_fpga_debug 
 PROJECT_ROOT := $(dir $(PROJECT))
 PROJECT_LEAF := $(notdir $(PROJECT))
 QUARTUS_PROJECT_DIR := $(PROJECTS_DIR)/$(PROJECT_ROOT)
@@ -44,31 +43,31 @@ help_synth:
 	$H "FPGA builds using Altera Quartus"
 	$H ""
 	$H "The makefile support different 'project's using the same tree"
-	$H "The project name is specified with 'SYNTH_PROJECT'"
-	$H "SYNTH_PROJECT defaults to 'bbc_project'"
+	$H "The project name is specified with 'PROJECT'"
+	$H "PROJECT defaults to 'bbc_project'"
 	$H ""
 	$H "The first step is synthesis (mapping):"
-	$H "  make SYNTH_PROJECT=<project> synth"
+	$H "  make PROJECT=<project> synth"
 	$H ""
 	$H "The second step is fitting:"
-	$H "  make SYNTH_PROJECT=<project> fit"
+	$H "  make PROJECT=<project> fit"
 	$H ""
 	$H "The third step is timing analysis:"
-	$H "  make SYNTH_PROJECT=<project> timing"
+	$H "  make PROJECT=<project> timing"
 	$H ""
 	$H "After fitting (or timing, indeed) the SRAM's making an"
 	$H "image may be updated with"
-	$H "  make SYNTH_PROJECT=<project> fpga_update_srams"
+	$H "  make PROJECT=<project> fpga_update_srams"
 	$H ""
 	$H "A resynthesis can be performed with"
-	$H "  make SYNTH_PROJECT=<project> resynth"
+	$H "  make PROJECT=<project> resynth"
 	$H ""
 	$H "Rerunning timing can be performed with"
-	$H "  make SYNTH_PROJECT=<project> retime"
+	$H "  make PROJECT=<project> retime"
 	$H ""
-	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram resynth pins fit timing"
-	$H " make SYNTH_PROJECT=cam_de1_hps_project all_sram fpga_update_srams"
-	$H " make SYNTH_PROJECT=cam_de1_hps_project jtag_program"
+	$H " make PROJECT=de1_cl_hps/hps_fpga_debug all_sram resynth pins fit timing"
+	$H " make PROJECT=de1_cl_hps/hps_fpga_debug all_sram fpga_update_srams"
+	$H " make PROJECT=de1_cl_hps/hps_fpga_debug jtag_program"
 	$H ""
 
 clean: clean_synth
@@ -84,7 +83,7 @@ synth: $(MAKE_TARGETS)/synth.complete
 edit:
 	(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_EXE) $(PROJECT_LEAF) $(PROJECT_LEAF))
 
-dts : $(SYNTH_PROJECT).dts
+dts : $(PROJECT).dts
 # _board_info.xml hps_clock_info.xml
 
 %.dts %.sopcinfo:
@@ -95,7 +94,7 @@ dts : $(SYNTH_PROJECT).dts
 	$(DTS.DTC) -I dts -O dtb -o $@ $<
 
 pins:
-	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_STA) -t modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/pins.log
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_STA) -t $(QUARTUS_DIR)/modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/pins.log
 
 fit: $(MAKE_TARGETS)/fit.complete
 
