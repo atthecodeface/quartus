@@ -325,6 +325,13 @@ module hps_fpga_debug
     reg [31:0]csr_response__read_data;
         //   Ack for dprintf request from APB target
     reg apb_dprintf_ack;
+    reg timer_control__reset_counter;
+    reg timer_control__enable_counter;
+    reg timer_control__block_writes;
+    reg [7:0]timer_control__bonus_subfraction_numer;
+    reg [7:0]timer_control__bonus_subfraction_denom;
+    reg [3:0]timer_control__fractional_adder;
+    reg [7:0]timer_control__integer_adder;
     reg [31:0]apb_response__prdata;
     reg apb_response__pready;
     reg apb_response__perr;
@@ -472,7 +479,8 @@ module hps_fpga_debug
     wire gpio_input_event;
     wire [15:0]gpio_output_enable;
     wire [15:0]gpio_output;
-    wire [2:0]timer_equalled;
+    wire timer_value__irq;
+    wire [63:0]timer_value__value;
     wire led_chain;
         //   
     wire de1_cl_user_inputs__updated_switches;
@@ -1220,7 +1228,7 @@ module hps_fpga_debug
         .apb_response__perr(            dprintf_apb_response__perr),
         .apb_response__pready(            dprintf_apb_response__pready),
         .apb_response__prdata(            dprintf_apb_response__prdata)         );
-    apb_target_timer timer(
+    apb_target_rv_timer timer(
         .clk(lw_axi_clock_clk),
         .clk__enable(1'b1),
         .apb_request__pwdata(timer_apb_request__pwdata),
@@ -1228,8 +1236,16 @@ module hps_fpga_debug
         .apb_request__psel(timer_apb_request__psel),
         .apb_request__penable(timer_apb_request__penable),
         .apb_request__paddr(timer_apb_request__paddr),
+        .timer_control__integer_adder(timer_control__integer_adder),
+        .timer_control__fractional_adder(timer_control__fractional_adder),
+        .timer_control__bonus_subfraction_denom(timer_control__bonus_subfraction_denom),
+        .timer_control__bonus_subfraction_numer(timer_control__bonus_subfraction_numer),
+        .timer_control__block_writes(timer_control__block_writes),
+        .timer_control__enable_counter(timer_control__enable_counter),
+        .timer_control__reset_counter(timer_control__reset_counter),
         .reset_n(reset_n),
-        .timer_equalled(            timer_equalled),
+        .timer_value__value(            timer_value__value),
+        .timer_value__irq(            timer_value__irq),
         .apb_response__perr(            timer_apb_response__perr),
         .apb_response__pready(            timer_apb_response__pready),
         .apb_response__prdata(            timer_apb_response__prdata)         );
@@ -1465,6 +1481,9 @@ module hps_fpga_debug
     begin: riscv_instance__comb_code
     reg riscv_config__i32c__var;
     reg riscv_config__e32__var;
+    reg irqs__mtip__var;
+    reg timer_control__enable_counter__var;
+    reg [7:0]timer_control__integer_adder__var;
         riscv_config__i32c__var = 1'h0;
         riscv_config__e32__var = 1'h0;
         riscv_config__i32m = 1'h0;
@@ -1477,11 +1496,24 @@ module hps_fpga_debug
         irqs__meip = 1'h0;
         irqs__seip = 1'h0;
         irqs__ueip = 1'h0;
-        irqs__mtip = 1'h0;
+        irqs__mtip__var = 1'h0;
         irqs__msip = 1'h0;
         irqs__time = 64'h0;
+        irqs__mtip__var = timer_value__irq;
+        timer_control__reset_counter = 1'h0;
+        timer_control__enable_counter__var = 1'h0;
+        timer_control__block_writes = 1'h0;
+        timer_control__bonus_subfraction_numer = 8'h0;
+        timer_control__bonus_subfraction_denom = 8'h0;
+        timer_control__fractional_adder = 4'h0;
+        timer_control__integer_adder__var = 8'h0;
+        timer_control__enable_counter__var = 1'h1;
+        timer_control__integer_adder__var = 8'h14;
         riscv_config__i32c = riscv_config__i32c__var;
         riscv_config__e32 = riscv_config__e32__var;
+        irqs__mtip = irqs__mtip__var;
+        timer_control__enable_counter = timer_control__enable_counter__var;
+        timer_control__integer_adder = timer_control__integer_adder__var;
     end //always
 
     //b apb_master_instances clock process
