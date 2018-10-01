@@ -17,18 +17,20 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set entity    "de1_cl_hps_fpga_debug"
+set_global_assignment -name TOP_LEVEL_ENTITY       $entity
 
 #a Source files
 
-source scripts/pins.tcl
-source devices/cyclone_5_SE_M_F31.tcl
-source boards/de1.tcl
-source boards/cam_de1.tcl
+source $QUARTUS_DIR/scripts/pins.tcl
+source $QUARTUS_DIR/devices/cyclone_5_SE_M_F31.tcl
+source $QUARTUS_DIR/boards/de1.tcl
+source $QUARTUS_DIR/boards/cam_de1.tcl
 
 puts "Sourced TCL files"
 
-set_global_assignment -name SDC_FILE $QUARTUS_DIR/cam_de1_hps_project.sdc
-set_global_assignment -name VERILOG_FILE $RTL_DIR/cam_de1_hps_project.v
+set_global_assignment -name SDC_FILE     hps_fpga_debug.sdc
+set_global_assignment -name VERILOG_FILE hps_fpga_debug.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_master_axi.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_master_mux.v
@@ -70,7 +72,6 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/hps_fpga_debug.v
 # e.g. fpga_0|framebuffer_teletext:ftb|se_sram_srw_128x45:character_rom|se_sram_srw:ram
 
 set fpga_hier "fpga_0"
-set entity "cam_de1_hps_project"
 
 set_parameter -entity $entity -to "$fpga_hier\|ftb_lcd\|character_rom\|ram"      -name initfile $SRAMS_DIR/teletext.qmif
 set_parameter -entity $entity -to "$fpga_hier\|ftb_vga\|character_rom\|ram"      -name initfile $SRAMS_DIR/teletext.qmif

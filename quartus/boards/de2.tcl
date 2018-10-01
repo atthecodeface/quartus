@@ -128,9 +128,9 @@ pin_lvttl_signal {AB22 AC15 AB21 Y17 AC21 Y16 AD21 AE16 AD15 AE15 AC19 AF16 AD19
 # Ethernet 0
 pin_2_5v_signal A17 de2_eth0__gtx_clk
 pin_2_5v_signal A21 de2_eth0__int_n
+pin_2_5v_signal C19 de2_eth0__reset_n
 pin_2_5v_signal C20 de2_eth0__mdc
 pin_2_5v_signal B21 de2_eth0__mdio
-pin_2_5v_signal C19 de2_eth0__reset_n
 pin_2_5v_signal A15 de2_eth0__rx_clk
 pin_2_5v_signal E15 de2_eth0__rx_col
 pin_2_5v_signal D15 de2_eth0__rx_crs
@@ -144,9 +144,9 @@ pin_2_5v_signal B18 de2_eth0__tx_er
 
 pin_2_5v_signal C23 de2_eth1__gtx_clk
 pin_2_5v_signal D24 de2_eth1__int_n
+pin_2_5v_signal D22 de2_eth1__reset_n
 pin_2_5v_signal D23 de2_eth1__mdc
 pin_2_5v_signal D25 de2_eth1__mdio
-pin_2_5v_signal D22 de2_eth1__reset_n
 pin_2_5v_signal B15 de2_eth1__rx_clk
 pin_2_5v_signal B22 de2_eth1__rx_col
 pin_2_5v_signal D20 de2_eth1__rx_crs

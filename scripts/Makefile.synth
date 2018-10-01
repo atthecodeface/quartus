@@ -2,6 +2,7 @@ QUARTUS_DIR=$(ROOT)/quartus
 QUARTUS_OUTPUT=$(ROOT)/quartus_output
 QUARTUS_DB=$(ROOT)/quartus/db
 QUARTUS_IDB=$(ROOT)/quartus/incremental_db
+PROJECTS_DIR := ${QUARTUS_DIR}/projects
 
 QUARTUS=$(ALTERA)/quartus
 QUARTUS_BIN=$(QUARTUS)/bin
@@ -19,7 +20,11 @@ QUARTUS_SOPC2DTS = $(QUARTUS_ENV)  $(QUARTUS_BIN)/sopc2dts
 QUARTUS_JTAGD =sudo $(QUARTUS_ENV) $(QUARTUS_BIN)/jtagd
 QUARTUS_JTAGCONFIG =$(QUARTUS_ENV) $(QUARTUS_BIN)/jtagconfig
 
-SYNTH_PROJECT ?= bbc_project
+PROJECT ?= cam_de1_hps/riscv
+
+PROJECT_ROOT := $(dir $(PROJECT))
+PROJECT_LEAF := $(notdir $(PROJECT))
+QUARTUS_PROJECT_DIR := $(PROJECTS_DIR)/$(PROJECT_ROOT)
 
 help_synth:
 	$H ""
@@ -77,7 +82,7 @@ clean_synth:
 synth: $(MAKE_TARGETS)/synth.complete
 
 edit:
-	(cd $(QUARTUS_DIR); $(QUARTUS_EXE) $(SYNTH_PROJECT) $(SYNTH_PROJECT))
+	(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_EXE) $(PROJECT_LEAF) $(PROJECT_LEAF))
 
 dts : $(SYNTH_PROJECT).dts
 # _board_info.xml hps_clock_info.xml
@@ -114,16 +119,16 @@ $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTU
 	date >> $(QUARTUS_DIR)/modules/regenerate_date
 
 $(MAKE_TARGETS)/synth.complete: $(SCRIPTS_DIR)/synth.tcl
-	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT) )' $(QUARTUS_OUTPUT)/synth.log && date > $(MAKE_TARGETS)/synth.complete
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/synth.log && date > $(MAKE_TARGETS)/synth.complete
 
 $(MAKE_TARGETS)/fit.complete: $(MAKE_TARGETS)/synth.complete
-	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/fit.log && date > $(MAKE_TARGETS)/fit.complete
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/fit.log && date > $(MAKE_TARGETS)/fit.complete
 
 $(MAKE_TARGETS)/asm.complete: $(MAKE_TARGETS)/fit.complete
-	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/asm.log && date > $(MAKE_TARGETS)/asm.complete
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/asm.log && date > $(MAKE_TARGETS)/asm.complete
 
 $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
-	script -ef -c '(cd $(QUARTUS_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(SYNTH_PROJECT) $(SYNTH_PROJECT))' $(QUARTUS_OUTPUT)/timing.log && date > $(MAKE_TARGETS)/timing.complete
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > $(MAKE_TARGETS)/timing.complete
 
 rebuild_verilog:
 	(cd ../bbc_cdl; git pull && make clean && make -j6 verilog)
@@ -132,7 +137,7 @@ rebuild_verilog:
 	(cp -r ../bbc_cdl/roms/*mif mif)
 
 fpga_update_srams:
-	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(SYNTH_PROJECT))
+	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF))
 	(make asm)
 
 quartus_shell:
@@ -142,11 +147,11 @@ quartus_gui:
 	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -g)
 
 netlist:
-	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog $(SYNTH_PROJECT) -c $(SYNTH_PROJECT))
+	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog $(PROJECT_LEAF) -c $(PROJECT_LEAF))
 
 jtag_program:
-	#$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus_output/$(SYNTH_PROJECT).sof@2"
-	$(QUARTUS_PGM) -m jtag -o "P;quartus_output/$(SYNTH_PROJECT).sof@2"
+	#$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus_output/$(PROJECT_LEAF).sof@2"
+	$(QUARTUS_PGM) -m jtag -o "P;quartus_output/$(PROJECT_LEAF).sof@2"
 
 jtag_usb_init:
 	$(QUARTUS_JTAGD)

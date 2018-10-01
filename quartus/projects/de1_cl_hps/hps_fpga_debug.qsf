@@ -1,4 +1,3 @@
-set_global_assignment -name TOP_LEVEL_ENTITY cam_de1_hps_project
 #============================================================
 # Build by Terasic V1.0.0
 #============================================================
@@ -17,17 +16,16 @@ set_global_assignment -name TIMEQUEST_DO_REPORT_TIMING ON
 set_global_assignment -name TIMEQUEST_REPORT_WORST_CASE_TIMING_PATHS ON
 set_global_assignment -name TIMEQUEST_REPORT_NUM_WORST_CASE_TIMING_PATHS 10
 
-
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_global_assignment -name QIP_FILE modules/hps/synthesis/hps.qip
-# set_global_assignment -name SDC_FILE soc_system_timing.sdc
 
 set_global_assignment -name UNIPHY_SEQUENCER_DQS_CONFIG_ENABLE ON
 set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
 set_global_assignment -name ECO_REGENERATE_REPORT ON
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
 
-set_global_assignment -name SOURCE_TCL_SCRIPT_FILE cam_de1_hps_project.tcl
+set_global_assignment -name SOURCE_TCL_SCRIPT_FILE hps_fpga_debug.tcl
+set_global_assignment -name SOURCE_TCL_SCRIPT_FILE hps_fpga_debug.qip.tcl
+
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to hps_ddr3__ck_n -tag __hps_sdram_p0
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to hps_ddr3__ck_p -tag __hps_sdram_p0
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to hps_ddr3__addr[0] -tag __hps_sdram_p0

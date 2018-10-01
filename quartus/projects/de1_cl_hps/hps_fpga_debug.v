@@ -48,7 +48,7 @@ module pll_lcd (
 	);
 
 endmodule
-module cam_de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
+module de1_cl_hps_fpga_debug ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
 
                      de1_adc__cs_n, de1_adc__din, de1_adc__dout, de1_adc__sclk,
                      de1_aud__adcdat, de1_aud__adclkrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
