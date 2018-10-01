@@ -132,6 +132,12 @@ module bbc_micro_de1_cl_bbc
     reg [31:0]csr_response__read_data;
 
     //b Internal combinatorials
+    reg display_sram_access_req__valid;
+    reg [3:0]display_sram_access_req__id;
+    reg display_sram_access_req__read_not_write;
+    reg [7:0]display_sram_access_req__byte_enable;
+    reg [31:0]display_sram_access_req__address;
+    reg [63:0]display_sram_access_req__write_data;
     reg enable_cpu_clk;
     reg enable_clk_2MHz_video;
     reg bbc_micro_host_sram_request__valid;
@@ -388,9 +394,12 @@ module bbc_micro_de1_cl_bbc
         .csr_request__select(csr_request__select),
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
-        .display_sram_write__address(display_sram_write__address),
-        .display_sram_write__data(display_sram_write__data),
-        .display_sram_write__enable(display_sram_write__enable),
+        .display_sram_write__write_data(display_sram_access_req__write_data),
+        .display_sram_write__address(display_sram_access_req__address),
+        .display_sram_write__byte_enable(display_sram_access_req__byte_enable),
+        .display_sram_write__read_not_write(display_sram_access_req__read_not_write),
+        .display_sram_write__id(display_sram_access_req__id),
+        .display_sram_write__valid(display_sram_access_req__valid),
         .reset_n(framebuffer_reset_n),
         .csr_response__read_data(            framebuffer_csr_response__read_data),
         .csr_response__read_data_error(            framebuffer_csr_response__read_data_error),
@@ -458,9 +467,29 @@ module bbc_micro_de1_cl_bbc
         end //if
     end //always
 
-    //b floppy_and_framebuffer clock process
+    //b floppy_and_framebuffer__comb combinatorial process
+    always @ ( * )//floppy_and_framebuffer__comb
+    begin: floppy_and_framebuffer__comb_code
+    reg display_sram_access_req__valid__var;
+    reg [31:0]display_sram_access_req__address__var;
+    reg [63:0]display_sram_access_req__write_data__var;
+        display_sram_access_req__valid__var = 1'h0;
+        display_sram_access_req__id = 4'h0;
+        display_sram_access_req__read_not_write = 1'h0;
+        display_sram_access_req__byte_enable = 8'h0;
+        display_sram_access_req__address__var = 32'h0;
+        display_sram_access_req__write_data__var = 64'h0;
+        display_sram_access_req__valid__var = display_sram_write__enable;
+        display_sram_access_req__address__var = {16'h0,display_sram_write__address};
+        display_sram_access_req__write_data__var = {16'h0,display_sram_write__data};
+        display_sram_access_req__valid = display_sram_access_req__valid__var;
+        display_sram_access_req__address = display_sram_access_req__address__var;
+        display_sram_access_req__write_data = display_sram_access_req__write_data__var;
+    end //always
+
+    //b floppy_and_framebuffer__posedge_clk_cpu_active_low_reset_n clock process
     always @( posedge clk or negedge reset_n)
-    begin : floppy_and_framebuffer__code
+    begin : floppy_and_framebuffer__posedge_clk_cpu_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             floppy_sram_request_r__enable <= 1'h0;

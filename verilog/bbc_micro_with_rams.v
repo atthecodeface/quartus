@@ -118,6 +118,12 @@ module bbc_micro_with_rams
     //b Internal and output registers
 
     //b Internal combinatorials
+    reg display_sram_access_req__valid;
+    reg [3:0]display_sram_access_req__id;
+    reg display_sram_access_req__read_not_write;
+    reg [7:0]display_sram_access_req__byte_enable;
+    reg [31:0]display_sram_access_req__address;
+    reg [63:0]display_sram_access_req__write_data;
     reg bbc_reset_n;
     reg enable_cpu_clk;
     reg enable_clk_2MHz_video;
@@ -435,9 +441,12 @@ module bbc_micro_with_rams
         .csr_request__select(csr_request__select),
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
-        .display_sram_write__address(display_sram_write__address),
-        .display_sram_write__data(display_sram_write__data),
-        .display_sram_write__enable(display_sram_write__enable),
+        .display_sram_write__write_data(display_sram_access_req__write_data),
+        .display_sram_write__address(display_sram_access_req__address),
+        .display_sram_write__byte_enable(display_sram_access_req__byte_enable),
+        .display_sram_write__read_not_write(display_sram_access_req__read_not_write),
+        .display_sram_write__id(display_sram_access_req__id),
+        .display_sram_write__valid(display_sram_access_req__valid),
         .reset_n(reset_n),
         .csr_response__read_data(            framebuffer_csr_response__read_data),
         .csr_response__read_data_error(            framebuffer_csr_response__read_data_error),
@@ -458,6 +467,9 @@ module bbc_micro_with_rams
     reg csr_response__read_data_valid__var;
     reg csr_response__read_data_error__var;
     reg [31:0]csr_response__read_data__var;
+    reg display_sram_access_req__valid__var;
+    reg [31:0]display_sram_access_req__address__var;
+    reg [63:0]display_sram_access_req__write_data__var;
         csr_response__acknowledge__var = floppy_sram_csr_response__acknowledge;
         csr_response__read_data_valid__var = floppy_sram_csr_response__read_data_valid;
         csr_response__read_data_error__var = floppy_sram_csr_response__read_data_error;
@@ -477,10 +489,22 @@ module bbc_micro_with_rams
         enable_clk_2MHz_video = clock_control__enable_2MHz_video;
         enable_cpu_clk = clock_control__enable_cpu;
         bbc_reset_n = (reset_n & !(clock_control__reset_cpu!=1'h0));
+        display_sram_access_req__valid__var = 1'h0;
+        display_sram_access_req__id = 4'h0;
+        display_sram_access_req__read_not_write = 1'h0;
+        display_sram_access_req__byte_enable = 8'h0;
+        display_sram_access_req__address__var = 32'h0;
+        display_sram_access_req__write_data__var = 64'h0;
+        display_sram_access_req__valid__var = display_sram_write__enable;
+        display_sram_access_req__address__var = {16'h0,display_sram_write__address};
+        display_sram_access_req__write_data__var = {16'h0,display_sram_write__data};
         csr_response__acknowledge = csr_response__acknowledge__var;
         csr_response__read_data_valid = csr_response__read_data_valid__var;
         csr_response__read_data_error = csr_response__read_data_error__var;
         csr_response__read_data = csr_response__read_data__var;
+        display_sram_access_req__valid = display_sram_access_req__valid__var;
+        display_sram_access_req__address = display_sram_access_req__address__var;
+        display_sram_access_req__write_data = display_sram_access_req__write_data__var;
     end //always
 
 endmodule // bbc_micro_with_rams

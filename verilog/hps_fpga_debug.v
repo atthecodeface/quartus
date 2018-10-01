@@ -313,12 +313,12 @@ module hps_fpga_debug
     reg riscv_config__i32m_fuse;
     reg riscv_config__coproc_disable;
     reg riscv_config__unaligned_mem;
-    reg fb_display_sram_write__enable;
-    reg [47:0]fb_display_sram_write__data;
-    reg [15:0]fb_display_sram_write__address;
-    reg tt_display_sram_write__enable;
-    reg [47:0]tt_display_sram_write__data;
-    reg [15:0]tt_display_sram_write__address;
+    reg tt_display_sram_access_req__valid;
+    reg [3:0]tt_display_sram_access_req__id;
+    reg tt_display_sram_access_req__read_not_write;
+    reg [7:0]tt_display_sram_access_req__byte_enable;
+    reg [31:0]tt_display_sram_access_req__address;
+    reg [63:0]tt_display_sram_access_req__write_data;
     reg csr_response__acknowledge;
     reg csr_response__read_data_valid;
     reg csr_response__read_data_error;
@@ -1373,9 +1373,12 @@ module hps_fpga_debug
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
         .csr_select_in(16'h2),
-        .display_sram_write__address(tt_display_sram_write__address),
-        .display_sram_write__data(tt_display_sram_write__data),
-        .display_sram_write__enable(tt_display_sram_write__enable),
+        .display_sram_write__write_data(tt_display_sram_access_req__write_data),
+        .display_sram_write__address(tt_display_sram_access_req__address),
+        .display_sram_write__byte_enable(tt_display_sram_access_req__byte_enable),
+        .display_sram_write__read_not_write(tt_display_sram_access_req__read_not_write),
+        .display_sram_write__id(tt_display_sram_access_req__id),
+        .display_sram_write__valid(tt_display_sram_access_req__valid),
         .reset_n(reset_n),
         .csr_response__read_data(            tt_lcd_framebuffer_csr_response__read_data),
         .csr_response__read_data_error(            tt_lcd_framebuffer_csr_response__read_data_error),
@@ -1400,9 +1403,12 @@ module hps_fpga_debug
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
         .csr_select_in(16'h4),
-        .display_sram_write__address(fb_display_sram_write__address),
-        .display_sram_write__data(fb_display_sram_write__data),
-        .display_sram_write__enable(fb_display_sram_write__enable),
+        .display_sram_write__write_data(fb_sram_access_req__write_data),
+        .display_sram_write__address(fb_sram_access_req__address),
+        .display_sram_write__byte_enable(fb_sram_access_req__byte_enable),
+        .display_sram_write__read_not_write(fb_sram_access_req__read_not_write),
+        .display_sram_write__id(fb_sram_access_req__id),
+        .display_sram_write__valid(fb_sram_access_req__valid),
         .reset_n(reset_n),
         .csr_response__read_data(            tt_vga_framebuffer_csr_response__read_data),
         .csr_response__read_data_error(            tt_vga_framebuffer_csr_response__read_data_error),
@@ -2000,6 +2006,9 @@ module hps_fpga_debug
     //b dprintf_framebuffer_instances__comb combinatorial process
     always @ ( * )//dprintf_framebuffer_instances__comb
     begin: dprintf_framebuffer_instances__comb_code
+    reg tt_display_sram_access_req__valid__var;
+    reg [31:0]tt_display_sram_access_req__address__var;
+    reg [63:0]tt_display_sram_access_req__write_data__var;
     reg fb_sram_access_resp__ack__var;
     reg fb_sram_access_resp__valid__var;
     reg [3:0]fb_sram_access_resp__id__var;
@@ -2007,12 +2016,15 @@ module hps_fpga_debug
     reg csr_response__read_data_valid__var;
     reg csr_response__read_data_error__var;
     reg [31:0]csr_response__read_data__var;
-        tt_display_sram_write__enable = dprintf_byte__valid;
-        tt_display_sram_write__address = dprintf_byte__address;
-        tt_display_sram_write__data = {40'h0,dprintf_byte__data};
-        fb_display_sram_write__enable = ((fb_sram_access_req__valid!=1'h0)&&!(fb_sram_access_req__read_not_write!=1'h0));
-        fb_display_sram_write__address = fb_sram_access_req__address[15:0];
-        fb_display_sram_write__data = {40'h0,fb_sram_access_req__write_data[7:0]};
+        tt_display_sram_access_req__valid__var = 1'h0;
+        tt_display_sram_access_req__id = 4'h0;
+        tt_display_sram_access_req__read_not_write = 1'h0;
+        tt_display_sram_access_req__byte_enable = 8'h0;
+        tt_display_sram_access_req__address__var = 32'h0;
+        tt_display_sram_access_req__write_data__var = 64'h0;
+        tt_display_sram_access_req__valid__var = dprintf_byte__valid;
+        tt_display_sram_access_req__address__var = {16'h0,dprintf_byte__address};
+        tt_display_sram_access_req__write_data__var = {56'h0,dprintf_byte__data};
         fb_sram_access_resp__ack__var = 1'h0;
         fb_sram_access_resp__valid__var = 1'h0;
         fb_sram_access_resp__id__var = 4'h0;
@@ -2032,6 +2044,9 @@ module hps_fpga_debug
         csr_response__read_data_valid__var = csr_response__read_data_valid__var | timeout_csr_response__read_data_valid;
         csr_response__read_data_error__var = csr_response__read_data_error__var | timeout_csr_response__read_data_error;
         csr_response__read_data__var = csr_response__read_data__var | timeout_csr_response__read_data;
+        tt_display_sram_access_req__valid = tt_display_sram_access_req__valid__var;
+        tt_display_sram_access_req__address = tt_display_sram_access_req__address__var;
+        tt_display_sram_access_req__write_data = tt_display_sram_access_req__write_data__var;
         fb_sram_access_resp__ack = fb_sram_access_resp__ack__var;
         fb_sram_access_resp__valid = fb_sram_access_resp__valid__var;
         fb_sram_access_resp__id = fb_sram_access_resp__id__var;
@@ -2251,7 +2266,7 @@ module hps_fpga_debug
             begin
                 counter <= (counter+16'h1);
             end //if
-            if (((de1_switches[4:2]==3'h6)&&(tt_display_sram_write__enable!=1'h0)))
+            if (((de1_switches[4:2]==3'h6)&&(tt_display_sram_access_req__valid!=1'h0)))
             begin
                 counter <= (counter+16'h1);
             end //if

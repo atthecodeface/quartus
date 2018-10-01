@@ -56,9 +56,12 @@ module tb_framebuffer_teletext
     wire [7:0]video_bus__red;
     wire [7:0]video_bus__green;
     wire [7:0]video_bus__blue;
-    wire display_sram_write__enable;
-    wire [47:0]display_sram_write__data;
-    wire [15:0]display_sram_write__address;
+    wire display_sram_write__valid;
+    wire [3:0]display_sram_write__id;
+    wire display_sram_write__read_not_write;
+    wire [7:0]display_sram_write__byte_enable;
+    wire [31:0]display_sram_write__address;
+    wire [63:0]display_sram_write__write_data;
 
     //b Clock gating module instances
     //b Module instances
@@ -80,9 +83,12 @@ module tb_framebuffer_teletext
         .csr_request__select(            csr_request__select),
         .csr_request__read_not_write(            csr_request__read_not_write),
         .csr_request__valid(            csr_request__valid),
+        .display_sram_write__write_data(            display_sram_write__write_data),
         .display_sram_write__address(            display_sram_write__address),
-        .display_sram_write__data(            display_sram_write__data),
-        .display_sram_write__enable(            display_sram_write__enable)         );
+        .display_sram_write__byte_enable(            display_sram_write__byte_enable),
+        .display_sram_write__read_not_write(            display_sram_write__read_not_write),
+        .display_sram_write__id(            display_sram_write__id),
+        .display_sram_write__valid(            display_sram_write__valid)         );
     framebuffer_teletext fb(
         .video_clk(clk),
         .video_clk__enable(1'b1),
@@ -96,9 +102,12 @@ module tb_framebuffer_teletext
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
         .csr_select_in(16'h0),
+        .display_sram_write__write_data(display_sram_write__write_data),
         .display_sram_write__address(display_sram_write__address),
-        .display_sram_write__data(display_sram_write__data),
-        .display_sram_write__enable(display_sram_write__enable),
+        .display_sram_write__byte_enable(display_sram_write__byte_enable),
+        .display_sram_write__read_not_write(display_sram_write__read_not_write),
+        .display_sram_write__id(display_sram_write__id),
+        .display_sram_write__valid(display_sram_write__valid),
         .reset_n(reset_n),
         .csr_response__read_data(            csr_response__read_data),
         .csr_response__read_data_error(            csr_response__read_data_error),

@@ -2,7 +2,7 @@
 proc pin_io_signal {pin io sig {base_index 0}} {
     if {[llength $pin] > 1} {
         for {set n 0} {$n < [llength $pin]} {incr n} {
-            set sig_index $n + $base_index
+            set sig_index [expr $n+$base_index]
             set sig_part "${sig}[$sig_index]"
             set_location_assignment PIN_[lindex $pin $n] -to $sig_part
             set_instance_assignment -name IO_STANDARD $io -to $sig_part
@@ -23,7 +23,7 @@ proc pin_2_5v_signal {pin sig {base_index 0}} {
 proc io_signal {io tag sig nsig {base_index 0}} {
     if {$nsig > 1} {
         for {set n 0} {$n < $nsig} {incr n} {
-            set sig_index $n + $base_index
+            set sig_index [expr $n+$base_index]
             set sig_part "${sig}[$sig_index]"
             if {$tag == ""} {
                 set_instance_assignment -name IO_STANDARD $io -to $sig_part
@@ -41,7 +41,7 @@ proc io_signal {io tag sig nsig {base_index 0}} {
 
 }
 
-proc diff_sstl_signal {tag sig nsig {base index 0}} {
+proc diff_sstl_signal {tag sig nsig {base_index 0}} {
     io_signal "DIFFERENTIAL 1.5-V SSTL CLASS I" $tag $sig $nsig $base_index
 }
 
@@ -56,7 +56,7 @@ proc lvttl_signal {tag sig nsig {base_index 0}} {
 proc inst_assign {name value tag sig nsig {base_index 0}} {
     if {$nsig > 1} {
         for {set n 0} {$n < $nsig} {incr n} {
-            set sig_index $n + $base_index
+            set sig_index [expr $n+$base_index]
             set sig_part "${sig}[$sig_index]"
             set_instance_assignment -name $name $value -to $sig_part -tag $tag
         }

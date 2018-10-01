@@ -194,9 +194,12 @@ module bbc_micro_de1_cl_io
     reg [15:0]apb_processor_request__address;
     reg debug_combs__selected_data;
     reg debug_combs__timer_10ms;
-    reg tt_display_sram_write__enable;
-    reg [47:0]tt_display_sram_write__data;
-    reg [15:0]tt_display_sram_write__address;
+    reg tt_display_sram_access_req__valid;
+    reg [3:0]tt_display_sram_access_req__id;
+    reg tt_display_sram_access_req__read_not_write;
+    reg [7:0]tt_display_sram_access_req__byte_enable;
+    reg [31:0]tt_display_sram_access_req__address;
+    reg [63:0]tt_display_sram_access_req__write_data;
     reg led_data__valid;
     reg led_data__last;
     reg [7:0]led_data__red;
@@ -656,9 +659,12 @@ module bbc_micro_de1_cl_io
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
         .csr_select_in(16'h0),
-        .display_sram_write__address(tt_display_sram_write__address),
-        .display_sram_write__data(tt_display_sram_write__data),
-        .display_sram_write__enable(tt_display_sram_write__enable),
+        .display_sram_write__write_data(tt_display_sram_access_req__write_data),
+        .display_sram_write__address(tt_display_sram_access_req__address),
+        .display_sram_write__byte_enable(tt_display_sram_access_req__byte_enable),
+        .display_sram_write__read_not_write(tt_display_sram_access_req__read_not_write),
+        .display_sram_write__id(tt_display_sram_access_req__id),
+        .display_sram_write__valid(tt_display_sram_access_req__valid),
         .reset_n(framebuffer_reset_n),
         .csr_response__read_data(            tt_framebuffer_csr_response__read_data),
         .csr_response__read_data_error(            tt_framebuffer_csr_response__read_data_error),
@@ -1404,9 +1410,21 @@ module bbc_micro_de1_cl_io
     //b tt_framebuffer__comb combinatorial process
     always @ ( * )//tt_framebuffer__comb
     begin: tt_framebuffer__comb_code
-        tt_display_sram_write__enable = dprintf_byte__valid;
-        tt_display_sram_write__address = dprintf_byte__address;
-        tt_display_sram_write__data = {40'h0,dprintf_byte__data};
+    reg tt_display_sram_access_req__valid__var;
+    reg [31:0]tt_display_sram_access_req__address__var;
+    reg [63:0]tt_display_sram_access_req__write_data__var;
+        tt_display_sram_access_req__valid__var = 1'h0;
+        tt_display_sram_access_req__id = 4'h0;
+        tt_display_sram_access_req__read_not_write = 1'h0;
+        tt_display_sram_access_req__byte_enable = 8'h0;
+        tt_display_sram_access_req__address__var = 32'h0;
+        tt_display_sram_access_req__write_data__var = 64'h0;
+        tt_display_sram_access_req__valid__var = dprintf_byte__valid;
+        tt_display_sram_access_req__address__var = {16'h0,dprintf_byte__address};
+        tt_display_sram_access_req__write_data__var = {56'h0,dprintf_byte__data};
+        tt_display_sram_access_req__valid = tt_display_sram_access_req__valid__var;
+        tt_display_sram_access_req__address = tt_display_sram_access_req__address__var;
+        tt_display_sram_access_req__write_data = tt_display_sram_access_req__write_data__var;
     end //always
 
     //b tt_framebuffer__posedge_clk_active_low_reset_n clock process

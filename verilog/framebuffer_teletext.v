@@ -29,9 +29,12 @@ module framebuffer_teletext
     csr_request__address,
     csr_request__data,
     csr_select_in,
-    display_sram_write__enable,
-    display_sram_write__data,
+    display_sram_write__valid,
+    display_sram_write__id,
+    display_sram_write__read_not_write,
+    display_sram_write__byte_enable,
     display_sram_write__address,
+    display_sram_write__write_data,
     reset_n,
 
     csr_response__acknowledge,
@@ -64,9 +67,12 @@ module framebuffer_teletext
     input [15:0]csr_request__address;
     input [31:0]csr_request__data;
     input [15:0]csr_select_in;
-    input display_sram_write__enable;
-    input [47:0]display_sram_write__data;
-    input [15:0]display_sram_write__address;
+    input display_sram_write__valid;
+    input [3:0]display_sram_write__id;
+    input display_sram_write__read_not_write;
+    input [7:0]display_sram_write__byte_enable;
+    input [31:0]display_sram_write__address;
+    input [63:0]display_sram_write__write_data;
     input reset_n;
 
     //b Outputs
@@ -118,9 +124,12 @@ module framebuffer_teletext
     reg tt_timings__first_scanline_of_row;
     reg tt_timings__smoothe;
     reg [1:0]tt_timings__interpolate_vertical;
-    reg sram_state__write_request__enable;
-    reg [47:0]sram_state__write_request__data;
-    reg [15:0]sram_state__write_request__address;
+    reg sram_state__write_request__valid;
+    reg [3:0]sram_state__write_request__id;
+    reg sram_state__write_request__read_not_write;
+    reg [7:0]sram_state__write_request__byte_enable;
+    reg [31:0]sram_state__write_request__address;
+    reg [63:0]sram_state__write_request__write_data;
     reg [15:0]csrs__sram_base_address;
     reg [15:0]csrs__sram_words_per_line;
     reg [15:0]csr_select;
@@ -180,10 +189,10 @@ module framebuffer_teletext
         .address_1(pixel_state__sram_address[13:0]),
         .read_not_write_1(1'h1),
         .select_1(pixel_combs__sram_request),
-        .write_data_0(sram_state__write_request__data[7:0]),
+        .write_data_0(sram_state__write_request__write_data[7:0]),
         .address_0(sram_state__write_request__address[13:0]),
         .read_not_write_0(1'h0),
-        .select_0(sram_state__write_request__enable),
+        .select_0(sram_state__write_request__valid),
         .data_out_1(            pixel_read_data)         );
     teletext tt(
         .clk(video_clk),
@@ -440,18 +449,24 @@ module framebuffer_teletext
     begin : sram_write_logic__code
         if (reset_n==1'b0)
         begin
-            sram_state__write_request__enable <= 1'h0;
-            sram_state__write_request__data <= 48'h0;
-            sram_state__write_request__address <= 16'h0;
+            sram_state__write_request__valid <= 1'h0;
+            sram_state__write_request__id <= 4'h0;
+            sram_state__write_request__read_not_write <= 1'h0;
+            sram_state__write_request__byte_enable <= 8'h0;
+            sram_state__write_request__address <= 32'h0;
+            sram_state__write_request__write_data <= 64'h0;
         end
         else if (sram_clk__enable)
         begin
-            sram_state__write_request__enable <= 1'h0;
-            if ((display_sram_write__enable!=1'h0))
+            sram_state__write_request__valid <= 1'h0;
+            if ((display_sram_write__valid!=1'h0))
             begin
-                sram_state__write_request__enable <= display_sram_write__enable;
-                sram_state__write_request__data <= display_sram_write__data;
+                sram_state__write_request__valid <= display_sram_write__valid;
+                sram_state__write_request__id <= display_sram_write__id;
+                sram_state__write_request__read_not_write <= display_sram_write__read_not_write;
+                sram_state__write_request__byte_enable <= display_sram_write__byte_enable;
                 sram_state__write_request__address <= display_sram_write__address;
+                sram_state__write_request__write_data <= display_sram_write__write_data;
             end //if
         end //if
     end //always
