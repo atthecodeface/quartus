@@ -1,3 +1,5 @@
+CDL_HARDWARE   ?= $(ROOT)/../cdl_hardware
+
 QUARTUS_DIR    ?= $(ROOT)/quartus
 QUARTUS_OUTPUT ?= $(ROOT)/quartus_output
 QUARTUS_DB     ?= $(ROOT)/quartus/db
@@ -129,11 +131,12 @@ $(MAKE_TARGETS)/asm.complete: $(MAKE_TARGETS)/fit.complete
 $(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
 	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > $(MAKE_TARGETS)/timing.complete
 
+
 rebuild_verilog:
-	(cd ../bbc_cdl; git pull && make clean && make -j6 verilog)
-	(cp -r ../bbc_cdl/build/linux/*v verilog)
-	(cd ../bbc_cdl; make roms)
-	(cp -r ../bbc_cdl/roms/*mif mif)
+	(cd $(CDL_HARDWARE); git pull && make clean && make -j6 verilog)
+	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
+	(cd $(CDL_HARDWARE); make roms)
+	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
 fpga_update_srams:
 	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF))

@@ -1,7 +1,3 @@
-set_global_assignment -name SOURCE_TCL_SCRIPT_FILE bbc_project.tcl
-set_global_assignment -name TOP_LEVEL_ENTITY       bbc_project
-set_global_assignment -name TIMEQUEST_DO_REPORT_TIMING ON
-
 set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
@@ -19,7 +15,11 @@ set_global_assignment -name EXTRACT_VERILOG_STATE_MACHINES OFF
 set_global_assignment -name STATE_MACHINE_PROCESSING "USER-ENCODED"
 
 # Required for building, but breaks Quartus 13.0 as it does not support this in the same way
-set_global_assignment -name QIP_FILE modules/pll_lcd.qip
-set_global_assignment -name SIP_FILE modules/pll_lcd.sip
-set_global_assignment -name QIP_FILE modules/altclkctrl.qip
+#set_global_assignment -name QIP_FILE modules/pll_lcd.qip
+#set_global_assignment -name SIP_FILE modules/pll_lcd.sip
+#set_global_assignment -name QIP_FILE modules/altclkctrl.qip
 #set_global_assignment -name QIP_FILE hps.qip
+
+set_global_assignment -name SOURCE_TCL_SCRIPT_FILE bbc_project.tcl
+set_global_assignment -name TIMEQUEST_DO_REPORT_TIMING ON
+

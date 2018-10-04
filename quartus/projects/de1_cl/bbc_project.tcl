@@ -375,8 +375,13 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set entity    "bbc_project"
+set_global_assignment -name TOP_LEVEL_ENTITY       $entity
 
 #a Project files
+source $QUARTUS_DIR/scripts/pins.tcl
+source $QUARTUS_DIR/boards/de1_cl.tcl
+
 set_global_assignment -name VERILOG_FILE $RTL_DIR/bbc_project.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/clock_gate_module.v
@@ -416,9 +421,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf_4_mux.v
 
-set_global_assignment -name TOP_LEVEL_ENTITY bbc_project
-
-set_global_assignment -name SDC_FILE $QUARTUS_DIR/bbc_project.sdc
+set_global_assignment -name SDC_FILE bbc_project.sdc
 
 #a Set parameters (e.g. SRAMs)
 set bbc_hier "bbc_micro\|bbc"
