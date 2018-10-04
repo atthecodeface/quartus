@@ -14,108 +14,182 @@
 //a Module bbc_micro_de1_cl
 module bbc_micro_de1_cl
 (
-    video_clk,
-    video_clk__enable,
+    de1_cl_lcd_clock,
+    de1_cl_lcd_clock__enable,
+    de1_vga_clock,
+    de1_vga_clock__enable,
     clk,
     clk__enable,
 
-    inputs_status__sr_data,
-    inputs_status__left_rotary__direction_pin,
-    inputs_status__left_rotary__transition_pin,
-    inputs_status__right_rotary__direction_pin,
-    inputs_status__right_rotary__transition_pin,
-    ps2_in__data,
-    ps2_in__clk,
-    switches,
-    keys,
-    video_locked,
+    de1_cl_inputs_status__sr_data,
+    de1_cl_inputs_status__left_rotary__direction_pin,
+    de1_cl_inputs_status__left_rotary__transition_pin,
+    de1_cl_inputs_status__right_rotary__direction_pin,
+    de1_cl_inputs_status__right_rotary__transition_pin,
+    de1_ps2b_in__data,
+    de1_ps2b_in__clk,
+    de1_ps2_in__data,
+    de1_ps2_in__clk,
+    de1_inputs__irda_rxd,
+    de1_inputs__keys,
+    de1_inputs__switches,
+    de1_cl_lcd_clock_locked,
+    de1_vga_clock_locked,
+    de1_cl_lcd_reset_n,
+    de1_vga_reset_n,
     reset_n,
 
-    inputs_control__sr_clock,
-    inputs_control__sr_shift,
-    led_data_pin,
-    ps2_out__data,
-    ps2_out__clk,
-    leds,
-    lcd__vsync_n,
-    lcd__hsync_n,
-    lcd__display_enable,
-    lcd__red,
-    lcd__green,
-    lcd__blue,
-    lcd__backlight
+    de1_cl_inputs_control__sr_clock,
+    de1_cl_inputs_control__sr_shift,
+    de1_vga__vs,
+    de1_vga__hs,
+    de1_vga__blank_n,
+    de1_vga__sync_n,
+    de1_vga__red,
+    de1_vga__green,
+    de1_vga__blue,
+    de1_irda_txd,
+    de1_cl_led_data_pin,
+    de1_ps2b_out__data,
+    de1_ps2b_out__clk,
+    de1_ps2_out__data,
+    de1_ps2_out__clk,
+    de1_leds__leds,
+    de1_leds__h0,
+    de1_leds__h1,
+    de1_leds__h2,
+    de1_leds__h3,
+    de1_leds__h4,
+    de1_leds__h5,
+    de1_cl_lcd__vsync_n,
+    de1_cl_lcd__hsync_n,
+    de1_cl_lcd__display_enable,
+    de1_cl_lcd__red,
+    de1_cl_lcd__green,
+    de1_cl_lcd__blue,
+    de1_cl_lcd__backlight
 );
 
     //b Clocks
         //   9MHz clock from PLL, derived from 50MHz
-    input video_clk;
-    input video_clk__enable;
+    input de1_cl_lcd_clock;
+    input de1_cl_lcd_clock__enable;
+        //   VGA clock, not used
+    input de1_vga_clock;
+    input de1_vga_clock__enable;
         //   50MHz clock from DE1 clock generator
     input clk;
     input clk__enable;
 
     //b Inputs
         //   DE1 CL daughterboard shifter register etc status
-    input inputs_status__sr_data;
-    input inputs_status__left_rotary__direction_pin;
-    input inputs_status__left_rotary__transition_pin;
-    input inputs_status__right_rotary__direction_pin;
-    input inputs_status__right_rotary__transition_pin;
+    input de1_cl_inputs_status__sr_data;
+    input de1_cl_inputs_status__left_rotary__direction_pin;
+    input de1_cl_inputs_status__left_rotary__transition_pin;
+    input de1_cl_inputs_status__right_rotary__direction_pin;
+    input de1_cl_inputs_status__right_rotary__transition_pin;
         //   PS2 input pins
-    input ps2_in__data;
-    input ps2_in__clk;
-        //   DE1 switches
-    input [9:0]switches;
-        //   DE1 keys
-    input [3:0]keys;
-        //   High if video PLL has locked
-    input video_locked;
+    input de1_ps2b_in__data;
+    input de1_ps2b_in__clk;
+        //   PS2 input pins
+    input de1_ps2_in__data;
+    input de1_ps2_in__clk;
+        //   DE1 inputs
+    input de1_inputs__irda_rxd;
+    input [3:0]de1_inputs__keys;
+    input [9:0]de1_inputs__switches;
+        //   High if LCD PLL has locked
+    input de1_cl_lcd_clock_locked;
+        //   High if VGA PLL has locked
+    input de1_vga_clock_locked;
+        //   Combination of resets
+    input de1_cl_lcd_reset_n;
+        //   Combination of resets
+    input de1_vga_reset_n;
         //   hard reset from a pin - a key on DE1
     input reset_n;
 
     //b Outputs
         //   DE1 CL daughterboard shifter register control
-    output inputs_control__sr_clock;
-    output inputs_control__sr_shift;
+    output de1_cl_inputs_control__sr_clock;
+    output de1_cl_inputs_control__sr_shift;
+        //   DE1 VGA board output
+    output de1_vga__vs;
+    output de1_vga__hs;
+    output de1_vga__blank_n;
+    output de1_vga__sync_n;
+    output [9:0]de1_vga__red;
+    output [9:0]de1_vga__green;
+    output [9:0]de1_vga__blue;
+        //   IrDA tx data pin
+    output de1_irda_txd;
         //   DE1 CL daughterboard neopixel LED pin
-    output led_data_pin;
+    output de1_cl_led_data_pin;
         //   PS2 output pin driver open collector
-    output ps2_out__data;
-    output ps2_out__clk;
-        //   DE1 leds
-    output [9:0]leds;
+    output de1_ps2b_out__data;
+    output de1_ps2b_out__clk;
+        //   PS2 output pin driver open collector
+    output de1_ps2_out__data;
+    output de1_ps2_out__clk;
+        //   DE1 LEDs (red+hex)
+    output [9:0]de1_leds__leds;
+    output [6:0]de1_leds__h0;
+    output [6:0]de1_leds__h1;
+    output [6:0]de1_leds__h2;
+    output [6:0]de1_leds__h3;
+    output [6:0]de1_leds__h4;
+    output [6:0]de1_leds__h5;
         //   LCD display out to computer lab daughterboard
-    output lcd__vsync_n;
-    output lcd__hsync_n;
-    output lcd__display_enable;
-    output [5:0]lcd__red;
-    output [6:0]lcd__green;
-    output [5:0]lcd__blue;
-    output lcd__backlight;
+    output de1_cl_lcd__vsync_n;
+    output de1_cl_lcd__hsync_n;
+    output de1_cl_lcd__display_enable;
+    output [5:0]de1_cl_lcd__red;
+    output [6:0]de1_cl_lcd__green;
+    output [5:0]de1_cl_lcd__blue;
+    output de1_cl_lcd__backlight;
 
 // output components here
 
     //b Output combinatorials
+        //   DE1 VGA board output
+    reg de1_vga__vs;
+    reg de1_vga__hs;
+    reg de1_vga__blank_n;
+    reg de1_vga__sync_n;
+    reg [9:0]de1_vga__red;
+    reg [9:0]de1_vga__green;
+    reg [9:0]de1_vga__blue;
+        //   IrDA tx data pin
+    reg de1_irda_txd;
         //   DE1 CL daughterboard neopixel LED pin
-    reg led_data_pin;
+    reg de1_cl_led_data_pin;
+        //   PS2 output pin driver open collector
+    reg de1_ps2b_out__data;
+    reg de1_ps2b_out__clk;
         //   LCD display out to computer lab daughterboard
-    reg lcd__vsync_n;
-    reg lcd__hsync_n;
-    reg lcd__display_enable;
-    reg [5:0]lcd__red;
-    reg [6:0]lcd__green;
-    reg [5:0]lcd__blue;
-    reg lcd__backlight;
+    reg de1_cl_lcd__vsync_n;
+    reg de1_cl_lcd__hsync_n;
+    reg de1_cl_lcd__display_enable;
+    reg [5:0]de1_cl_lcd__red;
+    reg [6:0]de1_cl_lcd__green;
+    reg [5:0]de1_cl_lcd__blue;
+    reg de1_cl_lcd__backlight;
 
     //b Output nets
         //   DE1 CL daughterboard shifter register control
-    wire inputs_control__sr_clock;
-    wire inputs_control__sr_shift;
+    wire de1_cl_inputs_control__sr_clock;
+    wire de1_cl_inputs_control__sr_shift;
         //   PS2 output pin driver open collector
-    wire ps2_out__data;
-    wire ps2_out__clk;
-        //   DE1 leds
-    wire [9:0]leds;
+    wire de1_ps2_out__data;
+    wire de1_ps2_out__clk;
+        //   DE1 LEDs (red+hex)
+    wire [9:0]de1_leds__leds;
+    wire [6:0]de1_leds__h0;
+    wire [6:0]de1_leds__h1;
+    wire [6:0]de1_leds__h2;
+    wire [6:0]de1_leds__h3;
+    wire [6:0]de1_leds__h4;
+    wire [6:0]de1_leds__h5;
 
     //b Internal and output registers
 
@@ -162,17 +236,17 @@ module bbc_micro_de1_cl
     //b Clock gating module instances
     //b Module instances
     bbc_micro_de1_cl_io io(
-        .video_clk(video_clk),
+        .video_clk(de1_cl_lcd_clock),
         .video_clk__enable(1'b1),
         .clk(clk),
         .clk__enable(1'b1),
-        .ps2_in__clk(ps2_in__clk),
-        .ps2_in__data(ps2_in__data),
-        .inputs_status__right_rotary__transition_pin(inputs_status__right_rotary__transition_pin),
-        .inputs_status__right_rotary__direction_pin(inputs_status__right_rotary__direction_pin),
-        .inputs_status__left_rotary__transition_pin(inputs_status__left_rotary__transition_pin),
-        .inputs_status__left_rotary__direction_pin(inputs_status__left_rotary__direction_pin),
-        .inputs_status__sr_data(inputs_status__sr_data),
+        .ps2_in__clk(de1_ps2_in__clk),
+        .ps2_in__data(de1_ps2_in__data),
+        .inputs_status__right_rotary__transition_pin(de1_cl_inputs_status__right_rotary__transition_pin),
+        .inputs_status__right_rotary__direction_pin(de1_cl_inputs_status__right_rotary__direction_pin),
+        .inputs_status__left_rotary__transition_pin(de1_cl_inputs_status__left_rotary__transition_pin),
+        .inputs_status__left_rotary__direction_pin(de1_cl_inputs_status__left_rotary__direction_pin),
+        .inputs_status__sr_data(de1_cl_inputs_status__sr_data),
         .csr_response__read_data(bbc_csr_response__read_data),
         .csr_response__read_data_error(bbc_csr_response__read_data_error),
         .csr_response__read_data_valid(bbc_csr_response__read_data_valid),
@@ -185,18 +259,25 @@ module bbc_micro_de1_cl
         .clock_control__enable_2MHz_video(bbc_clock_control__enable_2MHz_video),
         .clock_control__will_enable_2MHz_video(bbc_clock_control__will_enable_2MHz_video),
         .clock_control__enable_cpu(bbc_clock_control__enable_cpu),
-        .switches(switches),
-        .keys(keys),
+        .de1_inputs__switches(de1_inputs__switches),
+        .de1_inputs__keys(de1_inputs__keys),
+        .de1_inputs__irda_rxd(de1_inputs__irda_rxd),
         .framebuffer_reset_n(framebuffer_reset_n),
         .bbc_reset_n(bbc_reset_n),
         .reset_n(reset_n),
         .led_chain(            led_chain),
-        .leds(            leds),
+        .de1_leds__h5(            de1_leds__h5),
+        .de1_leds__h4(            de1_leds__h4),
+        .de1_leds__h3(            de1_leds__h3),
+        .de1_leds__h2(            de1_leds__h2),
+        .de1_leds__h1(            de1_leds__h1),
+        .de1_leds__h0(            de1_leds__h0),
+        .de1_leds__leds(            de1_leds__leds),
         .lcd_source(            lcd_source),
-        .ps2_out__clk(            ps2_out__clk),
-        .ps2_out__data(            ps2_out__data),
-        .inputs_control__sr_shift(            inputs_control__sr_shift),
-        .inputs_control__sr_clock(            inputs_control__sr_clock),
+        .ps2_out__clk(            de1_ps2_out__clk),
+        .ps2_out__data(            de1_ps2_out__data),
+        .inputs_control__sr_shift(            de1_cl_inputs_control__sr_shift),
+        .inputs_control__sr_clock(            de1_cl_inputs_control__sr_clock),
         .csr_request__data(            csr_request__data),
         .csr_request__address(            csr_request__address),
         .csr_request__select(            csr_request__select),
@@ -212,7 +293,7 @@ module bbc_micro_de1_cl
         .bbc_keyboard__keys_down_cols_0_to_7(            bbc_keyboard__keys_down_cols_0_to_7),
         .bbc_keyboard__reset_pressed(            bbc_keyboard__reset_pressed)         );
     bbc_micro_de1_cl_bbc bbc(
-        .video_clk(video_clk),
+        .video_clk(de1_cl_lcd_clock),
         .video_clk__enable(1'b1),
         .clk(clk),
         .clk__enable(1'b1),
@@ -250,8 +331,18 @@ module bbc_micro_de1_cl
         //       
     always @ ( * )//misc_logic
     begin: misc_logic__comb_code
-        bbc_reset_n = ((reset_n & !(bbc_clock_control__reset_cpu!=1'h0)) & switches[0]);
-        framebuffer_reset_n = (reset_n & video_locked);
+        bbc_reset_n = ((reset_n & !(bbc_clock_control__reset_cpu!=1'h0)) & de1_inputs__switches[0]);
+        framebuffer_reset_n = (reset_n & de1_cl_lcd_clock_locked);
+        de1_irda_txd = 1'h0;
+        de1_vga__vs = 1'h0;
+        de1_vga__hs = 1'h0;
+        de1_vga__blank_n = 1'h0;
+        de1_vga__sync_n = 1'h0;
+        de1_vga__red = 10'h0;
+        de1_vga__green = 10'h0;
+        de1_vga__blue = 10'h0;
+        de1_ps2b_out__data = 1'h0;
+        de1_ps2b_out__clk = 1'h0;
     end //always
 
     //b output_muxes combinatorial process
@@ -259,35 +350,35 @@ module bbc_micro_de1_cl
         //       
     always @ ( * )//output_muxes
     begin: output_muxes__comb_code
-    reg lcd__vsync_n__var;
-    reg lcd__hsync_n__var;
-    reg lcd__display_enable__var;
-    reg [5:0]lcd__red__var;
-    reg [6:0]lcd__green__var;
-    reg [5:0]lcd__blue__var;
-        lcd__vsync_n__var = !(bbc_video_bus__vsync!=1'h0);
-        lcd__hsync_n__var = !(bbc_video_bus__hsync!=1'h0);
-        lcd__display_enable__var = bbc_video_bus__display_enable;
-        lcd__red__var = bbc_video_bus__red[7:2];
-        lcd__green__var = bbc_video_bus__green[7:1];
-        lcd__blue__var = bbc_video_bus__blue[7:2];
-        lcd__backlight = switches[1];
+    reg de1_cl_lcd__vsync_n__var;
+    reg de1_cl_lcd__hsync_n__var;
+    reg de1_cl_lcd__display_enable__var;
+    reg [5:0]de1_cl_lcd__red__var;
+    reg [6:0]de1_cl_lcd__green__var;
+    reg [5:0]de1_cl_lcd__blue__var;
+        de1_cl_lcd__vsync_n__var = !(bbc_video_bus__vsync!=1'h0);
+        de1_cl_lcd__hsync_n__var = !(bbc_video_bus__hsync!=1'h0);
+        de1_cl_lcd__display_enable__var = bbc_video_bus__display_enable;
+        de1_cl_lcd__red__var = bbc_video_bus__red[7:2];
+        de1_cl_lcd__green__var = bbc_video_bus__green[7:1];
+        de1_cl_lcd__blue__var = bbc_video_bus__blue[7:2];
+        de1_cl_lcd__backlight = de1_inputs__switches[1];
         if ((lcd_source!=1'h0))
         begin
-            lcd__vsync_n__var = !(io_video_bus__vsync!=1'h0);
-            lcd__hsync_n__var = !(io_video_bus__hsync!=1'h0);
-            lcd__display_enable__var = io_video_bus__display_enable;
-            lcd__red__var = io_video_bus__red[7:2];
-            lcd__green__var = io_video_bus__green[7:1];
-            lcd__blue__var = io_video_bus__blue[7:2];
+            de1_cl_lcd__vsync_n__var = !(io_video_bus__vsync!=1'h0);
+            de1_cl_lcd__hsync_n__var = !(io_video_bus__hsync!=1'h0);
+            de1_cl_lcd__display_enable__var = io_video_bus__display_enable;
+            de1_cl_lcd__red__var = io_video_bus__red[7:2];
+            de1_cl_lcd__green__var = io_video_bus__green[7:1];
+            de1_cl_lcd__blue__var = io_video_bus__blue[7:2];
         end //if
-        led_data_pin = !(led_chain!=1'h0);
-        lcd__vsync_n = lcd__vsync_n__var;
-        lcd__hsync_n = lcd__hsync_n__var;
-        lcd__display_enable = lcd__display_enable__var;
-        lcd__red = lcd__red__var;
-        lcd__green = lcd__green__var;
-        lcd__blue = lcd__blue__var;
+        de1_cl_led_data_pin = !(led_chain!=1'h0);
+        de1_cl_lcd__vsync_n = de1_cl_lcd__vsync_n__var;
+        de1_cl_lcd__hsync_n = de1_cl_lcd__hsync_n__var;
+        de1_cl_lcd__display_enable = de1_cl_lcd__display_enable__var;
+        de1_cl_lcd__red = de1_cl_lcd__red__var;
+        de1_cl_lcd__green = de1_cl_lcd__green__var;
+        de1_cl_lcd__blue = de1_cl_lcd__blue__var;
     end //always
 
 endmodule // bbc_micro_de1_cl

@@ -38,14 +38,21 @@ module bbc_micro_de1_cl_io
     clock_control__phi,
     clock_control__reset_cpu,
     clock_control__debug,
-    switches,
-    keys,
+    de1_inputs__irda_rxd,
+    de1_inputs__keys,
+    de1_inputs__switches,
     framebuffer_reset_n,
     bbc_reset_n,
     reset_n,
 
     led_chain,
-    leds,
+    de1_leds__leds,
+    de1_leds__h0,
+    de1_leds__h1,
+    de1_leds__h2,
+    de1_leds__h3,
+    de1_leds__h4,
+    de1_leds__h5,
     lcd_source,
     inputs_control__sr_clock,
     inputs_control__sr_shift,
@@ -97,8 +104,9 @@ module bbc_micro_de1_cl_io
     input [1:0]clock_control__phi;
     input clock_control__reset_cpu;
     input [3:0]clock_control__debug;
-    input [9:0]switches;
-    input [3:0]keys;
+    input de1_inputs__irda_rxd;
+    input [3:0]de1_inputs__keys;
+    input [9:0]de1_inputs__switches;
     input framebuffer_reset_n;
     input bbc_reset_n;
         //   hard reset from a pin - a key on DE1
@@ -106,7 +114,13 @@ module bbc_micro_de1_cl_io
 
     //b Outputs
     output led_chain;
-    output [9:0]leds;
+    output [9:0]de1_leds__leds;
+    output [6:0]de1_leds__h0;
+    output [6:0]de1_leds__h1;
+    output [6:0]de1_leds__h2;
+    output [6:0]de1_leds__h3;
+    output [6:0]de1_leds__h4;
+    output [6:0]de1_leds__h5;
     output lcd_source;
         //   DE1 CL daughterboard shifter register control
     output inputs_control__sr_clock;
@@ -132,7 +146,13 @@ module bbc_micro_de1_cl_io
 // output components here
 
     //b Output combinatorials
-    reg [9:0]leds;
+    reg [9:0]de1_leds__leds;
+    reg [6:0]de1_leds__h0;
+    reg [6:0]de1_leds__h1;
+    reg [6:0]de1_leds__h2;
+    reg [6:0]de1_leds__h3;
+    reg [6:0]de1_leds__h4;
+    reg [6:0]de1_leds__h5;
     reg lcd_source;
     reg bbc_keyboard__reset_pressed;
     reg [63:0]bbc_keyboard__keys_down_cols_0_to_7;
@@ -774,19 +794,19 @@ module bbc_micro_de1_cl_io
             begin
                 debug_state__falling_1MHz_ticks <= (debug_state__falling_1MHz_ticks+32'h1);
             end //if
-            if (((clock_control__debug[0]!=1'h0)&&!(switches[4]!=1'h0)))
+            if (((clock_control__debug[0]!=1'h0)&&!(de1_inputs__switches[4]!=1'h0)))
             begin
                 debug_state__counter_0 <= (debug_state__counter_0+32'h1);
             end //if
-            if (((clock_control__debug[1]!=1'h0)&&!(switches[4]!=1'h0)))
+            if (((clock_control__debug[1]!=1'h0)&&!(de1_inputs__switches[4]!=1'h0)))
             begin
                 debug_state__counter_1 <= (debug_state__counter_1+32'h1);
             end //if
-            if (((clock_control__debug[2]!=1'h0)&&(switches[4]!=1'h0)))
+            if (((clock_control__debug[2]!=1'h0)&&(de1_inputs__switches[4]!=1'h0)))
             begin
                 debug_state__counter_0 <= (debug_state__counter_0+32'h1);
             end //if
-            if (((clock_control__debug[3]!=1'h0)&&(switches[4]!=1'h0)))
+            if (((clock_control__debug[3]!=1'h0)&&(de1_inputs__switches[4]!=1'h0)))
             begin
                 debug_state__counter_1 <= (debug_state__counter_1+32'h1);
             end //if
@@ -808,7 +828,7 @@ module bbc_micro_de1_cl_io
         //       
     always @ ( * )//misc_logic__comb
     begin: misc_logic__comb_code
-        lcd_source = switches[3];
+        lcd_source = de1_inputs__switches[3];
     end //always
 
     //b misc_logic__posedge_clk_active_low_reset_n clock process
@@ -1403,7 +1423,7 @@ module bbc_micro_de1_cl_io
         end
         else if (clk__enable)
         begin
-            keys_r <= keys;
+            keys_r <= de1_inputs__keys;
         end //if
     end //always
 
@@ -1615,7 +1635,7 @@ module bbc_micro_de1_cl_io
     begin: apb_csr_logic__comb_code
     reg apb_processor_request__valid__var;
     reg [15:0]apb_processor_request__address__var;
-    reg [9:0]leds__var;
+    reg [9:0]de1_leds__leds__var;
     reg combined_csr_response__acknowledge__var;
     reg combined_csr_response__read_data_valid__var;
     reg combined_csr_response__read_data_error__var;
@@ -1632,11 +1652,18 @@ module bbc_micro_de1_cl_io
             apb_processor_request__address__var[8:4] = {1'h1,key_state__video_selection};
             apb_processor_request__valid__var = 1'h1;
         end //if
-        leds__var[0] = apb_processor_request__valid__var;
-        leds__var[1] = apb_processor_response__acknowledge;
-        leds__var[2] = apb_processor_response__rom_busy;
-        leds__var[3] = csr_request__valid;
-        leds__var[4] = csr_response_r__acknowledge;
+        de1_leds__leds__var = 10'h0;
+        de1_leds__h0 = 7'h0;
+        de1_leds__h1 = 7'h0;
+        de1_leds__h2 = 7'h0;
+        de1_leds__h3 = 7'h0;
+        de1_leds__h4 = 7'h0;
+        de1_leds__h5 = 7'h0;
+        de1_leds__leds__var[0] = apb_processor_request__valid__var;
+        de1_leds__leds__var[1] = apb_processor_response__acknowledge;
+        de1_leds__leds__var[2] = apb_processor_response__rom_busy;
+        de1_leds__leds__var[3] = csr_request__valid;
+        de1_leds__leds__var[4] = csr_response_r__acknowledge;
         combined_csr_response__acknowledge__var = csr_response__acknowledge;
         combined_csr_response__read_data_valid__var = csr_response__read_data_valid;
         combined_csr_response__read_data_error__var = csr_response__read_data_error;
@@ -1647,7 +1674,7 @@ module bbc_micro_de1_cl_io
         combined_csr_response__read_data__var = combined_csr_response__read_data__var | tt_framebuffer_csr_response__read_data;
         apb_processor_request__valid = apb_processor_request__valid__var;
         apb_processor_request__address = apb_processor_request__address__var;
-        leds = leds__var;
+        de1_leds__leds = de1_leds__leds__var;
         combined_csr_response__acknowledge = combined_csr_response__acknowledge__var;
         combined_csr_response__read_data_valid = combined_csr_response__read_data_valid__var;
         combined_csr_response__read_data_error = combined_csr_response__read_data_error__var;

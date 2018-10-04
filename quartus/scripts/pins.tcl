@@ -6,13 +6,19 @@ proc pin_io_signal {pin io sig {base_index 0}} {
             set sig_part "${sig}[$sig_index]"
             set_location_assignment PIN_[lindex $pin $n] -to $sig_part
             set_instance_assignment -name IO_STANDARD $io -to $sig_part
+            set_instance_assignment -name SLEW_RATE 1               -to $sig_part
+            set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to $sig_part
         }
     } else {
         set_location_assignment PIN_$pin -to $sig
         set_instance_assignment -name IO_STANDARD $io -to $sig
+        set_instance_assignment -name SLEW_RATE 1               -to $sig
+        set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to $sig
     }
 }
 proc pin_lvttl_signal {pin sig {base_index 0}} {
+    # slew rate is 1 by default; 0 slow, 1 medium, 2 fast???
+    # current strength is 16mA by default
     pin_io_signal $pin "3.3-V LVTTL" $sig $base_index
 }
 

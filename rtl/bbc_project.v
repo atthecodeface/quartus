@@ -157,9 +157,9 @@ module bbc_project(clk, reset_n, leds, switches, keys,
    output       lcd__backlight          //synthesis altera_chip_pin_lc="@AA21"
                 ;
    inout        ps2_clk                 //synthesis altera_chip_pin_lc="@AD7"
-                ; // other one is AE9
-   inout        ps2_dat                 //synthesis altera_chip_pin_lc="@AE7"
                 ; // other one is AD9
+   inout        ps2_dat                 //synthesis altera_chip_pin_lc="@AE7"
+                ; // other one is AE9
    
    
    // e.g. output [7:0] sum /* synthesis altera_chip_pin_lc="@17, @166, @191, @152, @15, @148, @147, @149" */;

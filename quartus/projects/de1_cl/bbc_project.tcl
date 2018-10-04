@@ -375,14 +375,16 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set entity    "bbc_project"
+set entity    "de1_cl_project"
 set_global_assignment -name TOP_LEVEL_ENTITY       $entity
 
 #a Project files
 source $QUARTUS_DIR/scripts/pins.tcl
+source $QUARTUS_DIR/boards/de1.tcl
 source $QUARTUS_DIR/boards/de1_cl.tcl
 
-set_global_assignment -name VERILOG_FILE $RTL_DIR/bbc_project.v
+set_global_assignment -name VERILOG_MACRO de1_cl_dut_module=bbc_micro_de1_cl
+set_global_assignment -name VERILOG_FILE $RTL_DIR/de1_cl_project.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/clock_gate_module.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/saa5050.v
@@ -424,79 +426,14 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/dprintf_4_mux.v
 set_global_assignment -name SDC_FILE bbc_project.sdc
 
 #a Set parameters (e.g. SRAMs)
-set bbc_hier "bbc_micro\|bbc"
-set io_hier "bbc_micro\|io"
-set_parameter -entity "bbc_project" -to "$bbc_hier\|bbc\|basic\|ram"               -name initfile $SRAMS_DIR/basic2.rom.qmif
-set_parameter -entity "bbc_project" -to "$bbc_hier\|bbc\|os\|ram"                  -name initfile $SRAMS_DIR/os12.rom.qmif
-set_parameter -entity "bbc_project" -to "$bbc_hier\|bbc\|adfs\|ram"                -name initfile $SRAMS_DIR/dfs.rom.qmif
-set_parameter -entity "bbc_project" -to "$bbc_hier\|floppy\|ram"                   -name initfile $SRAMS_DIR/elite.qmif
-set_parameter -entity "bbc_project" -to "$bbc_hier\|bbc\|saa\|character_rom\|ram"  -name initfile $SRAMS_DIR/teletext.qmif
-set_parameter -entity "bbc_project" -to "$io_hier\|ftb\|character_rom\|ram"        -name initfile $SRAMS_DIR/teletext.qmif
-set_parameter -entity "bbc_project" -to "$io_hier\|bbc_ps2_kbd\|kbd_map\|ram"      -name initfile $SRAMS_DIR/ps2_bbc_kbd.qmif
-set_parameter -entity "bbc_project" -to "$io_hier\|apb_rom\|ram"                   -name initfile $SRAMS_DIR/apb_rom.qmif
+set bbc_hier "dut\|bbc"
+set io_hier  "dut\|io"
+set_parameter -entity $entity -to "$bbc_hier\|bbc\|basic\|ram"               -name initfile $SRAMS_DIR/basic2.rom.qmif
+set_parameter -entity $entity -to "$bbc_hier\|bbc\|os\|ram"                  -name initfile $SRAMS_DIR/os12.rom.qmif
+set_parameter -entity $entity -to "$bbc_hier\|bbc\|adfs\|ram"                -name initfile $SRAMS_DIR/dfs.rom.qmif
+set_parameter -entity $entity -to "$bbc_hier\|floppy\|ram"                   -name initfile $SRAMS_DIR/elite.qmif
+set_parameter -entity $entity -to "$bbc_hier\|bbc\|saa\|character_rom\|ram"  -name initfile $SRAMS_DIR/teletext.qmif
+set_parameter -entity $entity -to "$io_hier\|ftb\|character_rom\|ram"        -name initfile $SRAMS_DIR/teletext.qmif
+set_parameter -entity $entity -to "$io_hier\|bbc_ps2_kbd\|kbd_map\|ram"      -name initfile $SRAMS_DIR/ps2_bbc_kbd.qmif
+set_parameter -entity $entity -to "$io_hier\|apb_rom\|ram"                   -name initfile $SRAMS_DIR/apb_rom.qmif
 
-#a Set I/Os
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to clk
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to reset_n
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__clock
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__backlight
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__vsync_n
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__hsync_n
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__display_enable
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[0]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[1]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[2]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[3]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[4]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[5]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[6]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__red[7]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[0]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[1]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[2]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[3]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[4]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[5]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[6]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__green[7]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[0]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[1]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[2]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[3]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[4]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[5]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[6]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to lcd__blue[7]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[0]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[1]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[2]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[3]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[4]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[5]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[6]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[7]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[8]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to leds[9]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to keys[0]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to keys[1]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to keys[2]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[0]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[1]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[2]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[3]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[4]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[5]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[6]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[7]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[8]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to switches[9]
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__sr_data
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__left_rotary__direction_pin
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__left_rotary__transition_pin
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__right_rotary__direction_pin
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_status__right_rotary__transition_pin
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_control__sr_clock
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to inputs_control__sr_shift
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to led_data_pin
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to ps2_dat
-set_instance_assignment -name IO_STANDARD "3.3V LVCMOS" -to ps2_clk
