@@ -1,7 +1,7 @@
-QUARTUS_DIR=$(ROOT)/quartus
-QUARTUS_OUTPUT=$(ROOT)/quartus_output
-QUARTUS_DB=$(ROOT)/quartus/db
-QUARTUS_IDB=$(ROOT)/quartus/incremental_db
+QUARTUS_DIR    ?= $(ROOT)/quartus
+QUARTUS_OUTPUT ?= $(ROOT)/quartus_output
+QUARTUS_DB     ?= $(ROOT)/quartus/db
+QUARTUS_IDB    ?= $(ROOT)/quartus/incremental_db
 PROJECTS_DIR := ${QUARTUS_DIR}/projects
 
 QUARTUS=$(ALTERA)/quartus

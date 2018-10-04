@@ -1,6 +1,3 @@
-SRAM_CONTENTS=$(ROOT)/sram_contents
-SRAM_CONTENTS_REL=$(ROOT_REL)/sram_contents
-
 help_sram:
 	$H ""
 	$H "****************************************************************"

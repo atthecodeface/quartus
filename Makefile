@@ -1,12 +1,13 @@
 
-ROOT:=$(CURDIR)
-ROOT_REL:=.
-RTL_DIR=$(ROOT)/rtl
-VERILOG_DIR=$(ROOT)/verilog
-SCRIPTS_DIR=$(ROOT)/scripts
-PYTHON_DIR=$(ROOT)/python
-MIF_DIR=$(ROOT)/mif
-MAKE_TARGETS=$(ROOT)/make
+ROOT              ?= $(CURDIR)
+ROOT_REL          ?= .
+RTL_DIR           ?= $(ROOT)/rtl
+VERILOG_DIR       ?= $(ROOT)/verilog
+SCRIPTS_DIR       ?= $(ROOT)/scripts
+PYTHON_DIR        ?= $(ROOT)/python
+MIF_DIR           ?= $(ROOT)/mif
+MAKE_TARGETS      ?= $(ROOT)/make
+SRAM_CONTENTS     ?= $(ROOT)/sram_contents
 
 ALTERA=/altera
 
