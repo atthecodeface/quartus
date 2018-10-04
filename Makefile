@@ -39,6 +39,10 @@ help_toplevel:
 	$H "   Synthesis, fit, timing makefile, with its own help (below)"
 	$H " Makefile.sram"
 	$H "   SRAM generation makefile, with its own help (below)"
+	$H
+	$H "Projects available:"
+	$H "  de1_cl/bbc_project        - working (if you have the ROMs)"
+	$H "  de1_cl_hps/hps_fpga_debug - working (needs HPS modules generated)"
 
 .PHONY: clean
 
