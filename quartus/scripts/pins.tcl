@@ -49,19 +49,10 @@ proc io_signal {io tag sig nsig {base_index 0}} {
     sig_iter $sig $nsig pin_io_signal_set [list {} $tag {IO_STANDARD $io}] $base_index
 }
 
-proc diff_sstl_signal {tag sig nsig {base_index 0}} {
-    sig_iter $sig $nsig pin_io_signal_set [list $tag {IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I"}] $base_index
-}
-
-proc sstl_signal {tag sig nsig {base_index 0}} {
-    sig_iter $sig $nsig pin_io_signal_set [list $tag {IO_STANDARD "SSTL-15 CLASS I"}] $base_index
-}
-
 proc lvttl_signal {tag sig nsig {base_index 0}} {
-    sig_iter $sig $nsig pin_io_signal_set [list $tag {IO_STANDARD "3.3-V LVTTL" SLEW_RATE 1 CURRENT_STRENGTH_NEW 16MA}] $base_index
+    sig_iter $sig $nsig pin_io_signal_set [list {} $tag {IO_STANDARD "3.3-V LVTTL" SLEW_RATE 1 CURRENT_STRENGTH_NEW 16MA}] $base_index
 }
 
-proc term50 {tag sig nsig {base_index 0}} {
-    sig_iter $sig $nsig pin_io_signal_set [list $tag {INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION"}] $base_index
+proc inst_assign {sig nsig args {base_index 0}} {
+    sig_iter $sig $nsig pin_io_signal_set $args $base_index
 }
-

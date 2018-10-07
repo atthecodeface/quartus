@@ -379,6 +379,7 @@ set entity    "de1_cl_project"
 set_global_assignment -name TOP_LEVEL_ENTITY       $entity
 
 #a Project files
+source $QUARTUS_DIR/scripts/quartus.tcl
 source $QUARTUS_DIR/scripts/pins.tcl
 source $QUARTUS_DIR/boards/de1.tcl
 source $QUARTUS_DIR/boards/de1_cl.tcl

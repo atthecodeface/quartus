@@ -22,6 +22,7 @@ set_global_assignment -name TOP_LEVEL_ENTITY       $entity
 
 #a Source files
 
+source $QUARTUS_DIR/scripts/quartus.tcl
 source $QUARTUS_DIR/scripts/pins.tcl
 source $QUARTUS_DIR/devices/cyclone_5_SE_M_F31.tcl
 source $QUARTUS_DIR/boards/de1.tcl

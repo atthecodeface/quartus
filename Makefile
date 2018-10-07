@@ -41,8 +41,8 @@ help_toplevel:
 	$H "   SRAM generation makefile, with its own help (below)"
 	$H
 	$H "Projects available:"
-	$H "  de1_cl/bbc_project        - working (if you have the ROMs)"
-	$H "  de1_cl_hps/hps_fpga_debug - working (needs HPS modules generated)"
+	$H "  de1_cl/bbc_project        - working (if you have the ROMs)        (synth fit)"
+	$H "  de1_cl_hps/hps_fpga_debug - working (needs HPS modules generated) (synth pins fit)"
 
 .PHONY: clean
 
@@ -53,3 +53,4 @@ clean:
 include $(SCRIPTS_DIR)/Makefile.sram
 include $(SCRIPTS_DIR)/Makefile.sim
 include $(SCRIPTS_DIR)/Makefile.synth
+

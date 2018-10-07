@@ -25,7 +25,15 @@ QUARTUS_JTAGCONFIG =$(QUARTUS_ENV) $(QUARTUS_BIN)/jtagconfig
 PROJECT ?= de1_cl_hps/hps_fpga_debug 
 PROJECT_ROOT := $(dir $(PROJECT))
 PROJECT_LEAF := $(notdir $(PROJECT))
+MAKE_PREFIX  := $(MAKE_TARGETS)/${PROJECT_LEAF}.completed
 QUARTUS_PROJECT_DIR := $(PROJECTS_DIR)/$(PROJECT_ROOT)
+
+QUARTUS_PROJECT_MAKEFILE := $(QUARTUS_PROJECT_DIR)$(PROJECT_LEAF).mk
+QUARTUS_PROJECT_INCLUDE := $(shell if [ -f ${QUARTUS_PROJECT_MAKEFILE} ] ; then echo ${QUARTUS_PROJECT_MAKEFILE} ; else echo; fi;)
+
+ifneq ($(QUARTUS_PROJECT_INCLUDE),)
+-include ${QUARTUS_PROJECT_INCLUDE}
+endif
 
 help_synth:
 	$H ""
@@ -75,12 +83,27 @@ help_synth:
 clean: clean_synth
 .PHONY: clean_synth
 clean_synth:
-	rm -f $(MAKE_TARGETS)/synth.complete $(MAKE_TARGETS)/timing.complete $(MAKE_TARGETS)/fit.complete
+	rm -f ${MAKE_PREFIX}.*
 	rm -rf $(QUARTUS_OUTPUT) $(QUARTUS_DB) $(QUARTUS_IDB)
 	mkdir -p $(QUARTUS_OUTPUT) 
 
-.PHONY:synth fit timing
-synth: $(MAKE_TARGETS)/synth.complete
+.PHONY:synth asm fit timing
+synth:  ${MAKE_PREFIX}.synth
+fit:    ${MAKE_PREFIX}.fit
+timing: ${MAKE_PREFIX}.timing
+asm:    ${MAKE_PREFIX}.asm
+
+resynth:
+	make clean_synth
+	make synth
+
+refit:
+	rm -f ${MAKE_PREFIX}.fit ${MAKE_PREFIX}.timing ${MAKE_PREFIX}.asm
+	make fit
+
+retime:
+	rm -f ${MAKE_PREFIX}.timing
+	make timing
 
 edit:
 	(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_EXE) $(PROJECT_LEAF) $(PROJECT_LEAF))
@@ -98,20 +121,6 @@ dts : $(PROJECT).dts
 pins:
 	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_STA) -t $(QUARTUS_DIR)/modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/pins.log
 
-fit: $(MAKE_TARGETS)/fit.complete
-
-asm: $(MAKE_TARGETS)/asm.complete
-
-timing: $(MAKE_TARGETS)/timing.complete
-
-resynth:
-	make clean_synth
-	make synth
-
-retime:
-	rm -f $(MAKE_TARGETS)/timing.complete
-	make timing
-
 regenerate_modules: $(QUARTUS_DIR)/modules/regenerate_date
 
 $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTUS_DIR)/modules/altclkctrl.qsys
@@ -119,17 +128,17 @@ $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTU
 	(cd $(QUARTUS_DIR)/modules; $(QUARTUS_GENERATE) altclkctrl.qsys --synthesis=VERILOG $(QUARTUS_GENERATE_ARGS) )
 	date >> $(QUARTUS_DIR)/modules/regenerate_date
 
-$(MAKE_TARGETS)/synth.complete: $(SCRIPTS_DIR)/synth.tcl
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/synth.log && date > $(MAKE_TARGETS)/synth.complete
+${MAKE_PREFIX}.synth: $(SCRIPTS_DIR)/synth.tcl
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/synth.log  && date > ${MAKE_PREFIX}.synth
 
-$(MAKE_TARGETS)/fit.complete: $(MAKE_TARGETS)/synth.complete
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/fit.log && date > $(MAKE_TARGETS)/fit.complete
+${MAKE_PREFIX}.fit: synth
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/fit.log       && date > ${MAKE_PREFIX}.fit
 
-$(MAKE_TARGETS)/asm.complete: $(MAKE_TARGETS)/fit.complete
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/asm.log && date > $(MAKE_TARGETS)/asm.complete
+${MAKE_PREFIX}.asm: fit
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/asm.log       && date > ${MAKE_PREFIX}.asm
 
-$(MAKE_TARGETS)/timing.complete: $(MAKE_TARGETS)/fit.complete
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > $(MAKE_TARGETS)/timing.complete
+${MAKE_PREFIX}.timing: fit
+	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > ${MAKE_PREFIX}.timing
 
 
 rebuild_verilog:
@@ -143,10 +152,11 @@ fpga_update_srams:
 	(make asm)
 
 quartus_shell:
-	$(QUARTUS_SH) -s
+	cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -s
+	#$(PROJECT_LEAF) $(PROJECT_LEAF)
 
 quartus_gui:
-	(cd $(QUARTUS_DIR); $(QUARTUS_SH) -g)
+	cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -g
 
 netlist:
 	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog $(PROJECT_LEAF) -c $(PROJECT_LEAF))
