@@ -150,7 +150,7 @@ rebuild_verilog:
 	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
 fpga_update_srams:
-	(cd $(QUARTUS_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF))
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) '
 	(make asm)
 
 quartus_shell:

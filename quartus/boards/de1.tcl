@@ -18,7 +18,7 @@ pin_lvttl_signal AK4 de1_adc__din
 pin_lvttl_signal AK3 de1_adc__dout
 pin_lvttl_signal AK2 de1_adc__sclk
 pin_lvttl_signal  K7 de1_aud__adcdat
-pin_lvttl_signal  K8 de1_aud__adclkrck
+pin_lvttl_signal  K8 de1_aud__adclrck
 pin_lvttl_signal  H7 de1_aud__bclk
 pin_lvttl_signal  J7 de1_aud__dacdat
 pin_lvttl_signal  H8 de1_aud__daclrck
