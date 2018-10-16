@@ -4,12 +4,15 @@ QUARTUS_DIR    ?= $(ROOT)/quartus
 QUARTUS_OUTPUT ?= $(ROOT)/quartus_output
 QUARTUS_DB     ?= $(ROOT)/quartus/db
 QUARTUS_IDB    ?= $(ROOT)/quartus/incremental_db
-PROJECTS_DIR := ${QUARTUS_DIR}/projects
+PROJECTS_DIR   ?= ${QUARTUS_DIR}/projects
+
+SCRIPT ?= script -ef
 
 QUARTUS=$(ALTERA)/quartus
 QUARTUS_BIN=$(QUARTUS)/bin
 QUARTUS_SOPC_BUILDER=$(QUARTUS)/sopc_builder/bin/
-QUARTUS_ENV = SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) 
+QUARTUS_ENV ?= 
+QUARTUS_ENV += SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) QUARTUS_OUTPUT=$(QUARTUS_OUTPUT) QUARTUS_DIR=$(QUARTUS_DIR) 
 QUARTUS_GENERATE =$(QUARTUS_ENV) $(QUARTUS_SOPC_BUILDER)/qsys-generate
 QUARTUS_GENERATE_ARGS :=
 QUARTUS_EXE =$(QUARTUS_ENV) $(QUARTUS_BIN)/quartus
@@ -85,7 +88,7 @@ clean: clean_synth
 clean_synth:
 	rm -f ${MAKE_PREFIX}.*
 	rm -rf $(QUARTUS_OUTPUT) $(QUARTUS_DB) $(QUARTUS_IDB)
-	mkdir -p $(QUARTUS_OUTPUT) 
+	mkdir -p $(QUARTUS_OUTPUT) $(MAKE_TARGETS)
 
 .PHONY:synth asm fit timing
 synth:  ${MAKE_PREFIX}.synth
@@ -119,7 +122,7 @@ dts : $(PROJECT).dts
 	$(DTS.DTC) -I dts -O dtb -o $@ $<
 
 pins:
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_STA) -t $(QUARTUS_DIR)/modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/pins.log
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_STA) -t $(QUARTUS_DIR)/modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/pins.log
 
 regenerate_modules: $(QUARTUS_DIR)/modules/regenerate_date
 
@@ -129,17 +132,16 @@ $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTU
 	date >> $(QUARTUS_DIR)/modules/regenerate_date
 
 ${MAKE_PREFIX}.synth: $(SCRIPTS_DIR)/synth.tcl
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/synth.log  && date > ${MAKE_PREFIX}.synth
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/synth.log  && date > ${MAKE_PREFIX}.synth
 
 ${MAKE_PREFIX}.fit: synth
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/fit.log       && date > ${MAKE_PREFIX}.fit
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/fit.log       && date > ${MAKE_PREFIX}.fit
 
 ${MAKE_PREFIX}.asm: fit
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/asm.log       && date > ${MAKE_PREFIX}.asm
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/asm.log       && date > ${MAKE_PREFIX}.asm
 
 ${MAKE_PREFIX}.timing: fit
-	script -ef -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > ${MAKE_PREFIX}.timing
-
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > ${MAKE_PREFIX}.timing
 
 rebuild_verilog:
 	(cd $(CDL_HARDWARE); git pull && make clean && make -j6 verilog)
