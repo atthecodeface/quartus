@@ -90,11 +90,18 @@ clean_synth:
 	rm -rf $(QUARTUS_OUTPUT) $(QUARTUS_DB) $(QUARTUS_IDB)
 	mkdir -p $(QUARTUS_OUTPUT) $(MAKE_TARGETS)
 
-.PHONY:synth asm fit timing
+.PHONY:synth
+.PHONY:asm
+.PHONY:fit
+.PHONY:timing
 synth:  ${MAKE_PREFIX}.synth
 fit:    ${MAKE_PREFIX}.fit
 timing: ${MAKE_PREFIX}.timing
 asm:    ${MAKE_PREFIX}.asm
+
+force_asm:
+	rm -f ${MAKE_PREFIX}.asm
+	make asm
 
 resynth:
 	make clean_synth
@@ -134,13 +141,13 @@ $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTU
 ${MAKE_PREFIX}.synth: $(SCRIPTS_DIR)/synth.tcl
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/synth.log  && date > ${MAKE_PREFIX}.synth
 
-${MAKE_PREFIX}.fit: synth
+${MAKE_PREFIX}.fit: ${MAKE_PREFIX}.synth
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/fit.log       && date > ${MAKE_PREFIX}.fit
 
-${MAKE_PREFIX}.asm: fit
+${MAKE_PREFIX}.asm: ${MAKE_PREFIX}.fit
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/asm.log       && date > ${MAKE_PREFIX}.asm
 
-${MAKE_PREFIX}.timing: fit
+${MAKE_PREFIX}.timing: ${MAKE_PREFIX}.fit
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > ${MAKE_PREFIX}.timing
 
 rebuild_verilog:
@@ -150,8 +157,8 @@ rebuild_verilog:
 	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
 fpga_update_srams:
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) '
-	(make asm)
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) ' $(QUARTUS_OUTPUT)/fpga_update_srams.log       && date > ${MAKE_PREFIX}.fpga_update_srams
+	(make force_asm)
 
 quartus_shell:
 	cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -s
@@ -164,9 +171,9 @@ netlist:
 	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog $(PROJECT_LEAF) -c $(PROJECT_LEAF))
 
 jtag_program:
-	#$(QUARTUS_PGM) -c 'DE-SoC [1-1]' -m jtag -o "P;quartus_output/$(PROJECT_LEAF).sof@2"
-	$(QUARTUS_PGM) -m jtag -o "P;quartus_output/$(PROJECT_LEAF).sof@2"
+	( cable_name=`ALTERA_BIN=/altera/quartus/bin $(SCRIPTS_DIR)/find_altera_cable.sh` ; \
+	  echo "Using cable '$$cable_name'" ; \
+	 $(QUARTUS_PGM) -m jtag --cable="$$cable_name" -o "P;quartus_output/$(PROJECT_LEAF).sof@2" )
 
 jtag_usb_init:
-	$(QUARTUS_JTAGD)
-	$(QUARTUS_JTAGCONFIG)
+	ALTERA_BIN=/altera/quartus/bin bash -c "source $(SCRIPTS_DIR)/find_altera_cable.sh"
