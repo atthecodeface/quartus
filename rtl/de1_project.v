@@ -1,0 +1,224 @@
+module  pll_lcd_0002(
+
+	// interface 'refclk'
+	input wire refclk,
+
+	// interface 'reset'
+	input wire rst,
+
+	// interface 'outclk0'
+	output wire[1:0] outclk,
+
+	// interface 'locked'
+	output wire[1:0] locked
+);
+
+endmodule
+module pll_lcd (
+		input  wire  refclk,   //  refclk.clk
+		input  wire  rst,      //   reset.reset
+		output wire  outclk_0, // outclk0.clk
+		output wire  locked_0,    //  locked.export
+		output wire  outclk_1, // outclk0.clk
+		output wire  locked_1    //  locked.export
+	);
+
+   wire [1:0]        outclk;
+   wire              locked;
+   
+   assign outclk_0 = outclk[0];
+   assign outclk_1 = outclk[1];
+   assign locked_0 = locked;
+   assign locked_1 = locked;
+   
+	altera_pll #(
+		.fractional_vco_multiplier("false"),
+		.reference_clock_frequency("50.0 MHz"),
+		.operation_mode("direct"),
+		.number_of_clocks(2),
+		.output_clock_frequency0("9.000000 MHz"),
+		.output_clock_frequency1("27 MHz"),
+		.pll_type("General"),
+		.pll_subtype("General")
+	) altera_pll_i (
+		.rst	(rst),
+		.outclk	(outclk),
+		.locked	(locked),
+		.refclk	(refclk)
+	);
+
+endmodule
+module de1_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
+
+                     de1_adc__cs_n, de1_adc__din, de1_adc__dout, de1_adc__sclk,
+                     de1_aud__adcdat, de1_aud__adclrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
+
+                     de1_ddr__clk, de1_ddr__cke, de1_ddr__cs_n,
+                     de1_ddr__addr, de1_ddr__ba,
+                     de1_ddr__ras_n, de1_ddr__cas_n, de1_ddr__we_n,
+                     de1_ddr__dq, de1_ddr__ldqm, de1_ddr__udqm,
+
+                     de1_fan_ctrl,
+
+                     de1_fpga_i2c__sclk,
+                     de1_fpga_i2c__sdat,
+
+                     de1_hex0, de1_hex1,de1_hex2, de1_hex3, de1_hex4, de1_hex5,
+
+                     de1_irda__rxd, de1_irda__txd,
+                     de1_keys, de1_switches, de1_leds,
+                     
+                     de1_td__clk27, de1_td__data, de1_td__hs, de1_td__reset_n, de1_td__vs,
+
+                     de1_vga__b, de1_vga__blank_n, de1_vga__clk, de1_vga__g, de1_vga__hs, de1_vga__r, de1_vga__sync_n, de1_vga__vs,
+
+                     de1_ps2_dat, de1_ps2_clk,
+                     de1_ps2_b_dat, de1_ps2_b_clk
+
+                     );
+   input clk_50;
+   input clk2_50;
+   input clk3_50;
+   input clk4_50;
+   //input reset_n;
+
+   inout   de1_adc__cs_n;
+   output  de1_adc__din;
+   input   de1_adc__dout;
+   output  de1_adc__sclk;
+
+   input   de1_aud__adcdat;
+   inout   de1_aud__adclrck;
+   inout   de1_aud__bclk;
+   output  de1_aud__dacdat;
+   inout   de1_aud__daclrck;
+   output  de1_aud__xck;
+
+   output  de1_ddr__clk;
+   output  de1_ddr__cke;
+   output  de1_ddr__cs_n;
+   output [12:0] de1_ddr__addr;
+   output [1:0]  de1_ddr__ba;
+   inout [15:0]  de1_ddr__dq;
+   output        de1_ddr__ldqm;
+   output        de1_ddr__udqm;
+   output        de1_ddr__ras_n;
+   output        de1_ddr__cas_n;
+   output        de1_ddr__we_n;
+
+   output        de1_fan_ctrl;
+   output        de1_fpga_i2c__sclk;
+   inout         de1_fpga_i2c__sdat;
+   output [6:0]  de1_hex0;
+   output [6:0]  de1_hex1;
+   output [6:0]  de1_hex2;
+   output [6:0]  de1_hex3;
+   output [6:0]  de1_hex4;
+   output [6:0]  de1_hex5;
+
+   input         de1_irda__rxd;
+   output        de1_irda__txd;
+   input [3:0]   de1_keys;
+   output [9:0]  de1_leds;
+   input [9:0]   de1_switches;
+
+   inout       de1_ps2_clk;
+   inout       de1_ps2_dat;
+   inout       de1_ps2_b_clk;
+   inout       de1_ps2_b_dat;
+
+   input        de1_td__clk27;
+   input [7:0]  de1_td__data;
+   input        de1_td__hs;
+   output       de1_td__reset_n;
+   input        de1_td__vs;
+
+   output [7:0] de1_vga__b;
+   output       de1_vga__blank_n;
+   output       de1_vga__clk;
+   output [7:0] de1_vga__g;
+   output       de1_vga__hs;
+   output [7:0] de1_vga__r;
+   output       de1_vga__sync_n;
+   output       de1_vga__vs;
+
+   wire               reset_n;
+   assign reset_n = de1_switches[0];
+  
+   wire         vga_clk;
+   wire         vga_clk_locked;
+   wire         de1_vga_clock;
+   wire         de1_vga_reset_n;
+   pll_lcd video_clk_gen( .refclk(clk_50), .rst(!reset_n),
+                          .outclk_1(vga_clk), .locked_1(vga_clk_locked) );
+   assign de1_vga_clock        = !vga_clk;
+   assign de1_vga__clk         = vga_clk;
+   assign de1_vga_reset_n      = reset_n && vga_clk_locked;
+   
+  
+   wire         de1_ps2_in__clk;
+   wire         de1_ps2_in__data;
+   wire         de1_ps2_out__clk;
+   wire         de1_ps2_out__data;
+   assign de1_ps2_clk = de1_ps2_out__clk  ? 1'bz: 1'b0;
+   assign de1_ps2_dat = de1_ps2_out__data ? 1'bz: 1'b0;
+   assign de1_ps2_in__clk  = de1_ps2_clk;
+   assign de1_ps2_in__data = de1_ps2_dat;
+
+   wire         de1_ps2b_in__clk;
+   wire         de1_ps2b_in__data;
+   wire         de1_ps2b_out__clk;
+   wire         de1_ps2b_out__data;
+   assign de1_ps2_b_clk = de1_ps2b_out__clk  ? 1'bz: 1'b0;
+   assign de1_ps2_b_dat = de1_ps2b_out__data ? 1'bz: 1'b0;
+   assign de1_ps2b_in__clk  = de1_ps2_b_clk;
+   assign de1_ps2b_in__data = de1_ps2_b_dat;
+
+   assign de1_aud__xck = 0;
+   
+   `de1_dut_module dut( .clk(clk_50),
+                        .clk__enable(1'b1),
+                        .reset_n(reset_n),
+
+                        .de1_audio_bclk(de1_aud__bclk),
+                        .de1_audio_bclk__enable(1'b1),
+                        .de1_audio_adc__data(de1_aud__adcdat),
+                        .de1_audio_adc__lrc(de1_aud__adclrck),
+                        .de1_audio_dac__data(de1_aud__dacdat),
+                        .de1_audio_dac__lrc(de1_aud__daclrck),
+
+                        .de1_inputs__irda_rxd(de1_irda__rxd),
+                        .de1_inputs__switches(de1_switches),
+                        .de1_inputs__keys(de1_keys),
+                        //.de1_irda_txd(de1_irda__txd),
+
+                        .de1_ps2b_in__data(de1_ps2b_in__data),
+                        .de1_ps2b_in__clk(de1_ps2b_in__clk),
+                        .de1_ps2_in__data(de1_ps2_in__data),
+                        .de1_ps2_in__clk(de1_ps2_in__clk),
+                        .de1_ps2b_out__data(de1_ps2b_out__data),
+                        .de1_ps2b_out__clk(de1_ps2b_out__clk),
+                        .de1_ps2_out__data(de1_ps2_out__data),
+                        .de1_ps2_out__clk(de1_ps2_out__clk),
+
+                        .de1_vga_clock(de1_vga_clock),
+                        .de1_vga_clock__enable(1'b1),
+                        .de1_vga_reset_n(de1_vga_reset_n),
+                        .de1_vga__vs(de1_vga__vs),
+                        .de1_vga__hs(de1_vga__hs),
+                        .de1_vga__blank_n(de1_vga__blank_n),
+                        .de1_vga__sync_n(de1_vga__sync_n),
+                        .de1_vga__red(de1_vga__r),
+                        .de1_vga__green(de1_vga__g),
+                        .de1_vga__blue(de1_vga__b),
+
+                        .de1_leds__leds(de1_leds),
+                        .de1_leds__h0(de1_hex0),
+                        .de1_leds__h1(de1_hex1),
+                        .de1_leds__h2(de1_hex2),
+                        .de1_leds__h3(de1_hex3),
+                        .de1_leds__h4(de1_hex4),
+                        .de1_leds__h5(de1_hex5)
+                        );
+
+endmodule
