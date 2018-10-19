@@ -93,7 +93,7 @@ pin_lvttl_signal AA6 de2_sdr__cke
 pin_lvttl_signal AC3  de2_sdr__cs_n
 pin_lvttl_signal AB4  de2_sdr__ras_n
 pin_lvttl_signal AB3  de2_sdr__cas_n
-pin_lvttl_signal xV6  de2_sdr__we_n
+pin_lvttl_signal AD3  de2_sdr__we_n
 pin_lvttl_signal {T6 V4 V3 W2 W1 U6 U7 U5 W4 W3 Y1 V5} de2_sdr__addr
 pin_lvttl_signal {AE2 AE3} de2_sdr__ba
 pin_lvttl_signal {V6 AA2 AA1 Y3 Y4 R8 T8 V7 W6 AB2 AB1 AA4 AA3 AC2 AA5} de2_sdr__dq

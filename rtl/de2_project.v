@@ -22,8 +22,8 @@ module pll_video (
 		.number_of_clocks(2),
 		.output_clock_frequency0("9.000000 MHz"),
 		.output_clock_frequency1("27 MHz"),
-		.pll_type("General"),
-		.pll_subtype("General")
+		.pll_type("Auto"),
+		.pll_subtype("Auto")
 	) altera_pll_i (
 		.rst	(rst),
 		.outclk	(outclk),
@@ -187,31 +187,22 @@ module de2_project ( clk_50,
    assign de2_vga_reset_n      = reset_n && vga_clk_locked;
    
    wire         de2_ps2_in__clk;
-   wire         de2_ps2_in__data;
+   wire         de2_ps2_in__dat;
    wire         de2_ps2_out__clk;
-   wire         de2_ps2_out__data;
+   wire         de2_ps2_out__dat;
    assign de2_ps2_clk = de2_ps2_out__clk  ? 1'bz: 1'b0;
-   assign de2_ps2_dat = de2_ps2_out__data ? 1'bz: 1'b0;
+   assign de2_ps2_dat = de2_ps2_out__dat  ? 1'bz: 1'b0;
    assign de2_ps2_in__clk  = de2_ps2_clk;
-   assign de2_ps2_in__data = de2_ps2_dat;
-
-   wire         de2_ps2b_in__clk;
-   wire         de2_ps2b_in__data;
-   wire         de2_ps2b_out__clk;
-   wire         de2_ps2b_out__data;
-   assign de2_ps2b_clk = de2_ps2b_out__clk  ? 1'bz: 1'b0;
-   assign de2_ps2b_dat = de2_ps2b_out__data ? 1'bz: 1'b0;
-   assign de2_ps2b_in__clk  = de2_ps2b_clk;
-   assign de2_ps2b_in__data = de2_ps2b_dat;
+   assign de2_ps2_in__dat = de2_ps2_dat;
 
    wire         de2_i2c_in__clk;
    wire         de2_i2c_in__data;
    wire         de2_i2c_out__clk;
    wire         de2_i2c_out__data;
-   assign de2_i2c_clk = de2_i2c_out__clk  ? 1'bz: 1'b0;
-   assign de2_i2c_dat = de2_i2c_out__data ? 1'bz: 1'b0;
-   assign de2_i2c_in__clk  = de2_i2c_clk;
-   assign de2_i2c_in__data = de2_i2c_dat;
+   assign de2_i2c__sclk = de2_i2c_out__sclk ? 1'bz: 1'b0;
+   assign de2_i2c__sdat = de2_i2c_out__sdat ? 1'bz: 1'b0;
+   assign de2_i2c_in__sclk  = de2_i2c__sclk;
+   assign de2_i2c_in__sdat  = de2_i2c__sdat;
 
    assign  de2_aud__xck = 0; // clock out
 
@@ -278,14 +269,14 @@ module de2_project ( clk_50,
                         .de2_lcd__backlight(de2_lcd__backlight),
 
                         // inputs
-                        .de2_ps2_in__dat(de2_ps2_in__dat),
+                        .de2_ps2_in__data(de2_ps2_in__dat),
                         .de2_ps2_in__clk(de2_ps2_in__clk),
                         // outputs
-                        .de2_ps2_out__dat(de2_ps2_out__dat),
+                        .de2_ps2_out__data(de2_ps2_out__dat),
                         .de2_ps2_out__clk(de2_ps2_out__clk),
       
                         // inputs
-                        .de2_sma_clkin(de2_sma_clkin),
+                        //.de2_sma_clkin(de2_sma_clkin),
 
                         // outputs
                         // .de2_sd__clk(de2_sd__clk),
