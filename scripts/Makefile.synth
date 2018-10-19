@@ -156,6 +156,12 @@ rebuild_verilog:
 	(cd $(CDL_HARDWARE); make roms)
 	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
+copy_verilog:
+	(cd $(CDL_HARDWARE); make -j6 verilog)
+	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
+	(cd $(CDL_HARDWARE); make roms)
+	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+
 fpga_update_srams:
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) ' $(QUARTUS_OUTPUT)/fpga_update_srams.log       && date > ${MAKE_PREFIX}.fpga_update_srams
 	(make force_asm)

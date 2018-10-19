@@ -32,30 +32,31 @@ module pll_video (
 	);
 
 endmodule
-module de2_project ( clk_50,
+module de2_project ( clk_50, clk2_50, clk3_50,
 
                      de2_aud__xck, de2_aud__bclk, de2_aud__adc_dat, de2_aud__adc_lrc, de2_aud__dac_dat, de2_aud__dac_lrc,
 
+                     de2_eep_i2c__sclk, de2_eep_i2c__sdat,
                      de2_i2c__sclk, de2_i2c__sdat,
 
                      de2_hex0, de2_hex1,de2_hex2, de2_hex3, de2_hex4, de2_hex5, de2_hex6, de2_hex7,
                      de2_keys, de2_switches, de2_ledg, de2_ledr,
 
                      de2_irda__rxd,
-                     de2_irda__txd,
 
                      de2_lcd__enable, de2_lcd__rs, de2_lcd__read_write, de2_lcd__data,
                      de2_lcd__on, de2_lcd__backlight,
 
                      de2_ps2_dat, de2_ps2_clk,
+                     de2_ps2_b_dat, de2_ps2_b_clk,
 
-                     de2_sma_clkin, // de2_sma_clkout,
+                     de2_sma_clkin, de2_sma_clkout,
 
-                     //de2_sd__clk, de2_sd__cmd, de2_sd__wp_n, de2_sd__data,
+                     de2_sd__clk, de2_sd__cmd, de2_sd__wp_n, de2_sd__data,
 
                      de2_td__clk27, de2_td__data, de2_td__hs, de2_td__reset_n, de2_td__vs,
 
-                     de2_uart__txd, de2_uart__rxd, // de2_uart__cts, de2_uart__rts,
+                     de2_uart__txd, de2_uart__rxd, de2_uart__cts, de2_uart__rts,
 
                      de2_vga__b, de2_vga__blank_n, de2_vga__clk, de2_vga__g, de2_vga__hs, de2_vga__r, de2_vga__sync_n, de2_vga__vs,
 
@@ -69,15 +70,27 @@ module de2_project ( clk_50,
                      de2_sram__addr, de2_sram__dq,
 
                      de2_flash__reset_n,
-                     de2_flash__ce_n, de2_flash__oe_n, de2_flash__we_n,
-                     // de2_flash__wp_n, de2_flash__ready,
+                     de2_flash__ce_n, de2_flash__oe_n, de2_flash__we_n, de2_flash__wp_n, de2_flash__ready,
                      de2_flash__addr, de2_flash__dq,
 
-                     de2_gpio_0,
-                     de2_gpio_1
+                     de2_gpio,
+
+                     de2_eth0__gtx_clk,
+                     de2_eth0__int_n, de2_eth0__reset_n,
+                     de2_eth0__mdc, de2_eth0__mdio,
+                     de2_eth0__rx_clk, de2_eth0__rx_col, de2_eth0__rx_crs, de2_eth0__rx_data, de2_eth0__rx_dv, de2_eth0__rx_er,
+                     de2_eth0__tx_clk, de2_eth0__tx_data, de2_eth0__tx_en, de2_eth0__tx_er,
+
+                     de2_eth1__gtx_clk,
+                     de2_eth1__int_n, de2_eth1__reset_n,
+                     de2_eth1__mdc, de2_eth1__mdio,
+                     de2_eth1__rx_clk, de2_eth1__rx_col, de2_eth1__rx_crs, de2_eth1__rx_data, de2_eth1__rx_dv, de2_eth1__rx_er,
+                     de2_eth1__tx_clk, de2_eth1__tx_data, de2_eth1__tx_en, de2_eth1__tx_er,
 
                      );
    input clk_50;
+   input clk2_50;
+   input clk3_50;
 
    output  de2_aud__xck;
    inout   de2_aud__bclk;
@@ -86,6 +99,8 @@ module de2_project ( clk_50,
    output  de2_aud__dac_dat;
    inout   de2_aud__dac_lrc;
 
+   output  de2_eep_i2c__sclk;
+   inout   de2_eep_i2c__sdat;
    output  de2_i2c__sclk;
    inout   de2_i2c__sdat;
 
@@ -103,7 +118,6 @@ module de2_project ( clk_50,
    output [17:0]  de2_ledr;
 
    input         de2_irda__rxd;
-   output        de2_irda__txd;
 
    output        de2_lcd__enable;
    output        de2_lcd__rs;
@@ -111,16 +125,20 @@ module de2_project ( clk_50,
    output [7:0]  de2_lcd__data;
    output        de2_lcd__on;
    output        de2_lcd__backlight;
+   
 
    inout       de2_ps2_clk;
    inout       de2_ps2_dat;
+   inout       de2_ps2_b_clk;
+   inout       de2_ps2_b_dat;
 
    input       de2_sma_clkin;
+   output      de2_sma_clkout;
    
-   //output        de2_sd__clk;
-   //inout         de2_sd__cmd;
-   //inout         de2_sd__wp_n;
-   //inout [3:0]   de2_sd__data;
+   output        de2_sd__clk;
+   inout         de2_sd__cmd;
+   inout         de2_sd__wp_n;
+   inout [3:0]   de2_sd__data;
 
    input        de2_td__clk27;
    input [7:0]  de2_td__data;
@@ -130,15 +148,15 @@ module de2_project ( clk_50,
 
    output       de2_uart__txd;
    input        de2_uart__rxd;
-   //output       de2_uart__cts;
-   //input        de2_uart__rts;
+   output       de2_uart__cts;
+   input        de2_uart__rts;
 
+   output [7:0] de2_vga__b;
    output       de2_vga__blank_n;
    output       de2_vga__clk;
-   output [9:0] de2_vga__b;
-   output [9:0] de2_vga__g;
-   output [9:0] de2_vga__r;
+   output [7:0] de2_vga__g;
    output       de2_vga__hs;
+   output [7:0] de2_vga__r;
    output       de2_vga__sync_n;
    output       de2_vga__vs;
    
@@ -148,31 +166,62 @@ module de2_project ( clk_50,
    output        de2_sdr__ras_n;
    output        de2_sdr__cas_n;
    output        de2_sdr__we_n;
-   output [11:0] de2_sdr__addr;
+   output [12:0] de2_sdr__addr;
    output [1:0]  de2_sdr__ba;
-   inout  [15:0] de2_sdr__dq;
-   output [1:0]  de2_sdr__dqm;
+   inout  [31:0] de2_sdr__dq;
+   output [3:0]  de2_sdr__dqm;
 
    output        de2_sram__ce_n;
    output        de2_sram__oe_n;
    output        de2_sram__we_n;
    output        de2_sram__lb_n;
    output        de2_sram__ub_n;
-   output [17:0] de2_sram__addr;
+   output [19:0] de2_sram__addr;
    inout  [15:0] de2_sram__dq;
 
    output        de2_flash__reset_n;
    output        de2_flash__ce_n;
    output        de2_flash__oe_n;
    output        de2_flash__we_n;
-   //output        de2_flash__wp_n;
-   //input        de2_flash__ready;
+   output        de2_flash__wp_n;
+   input         de2_flash__ready;
    output [22:0] de2_flash__addr;
    inout   [7:0] de2_flash__dq;
 
-   inout [35:0]  de2_gpio_0;
-   inout [35:0]  de2_gpio_1;
+   inout [37:0]  de2_gpio;
    
+   output        de2_eth0__gtx_clk  "125MHz reference clock if gigabit ethernet is required";
+   input         de2_eth0__int_n    "Open-drain, pull-up on board";
+   output        de2_eth0__reset_n;
+   output        de2_eth0__mdc;
+   inout         de2_eth0__mdio;
+   input         de2_eth0__rx_clk  "Either 2.5MHz, 25MHz or 125MHz recovered rx clock depending on PHY bit-rate";
+   input         de2_eth0__rx_col;
+   input         de2_eth0__rx_crs;
+   input         de2_eth0__rx_dv   "Synchronous with rx_clk, validates rx_er / rx_data";
+   input         de2_eth0__rx_er   "Synchronous with rx_clk and rx_dv, error symbol received";
+   input [3:0]   de2_eth0__rx_data "Synchronous with rx_clk and rx_dv, if rx_er is low, indicates data";
+   input         de2_eth0__tx_clk  "Either 2.5MHz or 25MHz transmit clock depending on PHY bit-rate";
+   output        de2_eth0__tx_en   "Synchronous to gtx_clk or tx_clk; if asserted use tx_er / tx_data for data out";
+   output        de2_eth0__tx_er   "Synchronous to gtx_clk or tx_clk, use with tx_en";
+   output [3:0]  de2_eth0__tx_data "MII-mode and RGMII-mode data";
+
+   output        de2_eth1__gtx_clk;
+   input         de2_eth1__int_n    "Open-drain, pull-up on board";
+   output        de2_eth1__reset_n;
+   output        de2_eth1__mdc;
+   inout         de2_eth1__mdio;
+   input         de2_eth1__rx_clk;
+   input         de2_eth1__rx_col;
+   input         de2_eth1__rx_crs;
+   input         de2_eth1__rx_er;
+   input         de2_eth1__rx_dv;
+   input [3:0]   de2_eth1__rx_data;
+   input         de2_eth1__tx_clk;
+   output        de2_eth1__tx_en;
+   output        de2_eth1__tx_er;
+   output [3:0]  de2_eth1__tx_data;
+
    wire               reset_n;
    assign reset_n = de2_switches[0];
   
@@ -213,22 +262,24 @@ module de2_project ( clk_50,
    assign de2_i2c_in__clk  = de2_i2c_clk;
    assign de2_i2c_in__data = de2_i2c_dat;
 
+   wire         de2_eep_i2c_in__clk;
+   wire         de2_eep_i2c_in__data;
+   wire         de2_eep_i2c_out__clk;
+   wire         de2_eep_i2c_out__data;
+   assign de2_eep_i2c_clk = de2_eep_i2c_out__clk  ? 1'bz: 1'b0;
+   assign de2_eep_i2c_dat = de2_eep_i2c_out__data ? 1'bz: 1'b0;
+   assign de2_eep_i2c_in__clk  = de2_eep_i2c_clk;
+   assign de2_eep_i2c_in__data = de2_eep_i2c_dat;
+
    assign  de2_aud__xck = 0; // clock out
 
-   wire          de2_sdr_out__dqe;
-   wire [15:0]   de2_sdr_out__dq;
-   assign de2_sdr__dq    = de2_sdr_out__dqe ? de2_sdr_out__dq : 16'bz;
+   assign de2_sdr__dq    = de2_sdr_out__dqe ? de2_sdr_out__dq : 32bz;
 
-   wire [1:0]    de2_sram_out__be_n;
-   wire          de2_sram_out__dqe;
-   wire [15:0]   de2_sram_out__dq;
-   assign de2_sram__lb_n = de2_sram_out__be_n[0];
-   assign de2_sram__ub_n = de2_sram_out__be_n[1];
-   assign de2_sram__dq   = de2_sram_out__dqe ? de2_sram_out__dq : 16'bz;
+   assign de2_sram__lb_n = de2_sram__be_n[0];
+   assign de2_sram__ub_n = de2_sram__be_n[1];
+   assign de2_sram__dq   = de2_sram_out__dqe ? de2_sram_out__dq : 16bz;
 
-   wire         de2_flash_out__dqe;
-   wire [7:0]   de2_flash_out__dq;
-   assign de2_flash__dq    = de2_flash_out__dqe ? de2_flash_out__dq : 8'bz;
+   assign de2_flash__dq    = de2_flash_out__dqe ? de2_flash_out__dq : 8bz;
    
    `de2_dut_module dut( .de2_vga_clk(de2_vga_clock),
                         .de2_vga_clk__enable(1'b1),
@@ -244,9 +295,13 @@ module de2_project ( clk_50,
                         .de2_audio_dac__lrc(de2_aud__dac_lrc),
       
                         // inputs
+                        .de2_eep_i2c_in__sclk(de2_eep_i2c_in__sclk),
+                        .de2_eep_i2c_in__sdat(de2_eep_i2c_in__sdat),
                         .de2_i2c_in__sclk(de2_i2c_in__sclk),
                         .de2_i2c_in__sdat(de2_i2c_in__sdat),
                         // outputs
+                        .de2_eep_i2c_out__sclk(de2_eep_i2c_out__sclk),
+                        .de2_eep_i2c_out__sdat(de2_eep_i2c_out__sdat),
                         .de2_i2c_out__sclk(de2_i2c_out__sclk),
                         .de2_i2c_out__sdat(de2_i2c_out__sdat),
 
@@ -285,14 +340,23 @@ module de2_project ( clk_50,
                         .de2_ps2_out__clk(de2_ps2_out__clk),
       
                         // inputs
+                        .de2_ps2b_in__dat(de2_ps2b_in__dat),
+                        .de2_ps2b_in__clk(de2_ps2b_in__clk),
+                        // outputs
+                        .de2_ps2b_out__dat(de2_ps2b_out__dat),
+                        .de2_ps2b_out__clk(de2_ps2b_out__clk),
+      
+                        // inputs
                         .de2_sma_clkin(de2_sma_clkin),
+                        // outputs
+                        .de2_sma_clkout(de2_sma_clkout),
 
                         // outputs
-                        // .de2_sd__clk(de2_sd__clk),
+                        .de2_sd__clk(de2_sd__clk),
                         // inouts
-                        // .de2_sd__cmd(de2_sd__cmd),
-                        // .de2_sd__wp_n(de2_sd__wp_n),
-                        // .de2_sd__data(de2_sd__data),
+                        .de2_sd__cmd(de2_sd__cmd),
+                        .de2_sd__wp_n(de2_sd__wp_n),
+                        .de2_sd__data(de2_sd__data),
 
                         // clocks
                         .de2_td_clk(de2_td__clk27),
@@ -318,9 +382,9 @@ module de2_project ( clk_50,
                         .de2_vga__sync_n(de2_vga__sync_n),
                         .de2_vga__vs(de2_vga__vs),
                         .de2_vga__hs(de2_vga__hs),
-                        .de2_vga__red(de2_vga__r),
-                        .de2_vga__green(de2_vga__g),
-                        .de2_vga__blue(de2_vga__b),
+                        .de2_vga__r(de2_vga__r),
+                        .de2_vga__g(de2_vga__g),
+                        .de2_vga__b(de2_vga__b),
 
                         // clocks
                         .de2_sdr_clk(de2_sdr__clk),
@@ -342,7 +406,7 @@ module de2_project ( clk_50,
                         .de2_sram_out__ce_n(de2_sram__ce_n),
                         .de2_sram_out__oe_n(de2_sram__oe_n),
                         .de2_sram_out__we_n(de2_sram__we_n),
-                        .de2_sram_out__be_n(de2_sram_out__be_n),
+                        .de2_sram_out__be_n(de2_sram__be_n),
                         .de2_sram_out__addr(de2_sram__addr),
                         .de2_sram_out__dq(de2_sram_out__dq),
                         .de2_sram_out__dqe(de2_sram_out__dqe),
@@ -353,15 +417,47 @@ module de2_project ( clk_50,
                         .de2_flash_out__ce_n(de2_flash__ce_n),
                         .de2_flash_out__oe_n(de2_flash__oe_n),
                         .de2_flash_out__we_n(de2_flash__we_n),
-                        //.de2_flash_out__wp_n(de2_flash__wp_n),
-                        //.de2_flash_out__ready(de2_flash__ready),
+                        .de2_flash_out__wp_n(de2_flash__wp_n),
+                        .de2_flash_out__ready(de2_flash__ready),
                         .de2_flash_out__addr(de2_flash__addr),
                         .de2_flash_out__dq(de2_flash_out__dq),
-                        .de2_flash_out__dqe(de2_flash_out__dqe),
+                        .de2_flash_out__dqe(de2_flash_out_dqe),
                         .de2_flash_in__dq(de2_flash__dq),
 
                         // inputs
-                        .de2_gpio_in__gpio_0(de2_gpio_0),
-                        .de2_gpio_in__gpio_1(de2_gpio_1)
-                        );
+                        .de2_gpio_in(de2_gpio),
+
+                        // outputs
+                        .de2_eth0__gtx_clk(de2_eth0__gtx_clk),
+                        .de2_eth0__int_n(de2_eth0__int_n),
+                        .de2_eth0__reset_n(de2_eth0__reset_n),
+                        .de2_eth0__mdc(de2_eth0__mdc),
+                        .de2_eth0__mdio(de2_eth0__mdio),
+                        .de2_eth0__rx_clk(de2_eth0__rx_clk),
+                        .de2_eth0__rx_col(de2_eth0__rx_col),
+                        .de2_eth0__rx_crs(de2_eth0__rx_crs),
+                        .de2_eth0__rx_data(de2_eth0__rx_data),
+                        .de2_eth0__rx_dv(de2_eth0__rx_dv),
+                        .de2_eth0__rx_er(de2_eth0__rx_er),
+                        .de2_eth0__tx_data(de2_eth0__tx_data),
+                        .de2_eth0__tx_en(de2_eth0__tx_en),
+                        .de2_eth0__tx_er(de2_eth0__tx_er),
+
+                        // outputs
+                        .de2_eth1__gtx_clk(de2_eth1__gtx_clk),
+                        .de2_eth1__int_n(de2_eth1__int_n),
+                        .de2_eth1__reset_n(de2_eth1__reset_n),
+                        .de2_eth1__mdc(de2_eth1__mdc),
+                        .de2_eth1__mdio(de2_eth1__mdio),
+                        .de2_eth1__rx_clk(de2_eth1__rx_clk),
+                        .de2_eth1__rx_col(de2_eth1__rx_col),
+                        .de2_eth1__rx_crs(de2_eth1__rx_crs),
+                        .de2_eth1__rx_data(de2_eth1__rx_data),
+                        .de2_eth1__rx_dv(de2_eth1__rx_dv),
+                        .de2_eth1__rx_er(de2_eth1__rx_er),
+                        .de2_eth1__tx_data(de2_eth1__tx_data),
+                        .de2_eth1__tx_en(de2_eth1__tx_en),
+                        .de2_eth1__tx_er(de2_eth1__tx_er),
+);
+
 endmodule

@@ -14,28 +14,63 @@
 //a Module picorisc_de2
 module picorisc_de2
 (
-    de2_vga_clock,
-    de2_vga_clock__enable,
+    de2_sdr_clk,
+    de2_sdr_clk__enable,
+    de2_vga_clk,
+    de2_vga_clk__enable,
+    de2_td_clk,
+    de2_td_clk__enable,
     de2_audio_bclk,
     de2_audio_bclk__enable,
     clk,
     clk__enable,
 
+    de2_gpio_in__gpio_0,
+    de2_gpio_in__gpio_1,
+    de2_flash_in__dq,
+    de2_sram_in__dq,
+    de2_sdr_in__dq,
+    de2_vga_reset_n,
     de2_uart_in__rxd,
     de2_uart_in__rts,
-    de2_vga_reset_n,
-    de2_ps2b_in__data,
-    de2_ps2b_in__clk,
+    de2_td__hs,
+    de2_td__vs,
+    de2_td__data,
     de2_ps2_in__data,
     de2_ps2_in__clk,
     de2_inputs__keys,
     de2_inputs__switches,
+    de2_inputs__irda_rxd,
+    de2_i2c_in__sclk,
+    de2_i2c_in__sdat,
     de2_audio_adc__data,
     de2_audio_adc__lrc,
     reset_n,
 
-    de2_uart_out__txd,
-    de2_uart_out__cts,
+    de2_flash_out__reset_n,
+    de2_flash_out__ce_n,
+    de2_flash_out__oe_n,
+    de2_flash_out__we_n,
+    de2_flash_out__addr,
+    de2_flash_out__dq,
+    de2_flash_out__dqe,
+    de2_sram_out__ce_n,
+    de2_sram_out__oe_n,
+    de2_sram_out__we_n,
+    de2_sram_out__be_n,
+    de2_sram_out__addr,
+    de2_sram_out__dq,
+    de2_sram_out__dqe,
+    de2_sdr_out__cke,
+    de2_sdr_out__cs_n,
+    de2_sdr_out__ras_n,
+    de2_sdr_out__cas_n,
+    de2_sdr_out__we_n,
+    de2_sdr_out__ba,
+    de2_sdr_out__addr,
+    de2_sdr_out__dq,
+    de2_sdr_out__dqm,
+    de2_sdr_out__dqe,
     de2_vga__vs,
     de2_vga__hs,
     de2_vga__blank_n,
@@ -43,8 +78,9 @@ module picorisc_de2
     de2_vga__red,
     de2_vga__green,
     de2_vga__blue,
-    de2_ps2b_out__data,
-    de2_ps2b_out__clk,
+    de2_uart_out__txd,
+    de2_uart_out__cts,
+    de2_td_reset_n,
     de2_ps2_out__data,
     de2_ps2_out__clk,
     de2_lcd__backlight,
@@ -63,39 +99,72 @@ module picorisc_de2
     de2_leds__h5,
     de2_leds__h6,
     de2_leds__h7,
-    de2_i2c__sclk,
-    de2_i2c__sdat,
-    de2_eep_i2c__sclk,
-    de2_eep_i2c__sdat,
+    de2_i2c_out__sclk,
+    de2_i2c_out__sdat,
     de2_audio_dac__data,
     de2_audio_dac__lrc
 );
 
     //b Clocks
-    input de2_vga_clock;
-    input de2_vga_clock__enable;
+    input de2_sdr_clk;
+    input de2_sdr_clk__enable;
+    input de2_vga_clk;
+    input de2_vga_clk__enable;
+    input de2_td_clk;
+    input de2_td_clk__enable;
     input de2_audio_bclk;
     input de2_audio_bclk__enable;
     input clk;
     input clk__enable;
 
     //b Inputs
+    input [17:0]de2_gpio_in__gpio_0;
+    input [17:0]de2_gpio_in__gpio_1;
+    input [7:0]de2_flash_in__dq;
+    input [15:0]de2_sram_in__dq;
+    input [15:0]de2_sdr_in__dq;
+    input de2_vga_reset_n;
     input de2_uart_in__rxd;
     input de2_uart_in__rts;
-    input de2_vga_reset_n;
-    input de2_ps2b_in__data;
-    input de2_ps2b_in__clk;
+    input de2_td__hs;
+    input de2_td__vs;
+    input [7:0]de2_td__data;
     input de2_ps2_in__data;
     input de2_ps2_in__clk;
     input [3:0]de2_inputs__keys;
     input [17:0]de2_inputs__switches;
+    input de2_inputs__irda_rxd;
+    input de2_i2c_in__sclk;
+    input de2_i2c_in__sdat;
     input de2_audio_adc__data;
     input de2_audio_adc__lrc;
     input reset_n;
 
     //b Outputs
-    output de2_uart_out__txd;
-    output de2_uart_out__cts;
+    output de2_flash_out__reset_n;
+    output de2_flash_out__ce_n;
+    output de2_flash_out__oe_n;
+    output de2_flash_out__we_n;
+    output [21:0]de2_flash_out__addr;
+    output [7:0]de2_flash_out__dq;
+    output de2_flash_out__dqe;
+    output de2_sram_out__ce_n;
+    output de2_sram_out__oe_n;
+    output de2_sram_out__we_n;
+    output [1:0]de2_sram_out__be_n;
+    output [11:0]de2_sram_out__addr;
+    output [15:0]de2_sram_out__dq;
+    output de2_sram_out__dqe;
+    output de2_sdr_out__cke;
+    output de2_sdr_out__cs_n;
+    output de2_sdr_out__ras_n;
+    output de2_sdr_out__cas_n;
+    output de2_sdr_out__we_n;
+    output [1:0]de2_sdr_out__ba;
+    output [11:0]de2_sdr_out__addr;
+    output [15:0]de2_sdr_out__dq;
+    output [1:0]de2_sdr_out__dqm;
+    output de2_sdr_out__dqe;
     output de2_vga__vs;
     output de2_vga__hs;
     output de2_vga__blank_n;
@@ -103,8 +172,9 @@ module picorisc_de2
     output [9:0]de2_vga__red;
     output [9:0]de2_vga__green;
     output [9:0]de2_vga__blue;
-    output de2_ps2b_out__data;
-    output de2_ps2b_out__clk;
+    output de2_uart_out__txd;
+    output de2_uart_out__cts;
+    output de2_td_reset_n;
     output de2_ps2_out__data;
     output de2_ps2_out__clk;
     output de2_lcd__backlight;
@@ -123,18 +193,38 @@ module picorisc_de2
     output [6:0]de2_leds__h5;
     output [6:0]de2_leds__h6;
     output [6:0]de2_leds__h7;
-    output de2_i2c__sclk;
-    output de2_i2c__sdat;
-    output de2_eep_i2c__sclk;
-    output de2_eep_i2c__sdat;
+    output de2_i2c_out__sclk;
+    output de2_i2c_out__sdat;
     output de2_audio_dac__data;
     output de2_audio_dac__lrc;
 
 // output components here
 
     //b Output combinatorials
-    reg de2_uart_out__txd;
-    reg de2_uart_out__cts;
+    reg de2_flash_out__reset_n;
+    reg de2_flash_out__ce_n;
+    reg de2_flash_out__oe_n;
+    reg de2_flash_out__we_n;
+    reg [21:0]de2_flash_out__addr;
+    reg [7:0]de2_flash_out__dq;
+    reg de2_flash_out__dqe;
+    reg de2_sram_out__ce_n;
+    reg de2_sram_out__oe_n;
+    reg de2_sram_out__we_n;
+    reg [1:0]de2_sram_out__be_n;
+    reg [11:0]de2_sram_out__addr;
+    reg [15:0]de2_sram_out__dq;
+    reg de2_sram_out__dqe;
+    reg de2_sdr_out__cke;
+    reg de2_sdr_out__cs_n;
+    reg de2_sdr_out__ras_n;
+    reg de2_sdr_out__cas_n;
+    reg de2_sdr_out__we_n;
+    reg [1:0]de2_sdr_out__ba;
+    reg [11:0]de2_sdr_out__addr;
+    reg [15:0]de2_sdr_out__dq;
+    reg [1:0]de2_sdr_out__dqm;
+    reg de2_sdr_out__dqe;
     reg de2_vga__vs;
     reg de2_vga__hs;
     reg de2_vga__blank_n;
@@ -142,8 +232,9 @@ module picorisc_de2
     reg [9:0]de2_vga__red;
     reg [9:0]de2_vga__green;
     reg [9:0]de2_vga__blue;
-    reg de2_ps2b_out__data;
-    reg de2_ps2b_out__clk;
+    reg de2_uart_out__txd;
+    reg de2_uart_out__cts;
+    reg de2_td_reset_n;
     reg de2_ps2_out__data;
     reg de2_ps2_out__clk;
     reg de2_lcd__backlight;
@@ -162,10 +253,8 @@ module picorisc_de2
     reg [6:0]de2_leds__h5;
     reg [6:0]de2_leds__h6;
     reg [6:0]de2_leds__h7;
-    reg de2_i2c__sclk;
-    reg de2_i2c__sdat;
-    reg de2_eep_i2c__sclk;
-    reg de2_eep_i2c__sdat;
+    reg de2_i2c_out__sclk;
+    reg de2_i2c_out__sdat;
     reg de2_audio_dac__data;
     reg de2_audio_dac__lrc;
 
@@ -184,10 +273,8 @@ module picorisc_de2
     begin: tieoffs__comb_code
         de2_audio_dac__data = 1'h0;
         de2_audio_dac__lrc = 1'h0;
-        de2_eep_i2c__sclk = 1'h1;
-        de2_eep_i2c__sdat = 1'h1;
-        de2_i2c__sclk = 1'h1;
-        de2_i2c__sdat = 1'h1;
+        de2_i2c_out__sclk = 1'h1;
+        de2_i2c_out__sdat = 1'h1;
         de2_leds__ledg = 10'h0;
         de2_leds__ledr = 18'h0;
         de2_leds__h0 = 7'h0;
@@ -215,8 +302,31 @@ module picorisc_de2
         de2_uart_out__cts = 1'h0;
         de2_ps2_out__data = 1'h0;
         de2_ps2_out__clk = 1'h0;
-        de2_ps2b_out__data = 1'h0;
-        de2_ps2b_out__clk = 1'h0;
+        de2_td_reset_n = 1'h0;
+        de2_sdr_out__cke = 1'h0;
+        de2_sdr_out__cs_n = 1'h0;
+        de2_sdr_out__ras_n = 1'h0;
+        de2_sdr_out__cas_n = 1'h0;
+        de2_sdr_out__we_n = 1'h0;
+        de2_sdr_out__ba = 2'h0;
+        de2_sdr_out__addr = 12'h0;
+        de2_sdr_out__dq = 16'h0;
+        de2_sdr_out__dqm = 2'h0;
+        de2_sdr_out__dqe = 1'h0;
+        de2_sram_out__ce_n = 1'h0;
+        de2_sram_out__oe_n = 1'h0;
+        de2_sram_out__we_n = 1'h0;
+        de2_sram_out__be_n = 2'h0;
+        de2_sram_out__addr = 12'h0;
+        de2_sram_out__dq = 16'h0;
+        de2_sram_out__dqe = 1'h0;
+        de2_flash_out__reset_n = 1'h0;
+        de2_flash_out__ce_n = 1'h0;
+        de2_flash_out__oe_n = 1'h0;
+        de2_flash_out__we_n = 1'h0;
+        de2_flash_out__addr = 22'h0;
+        de2_flash_out__dq = 8'h0;
+        de2_flash_out__dqe = 1'h0;
     end //always
 
 endmodule // picorisc_de2

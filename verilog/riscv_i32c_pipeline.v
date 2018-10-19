@@ -250,13 +250,15 @@ module riscv_i32c_pipeline
     //b Output nets
 
     //b Internal and output registers
-    reg decexecrfw_state__enable;
     reg [2:0]decexecrfw_state__instruction__mode;
     reg [31:0]decexecrfw_state__instruction__data;
     reg decexecrfw_state__valid;
     reg decexecrfw_state__valid_legal;
     reg decexecrfw_state__illegal_pc;
     reg [31:0]decexecrfw_state__pc;
+    reg [1:0]ifetch_state__state;
+    reg ifetch_state__running;
+    reg [31:0]ifetch_state__pc;
         //   Register 0 is tied to 0 - so it is written on every cycle to zero...
     reg [31:0]registers[31:0];
 
@@ -267,9 +269,10 @@ module riscv_i32c_pipeline
     reg csr_controls__timer_clear;
     reg csr_controls__timer_load;
     reg [63:0]csr_controls__timer_value;
-    reg csr_controls__interrupt;
     reg csr_controls__trap;
-    reg [3:0]csr_controls__trap_cause;
+    reg [2:0]csr_controls__trap_to_mode;
+    reg csr_controls__mret;
+    reg [4:0]csr_controls__trap_cause;
     reg [31:0]csr_controls__trap_pc;
     reg [31:0]csr_controls__trap_value;
     reg [4:0]decexecrfw_combs__idecode__rs1;
@@ -293,16 +296,10 @@ module riscv_i32c_pipeline
     reg decexecrfw_combs__idecode__ext__dummy;
     reg [31:0]decexecrfw_combs__rs1;
     reg [31:0]decexecrfw_combs__rs2;
-    reg [31:0]decexecrfw_combs__pc_plus_4;
-    reg [31:0]decexecrfw_combs__pc_plus_2;
-    reg [31:0]decexecrfw_combs__pc_plus_inst;
-    reg [31:0]decexecrfw_combs__next_pc;
-    reg decexecrfw_combs__fetch_sequential;
     reg [1:0]decexecrfw_combs__word_offset;
-    reg [31:0]decexecrfw_combs__branch_target;
     reg decexecrfw_combs__branch_taken;
     reg decexecrfw_combs__trap;
-    reg [3:0]decexecrfw_combs__trap_cause;
+    reg [4:0]decexecrfw_combs__trap_cause;
     reg [31:0]decexecrfw_combs__trap_value;
     reg [2:0]decexecrfw_combs__csr_access__access;
     reg [11:0]decexecrfw_combs__csr_access__address;
@@ -311,8 +308,32 @@ module riscv_i32c_pipeline
     reg decexecrfw_combs__dmem_misaligned;
     reg decexecrfw_combs__load_address_misaligned;
     reg decexecrfw_combs__store_address_misaligned;
-    reg ifetch_combs__request;
-    reg [31:0]ifetch_combs__address;
+    reg [31:0]ifetch_combs__pc_plus_4;
+    reg [31:0]ifetch_combs__pc_plus_2;
+    reg ifetch_combs__interrupt_req;
+    reg [3:0]ifetch_combs__interrupt_number;
+    reg pipeline_control__valid;
+    reg pipeline_control__debug;
+    reg [31:0]pipeline_control__pc;
+    reg [31:0]pipeline_control__data;
+    reg [2:0]pipeline_control__mode;
+    reg pipeline_control__error;
+    reg [1:0]pipeline_control__tag;
+    reg pipeline_control__interrupt_req;
+    reg [3:0]pipeline_control__interrupt_number;
+    reg [2:0]pipeline_control__interrupt_to_mode;
+    reg [2:0]pipeline_response__decode__action;
+    reg pipeline_response__decode__is_compressed;
+    reg [31:0]pipeline_response__decode__pc;
+    reg [31:0]pipeline_response__decode__branch_target;
+    reg [2:0]pipeline_response__exec__action;
+    reg pipeline_response__exec__trap;
+    reg [3:0]pipeline_response__exec__trap_vector;
+    reg [31:0]pipeline_response__exec__flush_target;
+    reg [29:0]pipeline_response__exec__mtvec__base;
+    reg pipeline_response__exec__mtvec__vectored;
+    reg pipeline_response__exec__is_compressed;
+    reg [31:0]pipeline_response__exec__pc;
 
     //b Internal nets
     wire [63:0]csrs__cycles;
@@ -322,7 +343,43 @@ module riscv_i32c_pipeline
     wire [31:0]csrs__mepc;
     wire [31:0]csrs__mcause;
     wire [31:0]csrs__mtval;
-    wire [31:0]csrs__mtvec;
+    wire [29:0]csrs__mtvec__base;
+    wire csrs__mtvec__vectored;
+    wire csrs__mstatus__sd;
+    wire csrs__mstatus__tsr;
+    wire csrs__mstatus__tw;
+    wire csrs__mstatus__tvm;
+    wire csrs__mstatus__mxr;
+    wire csrs__mstatus__sum;
+    wire csrs__mstatus__mprv;
+    wire [1:0]csrs__mstatus__xs;
+    wire [1:0]csrs__mstatus__fs;
+    wire [1:0]csrs__mstatus__mpp;
+    wire csrs__mstatus__spp;
+    wire csrs__mstatus__mpie;
+    wire csrs__mstatus__spie;
+    wire csrs__mstatus__upie;
+    wire csrs__mstatus__mie;
+    wire csrs__mstatus__sie;
+    wire csrs__mstatus__uie;
+    wire csrs__mip__meip;
+    wire csrs__mip__seip;
+    wire csrs__mip__ueip;
+    wire csrs__mip__mtip;
+    wire csrs__mip__stip;
+    wire csrs__mip__utip;
+    wire csrs__mip__msip;
+    wire csrs__mip__ssip;
+    wire csrs__mip__usip;
+    wire csrs__mie__meip;
+    wire csrs__mie__seip;
+    wire csrs__mie__ueip;
+    wire csrs__mie__mtip;
+    wire csrs__mie__stip;
+    wire csrs__mie__utip;
+    wire csrs__mie__msip;
+    wire csrs__mie__ssip;
+    wire csrs__mie__usip;
     wire [31:0]csr_data__read_data;
     wire csr_data__take_interrupt;
     wire [2:0]csr_data__interrupt_mode;
@@ -466,15 +523,16 @@ module riscv_i32c_pipeline
         .csr_controls__trap_value(csr_controls__trap_value),
         .csr_controls__trap_pc(csr_controls__trap_pc),
         .csr_controls__trap_cause(csr_controls__trap_cause),
+        .csr_controls__mret(csr_controls__mret),
+        .csr_controls__trap_to_mode(csr_controls__trap_to_mode),
         .csr_controls__trap(csr_controls__trap),
-        .csr_controls__interrupt(csr_controls__interrupt),
         .csr_controls__timer_value(csr_controls__timer_value),
         .csr_controls__timer_load(csr_controls__timer_load),
         .csr_controls__timer_clear(csr_controls__timer_clear),
         .csr_controls__timer_inc(csr_controls__timer_inc),
         .csr_controls__retire(csr_controls__retire),
         .csr_controls__exec_mode(csr_controls__exec_mode),
-        .csr_write_data(((decexecrfw_combs__idecode__illegal!=1'h0)?{27'h0,decexecrfw_combs__idecode__rs1}:decexecrfw_combs__rs1)),
+        .csr_write_data(((decexecrfw_combs__idecode__immediate_valid!=1'h0)?{27'h0,decexecrfw_combs__idecode__rs1}:decexecrfw_combs__rs1)),
         .csr_access__address(decexecrfw_combs__csr_access__address),
         .csr_access__access(decexecrfw_combs__csr_access__access),
         .irqs__time(irqs__time),
@@ -485,7 +543,43 @@ module riscv_i32c_pipeline
         .irqs__meip(irqs__meip),
         .irqs__nmi(irqs__nmi),
         .reset_n(reset_n),
-        .csrs__mtvec(            csrs__mtvec),
+        .csrs__mie__usip(            csrs__mie__usip),
+        .csrs__mie__ssip(            csrs__mie__ssip),
+        .csrs__mie__msip(            csrs__mie__msip),
+        .csrs__mie__utip(            csrs__mie__utip),
+        .csrs__mie__stip(            csrs__mie__stip),
+        .csrs__mie__mtip(            csrs__mie__mtip),
+        .csrs__mie__ueip(            csrs__mie__ueip),
+        .csrs__mie__seip(            csrs__mie__seip),
+        .csrs__mie__meip(            csrs__mie__meip),
+        .csrs__mip__usip(            csrs__mip__usip),
+        .csrs__mip__ssip(            csrs__mip__ssip),
+        .csrs__mip__msip(            csrs__mip__msip),
+        .csrs__mip__utip(            csrs__mip__utip),
+        .csrs__mip__stip(            csrs__mip__stip),
+        .csrs__mip__mtip(            csrs__mip__mtip),
+        .csrs__mip__ueip(            csrs__mip__ueip),
+        .csrs__mip__seip(            csrs__mip__seip),
+        .csrs__mip__meip(            csrs__mip__meip),
+        .csrs__mstatus__uie(            csrs__mstatus__uie),
+        .csrs__mstatus__sie(            csrs__mstatus__sie),
+        .csrs__mstatus__mie(            csrs__mstatus__mie),
+        .csrs__mstatus__upie(            csrs__mstatus__upie),
+        .csrs__mstatus__spie(            csrs__mstatus__spie),
+        .csrs__mstatus__mpie(            csrs__mstatus__mpie),
+        .csrs__mstatus__spp(            csrs__mstatus__spp),
+        .csrs__mstatus__mpp(            csrs__mstatus__mpp),
+        .csrs__mstatus__fs(            csrs__mstatus__fs),
+        .csrs__mstatus__xs(            csrs__mstatus__xs),
+        .csrs__mstatus__mprv(            csrs__mstatus__mprv),
+        .csrs__mstatus__sum(            csrs__mstatus__sum),
+        .csrs__mstatus__mxr(            csrs__mstatus__mxr),
+        .csrs__mstatus__tvm(            csrs__mstatus__tvm),
+        .csrs__mstatus__tw(            csrs__mstatus__tw),
+        .csrs__mstatus__tsr(            csrs__mstatus__tsr),
+        .csrs__mstatus__sd(            csrs__mstatus__sd),
+        .csrs__mtvec__vectored(            csrs__mtvec__vectored),
+        .csrs__mtvec__base(            csrs__mtvec__base),
         .csrs__mtval(            csrs__mtval),
         .csrs__mcause(            csrs__mcause),
         .csrs__mepc(            csrs__mepc),
@@ -498,7 +592,7 @@ module riscv_i32c_pipeline
         .csr_data__interrupt_mode(            csr_data__interrupt_mode),
         .csr_data__take_interrupt(            csr_data__take_interrupt),
         .csr_data__read_data(            csr_data__read_data)         );
-    //b instruction_fetch_request combinatorial process
+    //b pipeline_control_logic__comb combinatorial process
         //   
         //       The instruction fetch request derives from the
         //       decode/execute stage (the instruction address that is required
@@ -511,30 +605,208 @@ module riscv_i32c_pipeline
         //       If the decode/execute stage is invalid (i.e. it does not have a
         //       valid instruction to decode) then the current PC is requested.
         //       
-    always @ ( * )//instruction_fetch_request
-    begin: instruction_fetch_request__comb_code
-    reg [31:0]ifetch_combs__address__var;
+    always @ ( * )//pipeline_control_logic__comb
+    begin: pipeline_control_logic__comb_code
+    reg ifetch_combs__interrupt_req__var;
+    reg [3:0]ifetch_combs__interrupt_number__var;
     reg ifetch_req__valid__var;
     reg [31:0]ifetch_req__address__var;
     reg ifetch_req__sequential__var;
-        ifetch_combs__address__var = decexecrfw_combs__next_pc;
-        if ((!(decexecrfw_state__valid!=1'h0)&&(decexecrfw_state__enable!=1'h0)))
+    reg pipeline_control__valid__var;
+    reg [31:0]pipeline_control__pc__var;
+    reg [31:0]pipeline_control__data__var;
+    reg [2:0]pipeline_control__mode__var;
+    reg pipeline_control__interrupt_req__var;
+    reg [3:0]pipeline_control__interrupt_number__var;
+    reg [2:0]pipeline_control__interrupt_to_mode__var;
+        ifetch_combs__interrupt_req__var = 1'h0;
+        ifetch_combs__interrupt_number__var = 4'h0;
+        if (((csrs__mip__mtip & csrs__mie__mtip)!=1'h0))
         begin
-            ifetch_combs__address__var = decexecrfw_state__pc;
+            ifetch_combs__interrupt_req__var = csrs__mstatus__mie;
+            ifetch_combs__interrupt_number__var = 4'h7;
         end //if
-        ifetch_combs__request = decexecrfw_state__enable;
+        if (((csrs__mip__msip & csrs__mie__msip)!=1'h0))
+        begin
+            ifetch_combs__interrupt_req__var = csrs__mstatus__mie;
+            ifetch_combs__interrupt_number__var = 4'h3;
+        end //if
+        if (((csrs__mip__meip & csrs__mie__meip)!=1'h0))
+        begin
+            ifetch_combs__interrupt_req__var = csrs__mstatus__mie;
+            ifetch_combs__interrupt_number__var = 4'hb;
+        end //if
         ifetch_req__valid__var = 1'h0;
         ifetch_req__address__var = 32'h0;
         ifetch_req__sequential__var = 1'h0;
         ifetch_req__mode = 3'h0;
         ifetch_req__flush = 1'h0;
-        ifetch_req__valid__var = ifetch_combs__request;
-        ifetch_req__sequential__var = decexecrfw_combs__fetch_sequential;
-        ifetch_req__address__var = ifetch_combs__address__var;
-        ifetch_combs__address = ifetch_combs__address__var;
+        ifetch_req__valid__var = 1'h0;
+        ifetch_req__sequential__var = 1'h0;
+        ifetch_req__address__var = ifetch_state__pc;
+        ifetch_combs__pc_plus_4 = (pipeline_response__decode__pc+32'h4);
+        ifetch_combs__pc_plus_2 = (pipeline_response__decode__pc+32'h2);
+        case (ifetch_state__state) //synopsys parallel_case
+        2'h0: // req 1
+            begin
+            end
+        2'h1: // req 1
+            begin
+            ifetch_req__valid__var = 1'h1;
+            ifetch_req__address__var = ifetch_state__pc;
+            end
+        2'h2: // req 1
+            begin
+            ifetch_req__valid__var = 1'h1;
+            ifetch_req__sequential__var = 1'h1;
+            if ((pipeline_response__exec__action==3'h1))
+            begin
+                ifetch_req__address__var = pipeline_response__exec__flush_target;
+                ifetch_req__sequential__var = 1'h0;
+            end //if
+            else
+            
+            begin
+                if ((pipeline_response__decode__action==3'h3))
+                begin
+                end //if
+                else
+                
+                begin
+                    if ((pipeline_response__decode__action==3'h2))
+                    begin
+                    end //if
+                    else
+                    
+                    begin
+                        if ((pipeline_response__decode__action==3'h1))
+                        begin
+                        end //if
+                        else
+                        
+                        begin
+                            if ((pipeline_response__decode__action==3'h0))
+                            begin
+                                ifetch_req__sequential__var = 1'h1;
+                                ifetch_req__address__var = ifetch_combs__pc_plus_4;
+                                if ((pipeline_response__decode__is_compressed!=1'h0))
+                                begin
+                                    ifetch_req__address__var = ifetch_combs__pc_plus_2;
+                                end //if
+                            end //if
+                        end //else
+                    end //else
+                end //else
+            end //else
+            if ((pipeline_response__exec__trap!=1'h0))
+            begin
+                ifetch_req__address__var = {pipeline_response__exec__mtvec__base,2'h0};
+                ifetch_req__sequential__var = 1'h0;
+            end //if
+            end
+    //synopsys  translate_off
+    //pragma coverage off
+        default:
+            begin
+                if (1)
+                begin
+                    $display("%t *********CDL ASSERTION FAILURE:riscv_i32c_pipeline:pipeline_control_logic: Full switch statement did not cover all values", $time);
+                end
+            end
+    //pragma coverage on
+    //synopsys  translate_on
+        endcase
+        pipeline_control__valid__var = 1'h0;
+        pipeline_control__debug = 1'h0;
+        pipeline_control__pc__var = 32'h0;
+        pipeline_control__data__var = 32'h0;
+        pipeline_control__mode__var = 3'h0;
+        pipeline_control__error = 1'h0;
+        pipeline_control__tag = 2'h0;
+        pipeline_control__interrupt_req__var = 1'h0;
+        pipeline_control__interrupt_number__var = 4'h0;
+        pipeline_control__interrupt_to_mode__var = 3'h0;
+        pipeline_control__valid__var = ((ifetch_req__valid__var!=1'h0)&&(ifetch_resp__valid!=1'h0));
+        pipeline_control__pc__var = ifetch_req__address__var;
+        pipeline_control__data__var = ifetch_resp__data;
+        pipeline_control__mode__var = 3'h3;
+        pipeline_control__interrupt_req__var = ifetch_combs__interrupt_req__var;
+        pipeline_control__interrupt_number__var = ifetch_combs__interrupt_number__var;
+        pipeline_control__interrupt_to_mode__var = 3'h3;
+        ifetch_combs__interrupt_req = ifetch_combs__interrupt_req__var;
+        ifetch_combs__interrupt_number = ifetch_combs__interrupt_number__var;
         ifetch_req__valid = ifetch_req__valid__var;
         ifetch_req__address = ifetch_req__address__var;
         ifetch_req__sequential = ifetch_req__sequential__var;
+        pipeline_control__valid = pipeline_control__valid__var;
+        pipeline_control__pc = pipeline_control__pc__var;
+        pipeline_control__data = pipeline_control__data__var;
+        pipeline_control__mode = pipeline_control__mode__var;
+        pipeline_control__interrupt_req = pipeline_control__interrupt_req__var;
+        pipeline_control__interrupt_number = pipeline_control__interrupt_number__var;
+        pipeline_control__interrupt_to_mode = pipeline_control__interrupt_to_mode__var;
+    end //always
+
+    //b pipeline_control_logic__posedge_clk_active_low_reset_n clock process
+        //   
+        //       The instruction fetch request derives from the
+        //       decode/execute stage (the instruction address that is required
+        //       next) and presents that to the outside world.
+        //   
+        //       This request may be for any 16-bit aligned address, and two
+        //       successive 16-bit words from that request must be presented,
+        //       aligned to bit 0.
+        //   
+        //       If the decode/execute stage is invalid (i.e. it does not have a
+        //       valid instruction to decode) then the current PC is requested.
+        //       
+    always @( posedge clk or negedge reset_n)
+    begin : pipeline_control_logic__posedge_clk_active_low_reset_n__code
+        if (reset_n==1'b0)
+        begin
+            ifetch_state__running <= 1'h0;
+            ifetch_state__pc <= 32'h0;
+            ifetch_state__state <= 2'h0;
+            ifetch_state__state <= 2'h0;
+        end
+        else if (clk__enable)
+        begin
+            if (!(ifetch_state__running!=1'h0))
+            begin
+                ifetch_state__running <= 1'h1;
+                ifetch_state__pc <= 32'h0;
+            end //if
+            case (ifetch_state__state) //synopsys parallel_case
+            2'h0: // req 1
+                begin
+                if ((ifetch_state__running!=1'h0))
+                begin
+                    ifetch_state__state <= 2'h1;
+                end //if
+                end
+            2'h1: // req 1
+                begin
+                if ((ifetch_resp__valid!=1'h0))
+                begin
+                    ifetch_state__state <= 2'h2;
+                end //if
+                end
+            2'h2: // req 1
+                begin
+                end
+    //synopsys  translate_off
+    //pragma coverage off
+            default:
+                begin
+                    if (1)
+                    begin
+                        $display("%t *********CDL ASSERTION FAILURE:riscv_i32c_pipeline:pipeline_control_logic: Full switch statement did not cover all values", $time);
+                    end
+                end
+    //pragma coverage on
+    //synopsys  translate_on
+            endcase
+        end //if
     end //always
 
     //b decode_rfr_execute_stage__comb combinatorial process
@@ -577,7 +849,9 @@ module riscv_i32c_pipeline
     reg csr_controls__retire__var;
     reg csr_controls__timer_inc__var;
     reg csr_controls__trap__var;
-    reg [3:0]csr_controls__trap_cause__var;
+    reg [2:0]csr_controls__trap_to_mode__var;
+    reg csr_controls__mret__var;
+    reg [4:0]csr_controls__trap_cause__var;
     reg [31:0]csr_controls__trap_pc__var;
     reg [31:0]csr_controls__trap_value__var;
     reg [2:0]decexecrfw_combs__csr_access__access__var;
@@ -587,13 +861,13 @@ module riscv_i32c_pipeline
     reg [3:0]dmem_access_req__byte_enable__var;
     reg decexecrfw_combs__load_address_misaligned__var;
     reg decexecrfw_combs__store_address_misaligned__var;
+    reg pipeline_response__exec__trap__var;
+    reg [2:0]pipeline_response__exec__action__var;
+    reg [31:0]pipeline_response__exec__flush_target__var;
     reg decexecrfw_combs__trap__var;
-    reg [3:0]decexecrfw_combs__trap_cause__var;
+    reg [4:0]decexecrfw_combs__trap_cause__var;
     reg [31:0]decexecrfw_combs__trap_value__var;
     reg decexecrfw_combs__branch_taken__var;
-    reg [31:0]decexecrfw_combs__branch_target__var;
-    reg [31:0]decexecrfw_combs__next_pc__var;
-    reg decexecrfw_combs__fetch_sequential__var;
     reg [31:0]decexecrfw_combs__memory_data__var;
     reg [31:0]decexecrfw_combs__rfw_write_data__var;
         decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_i32__rs1;
@@ -640,6 +914,10 @@ module riscv_i32c_pipeline
                 decexecrfw_combs__idecode__ext__dummy__var = decexecrfw_idecode_i32c__ext__dummy;
             end //if
         end //if
+        pipeline_response__decode__pc = decexecrfw_state__pc;
+        pipeline_response__decode__is_compressed = decexecrfw_combs__idecode__is_compressed__var;
+        pipeline_response__decode__action = 3'h0;
+        pipeline_response__decode__branch_target = decexecrfw_alu_result__branch_target;
         decexecrfw_combs__rs1 = registers[decexecrfw_combs__idecode__rs1__var];
         decexecrfw_combs__rs2 = registers[decexecrfw_combs__idecode__rs2__var];
         csr_controls__exec_mode = 3'h0;
@@ -648,9 +926,10 @@ module riscv_i32c_pipeline
         csr_controls__timer_clear = 1'h0;
         csr_controls__timer_load = 1'h0;
         csr_controls__timer_value = 64'h0;
-        csr_controls__interrupt = 1'h0;
         csr_controls__trap__var = 1'h0;
-        csr_controls__trap_cause__var = 4'h0;
+        csr_controls__trap_to_mode__var = 3'h0;
+        csr_controls__mret__var = 1'h0;
+        csr_controls__trap_cause__var = 5'h0;
         csr_controls__trap_pc__var = 32'h0;
         csr_controls__trap_value__var = 32'h0;
         csr_controls__retire__var = decexecrfw_state__valid_legal;
@@ -663,7 +942,7 @@ module riscv_i32c_pipeline
         end //if
         dmem_access_req__read_enable__var = (decexecrfw_combs__idecode__op__var==4'h6);
         dmem_access_req__write_enable__var = (decexecrfw_combs__idecode__op__var==4'h7);
-        if (!(decexecrfw_state__valid_legal!=1'h0))
+        if (((pipeline_control__interrupt_req!=1'h0)||!(decexecrfw_state__valid_legal!=1'h0)))
         begin
             dmem_access_req__read_enable__var = 1'h0;
             dmem_access_req__write_enable__var = 1'h0;
@@ -699,11 +978,18 @@ module riscv_i32c_pipeline
             decexecrfw_combs__store_address_misaligned__var = 1'h1;
         end //if
         dmem_access_req__write_data = (decexecrfw_combs__rs2<<{decexecrfw_combs__word_offset,3'h0});
+        pipeline_response__exec__trap__var = 1'h0;
+        pipeline_response__exec__trap_vector = 4'h0;
+        pipeline_response__exec__is_compressed = decexecrfw_combs__idecode__is_compressed__var;
+        pipeline_response__exec__pc = decexecrfw_state__pc;
+        pipeline_response__exec__mtvec__base = csrs__mtvec__base;
+        pipeline_response__exec__mtvec__vectored = csrs__mtvec__vectored;
+        pipeline_response__exec__action__var = 3'h0;
+        pipeline_response__exec__flush_target__var = decexecrfw_alu_result__branch_target;
         decexecrfw_combs__trap__var = 1'h0;
-        decexecrfw_combs__trap_cause__var = 4'h0;
+        decexecrfw_combs__trap_cause__var = 5'h0;
         decexecrfw_combs__trap_value__var = 32'h0;
         decexecrfw_combs__branch_taken__var = 1'h0;
-        decexecrfw_combs__branch_target__var = decexecrfw_alu_result__branch_target;
         case (decexecrfw_combs__idecode__op__var) //synopsys parallel_case
         4'h0: // req 1
             begin
@@ -722,17 +1008,18 @@ module riscv_i32c_pipeline
             if ((decexecrfw_combs__idecode__subop__var==4'h2))
             begin
                 decexecrfw_combs__branch_taken__var = 1'h1;
-                decexecrfw_combs__branch_target__var = csrs__mepc;
+                csr_controls__mret__var = 1'h1;
+                pipeline_response__exec__flush_target__var = csrs__mepc;
             end //if
             if ((decexecrfw_combs__idecode__subop__var==4'h0))
             begin
                 decexecrfw_combs__trap__var = 1'h1;
-                decexecrfw_combs__trap_cause__var = 4'hb;
+                decexecrfw_combs__trap_cause__var = 5'hb;
             end //if
             if ((decexecrfw_combs__idecode__subop__var==4'h1))
             begin
                 decexecrfw_combs__trap__var = 1'h1;
-                decexecrfw_combs__trap_cause__var = 4'h3;
+                decexecrfw_combs__trap_cause__var = 5'h3;
                 decexecrfw_combs__trap_value__var = decexecrfw_state__pc;
             end //if
             end
@@ -747,40 +1034,45 @@ module riscv_i32c_pipeline
         //pragma coverage on
         //synopsys  translate_on
         endcase
+        if ((decexecrfw_combs__branch_taken__var!=1'h0))
+        begin
+            pipeline_response__exec__action__var = 3'h1;
+        end //if
         if ((decexecrfw_combs__idecode__illegal__var!=1'h0))
         begin
             decexecrfw_combs__trap__var = 1'h1;
-            decexecrfw_combs__trap_cause__var = 4'h2;
+            decexecrfw_combs__trap_cause__var = 5'h2;
             decexecrfw_combs__trap_value__var = decexecrfw_state__instruction__data;
         end //if
-        decexecrfw_combs__pc_plus_4 = (decexecrfw_state__pc+32'h4);
-        decexecrfw_combs__pc_plus_2 = (decexecrfw_state__pc+32'h2);
-        decexecrfw_combs__pc_plus_inst = ((decexecrfw_combs__idecode__is_compressed__var!=1'h0)?decexecrfw_combs__pc_plus_2:decexecrfw_combs__pc_plus_4);
-        decexecrfw_combs__next_pc__var = decexecrfw_combs__pc_plus_inst;
-        decexecrfw_combs__fetch_sequential__var = 1'h1;
-        if ((decexecrfw_combs__branch_taken__var!=1'h0))
+        if (!(decexecrfw_state__valid!=1'h0))
         begin
-            decexecrfw_combs__next_pc__var = decexecrfw_combs__branch_target__var;
-            decexecrfw_combs__fetch_sequential__var = 1'h0;
+            decexecrfw_combs__trap__var = 1'h0;
+        end //if
+        if ((pipeline_control__interrupt_req!=1'h0))
+        begin
+            decexecrfw_combs__trap__var = 1'h1;
+            decexecrfw_combs__trap_cause__var = 5'h10;
         end //if
         if ((decexecrfw_combs__trap__var!=1'h0))
         begin
-            decexecrfw_combs__next_pc__var = csrs__mtvec;
-            decexecrfw_combs__fetch_sequential__var = 1'h0;
+            pipeline_response__exec__trap__var = 1'h1;
         end //if
         csr_controls__trap_cause__var = decexecrfw_combs__trap_cause__var;
-        csr_controls__trap__var = 1'h0;
+        csr_controls__trap__var = ((decexecrfw_combs__trap__var!=1'h0)&&(decexecrfw_state__valid_legal!=1'h0));
+        csr_controls__trap_to_mode__var = 3'h3;
         csr_controls__trap_pc__var = decexecrfw_state__pc;
         csr_controls__trap_value__var = decexecrfw_combs__trap_value__var;
-        if ((decexecrfw_combs__trap__var!=1'h0))
-        begin
-            csr_controls__trap__var = decexecrfw_state__valid_legal;
-        end //if
         if ((decexecrfw_state__illegal_pc!=1'h0))
         begin
-            csr_controls__trap_cause__var = 4'h0;
+            csr_controls__trap_cause__var = 5'h0;
             csr_controls__trap__var = 1'h1;
             csr_controls__trap_value__var = decexecrfw_state__pc;
+        end //if
+        if ((pipeline_control__interrupt_req!=1'h0))
+        begin
+            csr_controls__trap_cause__var = decexecrfw_combs__trap_cause__var;
+            csr_controls__trap_cause__var[3:0] = pipeline_control__interrupt_number;
+            csr_controls__trap__var = 1'h1;
         end //if
         decexecrfw_combs__memory_data__var = dmem_access_resp__read_data;
         case (decexecrfw_combs__idecode__memory_width__var) //synopsys parallel_case
@@ -846,6 +1138,8 @@ module riscv_i32c_pipeline
         csr_controls__retire = csr_controls__retire__var;
         csr_controls__timer_inc = csr_controls__timer_inc__var;
         csr_controls__trap = csr_controls__trap__var;
+        csr_controls__trap_to_mode = csr_controls__trap_to_mode__var;
+        csr_controls__mret = csr_controls__mret__var;
         csr_controls__trap_cause = csr_controls__trap_cause__var;
         csr_controls__trap_pc = csr_controls__trap_pc__var;
         csr_controls__trap_value = csr_controls__trap_value__var;
@@ -856,13 +1150,13 @@ module riscv_i32c_pipeline
         dmem_access_req__byte_enable = dmem_access_req__byte_enable__var;
         decexecrfw_combs__load_address_misaligned = decexecrfw_combs__load_address_misaligned__var;
         decexecrfw_combs__store_address_misaligned = decexecrfw_combs__store_address_misaligned__var;
+        pipeline_response__exec__trap = pipeline_response__exec__trap__var;
+        pipeline_response__exec__action = pipeline_response__exec__action__var;
+        pipeline_response__exec__flush_target = pipeline_response__exec__flush_target__var;
         decexecrfw_combs__trap = decexecrfw_combs__trap__var;
         decexecrfw_combs__trap_cause = decexecrfw_combs__trap_cause__var;
         decexecrfw_combs__trap_value = decexecrfw_combs__trap_value__var;
         decexecrfw_combs__branch_taken = decexecrfw_combs__branch_taken__var;
-        decexecrfw_combs__branch_target = decexecrfw_combs__branch_target__var;
-        decexecrfw_combs__next_pc = decexecrfw_combs__next_pc__var;
-        decexecrfw_combs__fetch_sequential = decexecrfw_combs__fetch_sequential__var;
         decexecrfw_combs__memory_data = decexecrfw_combs__memory_data__var;
         decexecrfw_combs__rfw_write_data = decexecrfw_combs__rfw_write_data__var;
     end //always
@@ -887,7 +1181,6 @@ module riscv_i32c_pipeline
     begin : decode_rfr_execute_stage__posedge_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
-            decexecrfw_state__enable <= 1'h0;
             decexecrfw_state__valid <= 1'h0;
             decexecrfw_state__instruction__data <= 32'h0;
             decexecrfw_state__instruction__mode <= 3'h0;
@@ -930,21 +1223,17 @@ module riscv_i32c_pipeline
         end
         else if (clk__enable)
         begin
-            decexecrfw_state__enable <= 1'h1;
             decexecrfw_state__valid <= 1'h0;
-            if (((ifetch_req__valid!=1'h0)&&(ifetch_resp__valid!=1'h0)))
+            if ((pipeline_control__valid!=1'h0))
             begin
-                decexecrfw_state__instruction__data <= ifetch_resp__data;
-                decexecrfw_state__instruction__mode <= 3'h3;
+                decexecrfw_state__instruction__data <= pipeline_control__data;
+                decexecrfw_state__instruction__mode <= pipeline_control__mode;
                 decexecrfw_state__illegal_pc <= 1'h0;
                 decexecrfw_state__valid_legal <= 1'h1;
                 decexecrfw_state__valid <= 1'h1;
+                decexecrfw_state__pc <= pipeline_control__pc;
             end //if
-            if ((decexecrfw_state__valid!=1'h0))
-            begin
-                decexecrfw_state__pc <= decexecrfw_combs__next_pc;
-            end //if
-            if ((((decexecrfw_state__valid_legal!=1'h0)&&(decexecrfw_combs__idecode__rd_written!=1'h0))&&!(decexecrfw_combs__idecode__illegal!=1'h0)))
+            if ((((!(pipeline_control__interrupt_req!=1'h0)&&(decexecrfw_state__valid_legal!=1'h0))&&(decexecrfw_combs__idecode__rd_written!=1'h0))&&!(decexecrfw_combs__idecode__illegal!=1'h0)))
             begin
                 registers[decexecrfw_combs__idecode__rd] <= decexecrfw_combs__rfw_write_data;
             end //if
@@ -1010,7 +1299,7 @@ module riscv_i32c_pipeline
         coproc_controls__alu_flush_pipeline__var = 1'h0;
         coproc_controls__alu_cannot_start__var = 1'h0;
         coproc_controls__alu_cannot_complete__var = 1'h0;
-        coproc_controls__dec_idecode_valid__var = decexecrfw_state__valid;
+        coproc_controls__dec_idecode_valid__var = ((decexecrfw_state__valid!=1'h0)&&!(pipeline_control__interrupt_req!=1'h0));
         coproc_controls__dec_idecode__rs1__var = decexecrfw_combs__idecode__rs1;
         coproc_controls__dec_idecode__rs1_valid__var = decexecrfw_combs__idecode__rs1_valid;
         coproc_controls__dec_idecode__rs2__var = decexecrfw_combs__idecode__rs2;
@@ -1120,17 +1409,17 @@ module riscv_i32c_pipeline
         trace__branch_taken__var = 1'h0;
         trace__branch_target__var = 32'h0;
         trace__trap__var = 1'h0;
-        trace__instr_valid__var = decexecrfw_state__valid;
+        trace__instr_valid__var = ((decexecrfw_state__valid!=1'h0)&&!(pipeline_control__interrupt_req!=1'h0));
         trace__instr_pc__var = decexecrfw_state__pc;
         trace__instruction__mode__var = decexecrfw_state__instruction__mode;
         trace__instruction__data__var = decexecrfw_state__instruction__data;
-        trace__rfw_retire__var = decexecrfw_state__valid;
+        trace__rfw_retire__var = ((decexecrfw_state__valid!=1'h0)&&!(pipeline_control__interrupt_req!=1'h0));
         trace__rfw_data_valid__var = (((decexecrfw_state__valid_legal!=1'h0)&&(decexecrfw_combs__idecode__rd_written!=1'h0))&&!(decexecrfw_combs__idecode__illegal!=1'h0));
         trace__rfw_rd__var = decexecrfw_combs__idecode__rd;
         trace__rfw_data__var = decexecrfw_combs__rfw_write_data;
         trace__branch_taken__var = decexecrfw_combs__branch_taken;
         trace__trap__var = decexecrfw_combs__trap;
-        trace__branch_target__var = decexecrfw_combs__branch_target;
+        trace__branch_target__var = pipeline_response__exec__flush_target;
         trace__instr_valid = trace__instr_valid__var;
         trace__instr_pc = trace__instr_pc__var;
         trace__instruction__mode = trace__instruction__mode__var;

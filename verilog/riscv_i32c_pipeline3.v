@@ -344,9 +344,10 @@ module riscv_i32c_pipeline3
     reg csr_controls__timer_clear;
     reg csr_controls__timer_load;
     reg [63:0]csr_controls__timer_value;
-    reg csr_controls__interrupt;
     reg csr_controls__trap;
-    reg [3:0]csr_controls__trap_cause;
+    reg [2:0]csr_controls__trap_to_mode;
+    reg csr_controls__mret;
+    reg [4:0]csr_controls__trap_cause;
     reg [31:0]csr_controls__trap_pc;
     reg [31:0]csr_controls__trap_value;
         //   Coprocessor response masked out if configured off
@@ -374,7 +375,7 @@ module riscv_i32c_pipeline3
     reg alu_combs__trap;
     reg alu_combs__mret;
     reg alu_combs__jalr;
-    reg [3:0]alu_combs__trap_cause;
+    reg [4:0]alu_combs__trap_cause;
     reg [31:0]alu_combs__trap_value;
     reg [2:0]alu_combs__csr_access__access;
     reg [11:0]alu_combs__csr_access__address;
@@ -426,7 +427,43 @@ module riscv_i32c_pipeline3
     wire [31:0]csrs__mepc;
     wire [31:0]csrs__mcause;
     wire [31:0]csrs__mtval;
-    wire [31:0]csrs__mtvec;
+    wire [29:0]csrs__mtvec__base;
+    wire csrs__mtvec__vectored;
+    wire csrs__mstatus__sd;
+    wire csrs__mstatus__tsr;
+    wire csrs__mstatus__tw;
+    wire csrs__mstatus__tvm;
+    wire csrs__mstatus__mxr;
+    wire csrs__mstatus__sum;
+    wire csrs__mstatus__mprv;
+    wire [1:0]csrs__mstatus__xs;
+    wire [1:0]csrs__mstatus__fs;
+    wire [1:0]csrs__mstatus__mpp;
+    wire csrs__mstatus__spp;
+    wire csrs__mstatus__mpie;
+    wire csrs__mstatus__spie;
+    wire csrs__mstatus__upie;
+    wire csrs__mstatus__mie;
+    wire csrs__mstatus__sie;
+    wire csrs__mstatus__uie;
+    wire csrs__mip__meip;
+    wire csrs__mip__seip;
+    wire csrs__mip__ueip;
+    wire csrs__mip__mtip;
+    wire csrs__mip__stip;
+    wire csrs__mip__utip;
+    wire csrs__mip__msip;
+    wire csrs__mip__ssip;
+    wire csrs__mip__usip;
+    wire csrs__mie__meip;
+    wire csrs__mie__seip;
+    wire csrs__mie__ueip;
+    wire csrs__mie__mtip;
+    wire csrs__mie__stip;
+    wire csrs__mie__utip;
+    wire csrs__mie__msip;
+    wire csrs__mie__ssip;
+    wire csrs__mie__usip;
     wire [31:0]csr_data__read_data;
     wire csr_data__take_interrupt;
     wire [2:0]csr_data__interrupt_mode;
@@ -570,15 +607,16 @@ module riscv_i32c_pipeline3
         .csr_controls__trap_value(csr_controls__trap_value),
         .csr_controls__trap_pc(csr_controls__trap_pc),
         .csr_controls__trap_cause(csr_controls__trap_cause),
+        .csr_controls__mret(csr_controls__mret),
+        .csr_controls__trap_to_mode(csr_controls__trap_to_mode),
         .csr_controls__trap(csr_controls__trap),
-        .csr_controls__interrupt(csr_controls__interrupt),
         .csr_controls__timer_value(csr_controls__timer_value),
         .csr_controls__timer_load(csr_controls__timer_load),
         .csr_controls__timer_clear(csr_controls__timer_clear),
         .csr_controls__timer_inc(csr_controls__timer_inc),
         .csr_controls__retire(csr_controls__retire),
         .csr_controls__exec_mode(csr_controls__exec_mode),
-        .csr_write_data(((alu_state__idecode__illegal!=1'h0)?{27'h0,alu_state__idecode__rs1}:alu_combs__rs1)),
+        .csr_write_data(((alu_state__idecode__immediate_valid!=1'h0)?{27'h0,alu_state__idecode__rs1}:alu_combs__rs1)),
         .csr_access__address(alu_combs__csr_access__address),
         .csr_access__access(alu_combs__csr_access__access),
         .irqs__time(irqs__time),
@@ -589,7 +627,43 @@ module riscv_i32c_pipeline3
         .irqs__meip(irqs__meip),
         .irqs__nmi(irqs__nmi),
         .reset_n(reset_n),
-        .csrs__mtvec(            csrs__mtvec),
+        .csrs__mie__usip(            csrs__mie__usip),
+        .csrs__mie__ssip(            csrs__mie__ssip),
+        .csrs__mie__msip(            csrs__mie__msip),
+        .csrs__mie__utip(            csrs__mie__utip),
+        .csrs__mie__stip(            csrs__mie__stip),
+        .csrs__mie__mtip(            csrs__mie__mtip),
+        .csrs__mie__ueip(            csrs__mie__ueip),
+        .csrs__mie__seip(            csrs__mie__seip),
+        .csrs__mie__meip(            csrs__mie__meip),
+        .csrs__mip__usip(            csrs__mip__usip),
+        .csrs__mip__ssip(            csrs__mip__ssip),
+        .csrs__mip__msip(            csrs__mip__msip),
+        .csrs__mip__utip(            csrs__mip__utip),
+        .csrs__mip__stip(            csrs__mip__stip),
+        .csrs__mip__mtip(            csrs__mip__mtip),
+        .csrs__mip__ueip(            csrs__mip__ueip),
+        .csrs__mip__seip(            csrs__mip__seip),
+        .csrs__mip__meip(            csrs__mip__meip),
+        .csrs__mstatus__uie(            csrs__mstatus__uie),
+        .csrs__mstatus__sie(            csrs__mstatus__sie),
+        .csrs__mstatus__mie(            csrs__mstatus__mie),
+        .csrs__mstatus__upie(            csrs__mstatus__upie),
+        .csrs__mstatus__spie(            csrs__mstatus__spie),
+        .csrs__mstatus__mpie(            csrs__mstatus__mpie),
+        .csrs__mstatus__spp(            csrs__mstatus__spp),
+        .csrs__mstatus__mpp(            csrs__mstatus__mpp),
+        .csrs__mstatus__fs(            csrs__mstatus__fs),
+        .csrs__mstatus__xs(            csrs__mstatus__xs),
+        .csrs__mstatus__mprv(            csrs__mstatus__mprv),
+        .csrs__mstatus__sum(            csrs__mstatus__sum),
+        .csrs__mstatus__mxr(            csrs__mstatus__mxr),
+        .csrs__mstatus__tvm(            csrs__mstatus__tvm),
+        .csrs__mstatus__tw(            csrs__mstatus__tw),
+        .csrs__mstatus__tsr(            csrs__mstatus__tsr),
+        .csrs__mstatus__sd(            csrs__mstatus__sd),
+        .csrs__mtvec__vectored(            csrs__mtvec__vectored),
+        .csrs__mtvec__base(            csrs__mtvec__base),
         .csrs__mtval(            csrs__mtval),
         .csrs__mcause(            csrs__mcause),
         .csrs__mepc(            csrs__mepc),
@@ -1027,7 +1101,7 @@ module riscv_i32c_pipeline3
     reg csr_controls__retire__var;
     reg csr_controls__timer_inc__var;
     reg csr_controls__trap__var;
-    reg [3:0]csr_controls__trap_cause__var;
+    reg [4:0]csr_controls__trap_cause__var;
     reg [31:0]csr_controls__trap_pc__var;
     reg [31:0]csr_controls__trap_value__var;
     reg [2:0]alu_combs__csr_access__access__var;
@@ -1040,7 +1114,7 @@ module riscv_i32c_pipeline3
     reg [3:0]dmem_access_req__byte_enable__var;
     reg [31:0]dmem_access_req__write_data__var;
     reg alu_combs__trap__var;
-    reg [3:0]alu_combs__trap_cause__var;
+    reg [4:0]alu_combs__trap_cause__var;
     reg [31:0]alu_combs__trap_value__var;
     reg alu_combs__branch_taken__var;
     reg alu_combs__mret__var;
@@ -1083,9 +1157,10 @@ module riscv_i32c_pipeline3
         csr_controls__timer_clear = 1'h0;
         csr_controls__timer_load = 1'h0;
         csr_controls__timer_value = 64'h0;
-        csr_controls__interrupt = 1'h0;
         csr_controls__trap__var = 1'h0;
-        csr_controls__trap_cause__var = 4'h0;
+        csr_controls__trap_to_mode = 3'h0;
+        csr_controls__mret = 1'h0;
+        csr_controls__trap_cause__var = 5'h0;
         csr_controls__trap_pc__var = 32'h0;
         csr_controls__trap_value__var = 32'h0;
         csr_controls__retire__var = alu_combs__valid_legal;
@@ -1173,7 +1248,7 @@ module riscv_i32c_pipeline3
     //synopsys  translate_on
         endcase
         alu_combs__trap__var = 1'h0;
-        alu_combs__trap_cause__var = 4'h0;
+        alu_combs__trap_cause__var = 5'h0;
         alu_combs__trap_value__var = 32'h0;
         case (alu_state__idecode__op) //synopsys parallel_case
         4'h3: // req 1
@@ -1181,12 +1256,12 @@ module riscv_i32c_pipeline3
             if ((alu_state__idecode__subop==4'h0))
             begin
                 alu_combs__trap__var = 1'h1;
-                alu_combs__trap_cause__var = 4'hb;
+                alu_combs__trap_cause__var = 5'hb;
             end //if
             if ((alu_state__idecode__subop==4'h1))
             begin
                 alu_combs__trap__var = 1'h1;
-                alu_combs__trap_cause__var = 4'h3;
+                alu_combs__trap_cause__var = 5'h3;
                 alu_combs__trap_value__var = alu_state__pc;
             end //if
             end
@@ -1204,13 +1279,13 @@ module riscv_i32c_pipeline3
         if ((alu_state__idecode__illegal!=1'h0))
         begin
             alu_combs__trap__var = 1'h1;
-            alu_combs__trap_cause__var = 4'h2;
+            alu_combs__trap_cause__var = 5'h2;
             alu_combs__trap_value__var = alu_state__debug_instruction__data;
         end //if
         if ((alu_state__illegal_pc!=1'h0))
         begin
             alu_combs__trap__var = 1'h1;
-            alu_combs__trap_cause__var = 4'h0;
+            alu_combs__trap_cause__var = 5'h0;
             alu_combs__trap_value__var = alu_state__pc;
         end //if
         csr_controls__trap_cause__var = alu_combs__trap_cause__var;
@@ -1279,7 +1354,7 @@ module riscv_i32c_pipeline3
         if ((alu_combs__trap__var!=1'h0))
         begin
             alu_combs__flush_pipeline__var = 1'h1;
-            alu_combs__next_pc__var = csrs__mtvec;
+            alu_combs__next_pc__var = {csrs__mtvec__base,2'h0};
         end //if
         if ((!(alu_state__valid!=1'h0)||(alu_combs__cannot_complete!=1'h0)))
         begin

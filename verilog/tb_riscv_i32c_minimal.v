@@ -46,6 +46,13 @@ module tb_riscv_i32c_minimal
     reg irqs__mtip;
     reg irqs__msip;
     reg [63:0]irqs__time;
+    reg timer_control__reset_counter;
+    reg timer_control__enable_counter;
+    reg timer_control__block_writes;
+    reg [7:0]timer_control__bonus_subfraction_numer;
+    reg [7:0]timer_control__bonus_subfraction_denom;
+    reg [3:0]timer_control__fractional_adder;
+    reg [7:0]timer_control__integer_adder;
     reg [31:0]mux_apb_response__prdata;
     reg mux_apb_response__pready;
     reg mux_apb_response__perr;
@@ -83,7 +90,8 @@ module tb_riscv_i32c_minimal
     wire trace__branch_taken;
     wire [31:0]trace__branch_target;
     wire trace__trap;
-    wire [2:0]timer_equalled;
+    wire timer_value__irq;
+    wire [63:0]timer_value__value;
     wire [31:0]th_apb_response__prdata;
     wire th_apb_response__pready;
     wire th_apb_response__perr;
@@ -174,7 +182,7 @@ module tb_riscv_i32c_minimal
         .apb_response_0__perr(            data_access_apb_response__perr),
         .apb_response_0__pready(            data_access_apb_response__pready),
         .apb_response_0__prdata(            data_access_apb_response__prdata)         );
-    apb_target_timer timer(
+    apb_target_rv_timer timer(
         .clk(clk),
         .clk__enable(1'b1),
         .apb_request__pwdata(timer_apb_request__pwdata),
@@ -182,8 +190,16 @@ module tb_riscv_i32c_minimal
         .apb_request__psel(timer_apb_request__psel),
         .apb_request__penable(timer_apb_request__penable),
         .apb_request__paddr(timer_apb_request__paddr),
+        .timer_control__integer_adder(timer_control__integer_adder),
+        .timer_control__fractional_adder(timer_control__fractional_adder),
+        .timer_control__bonus_subfraction_denom(timer_control__bonus_subfraction_denom),
+        .timer_control__bonus_subfraction_numer(timer_control__bonus_subfraction_numer),
+        .timer_control__block_writes(timer_control__block_writes),
+        .timer_control__enable_counter(timer_control__enable_counter),
+        .timer_control__reset_counter(timer_control__reset_counter),
         .reset_n(reset_n),
-        .timer_equalled(            timer_equalled),
+        .timer_value__value(            timer_value__value),
+        .timer_value__irq(            timer_value__irq),
         .apb_response__perr(            timer_apb_response__perr),
         .apb_response__pready(            timer_apb_response__pready),
         .apb_response__prdata(            timer_apb_response__prdata)         );
@@ -280,6 +296,7 @@ module tb_riscv_i32c_minimal
     begin: riscv_instance__comb_code
     reg riscv_config__i32c__var;
     reg riscv_config__e32__var;
+    reg irqs__mtip__var;
         riscv_config__i32c__var = 1'h0;
         riscv_config__e32__var = 1'h0;
         riscv_config__i32m = 1'h0;
@@ -292,9 +309,10 @@ module tb_riscv_i32c_minimal
         irqs__meip = 1'h0;
         irqs__seip = 1'h0;
         irqs__ueip = 1'h0;
-        irqs__mtip = 1'h0;
+        irqs__mtip__var = 1'h0;
         irqs__msip = 1'h0;
         irqs__time = 64'h0;
+        irqs__mtip__var = timer_value__irq;
         th_apb_request__paddr = 32'h0;
         th_apb_request__penable = 1'h0;
         th_apb_request__psel = 1'h0;
@@ -302,11 +320,15 @@ module tb_riscv_i32c_minimal
         th_apb_request__pwdata = 32'h0;
         riscv_config__i32c = riscv_config__i32c__var;
         riscv_config__e32 = riscv_config__e32__var;
+        irqs__mtip = irqs__mtip__var;
     end //always
 
     //b apb_peripherals combinatorial process
     always @ ( * )//apb_peripherals
     begin: apb_peripherals__comb_code
+    reg timer_control__enable_counter__var;
+    reg [3:0]timer_control__fractional_adder__var;
+    reg [7:0]timer_control__integer_adder__var;
     reg [31:0]sram_apb_request__paddr__var;
     reg sram_apb_request__psel__var;
     reg [31:0]timer_apb_request__paddr__var;
@@ -314,6 +336,16 @@ module tb_riscv_i32c_minimal
     reg [31:0]mux_apb_response__prdata__var;
     reg mux_apb_response__pready__var;
     reg mux_apb_response__perr__var;
+        timer_control__reset_counter = 1'h0;
+        timer_control__enable_counter__var = 1'h0;
+        timer_control__block_writes = 1'h0;
+        timer_control__bonus_subfraction_numer = 8'h0;
+        timer_control__bonus_subfraction_denom = 8'h0;
+        timer_control__fractional_adder__var = 4'h0;
+        timer_control__integer_adder__var = 8'h0;
+        timer_control__enable_counter__var = 1'h1;
+        timer_control__fractional_adder__var = 4'h2;
+        timer_control__integer_adder__var = 8'h0;
         sram_apb_request__paddr__var = mux_apb_request__paddr;
         sram_apb_request__penable = mux_apb_request__penable;
         sram_apb_request__psel__var = mux_apb_request__psel;
@@ -337,6 +369,9 @@ module tb_riscv_i32c_minimal
             mux_apb_response__pready__var = sram_apb_response__pready;
             mux_apb_response__perr__var = sram_apb_response__perr;
         end //if
+        timer_control__enable_counter = timer_control__enable_counter__var;
+        timer_control__fractional_adder = timer_control__fractional_adder__var;
+        timer_control__integer_adder = timer_control__integer_adder__var;
         sram_apb_request__paddr = sram_apb_request__paddr__var;
         sram_apb_request__psel = sram_apb_request__psel__var;
         timer_apb_request__paddr = timer_apb_request__paddr__var;

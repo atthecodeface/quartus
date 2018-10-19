@@ -23,14 +23,14 @@ set_global_assignment -name TOP_LEVEL_ENTITY       $entity
 #a Source files
 
 source $QUARTUS_DIR/scripts/pins.tcl
-#source $QUARTUS_DIR/devices/cyclone_5_SE_M_F31.tcl
+source $QUARTUS_DIR/devices/cyclone_2_35_F_672.tcl
 source $QUARTUS_DIR/boards/de2.tcl
 
 puts "Sourced TCL files"
 
 set_global_assignment -name SDC_FILE     picorisc.sdc
 set_global_assignment -name VERILOG_MACRO de2_dut_module=picorisc_de2
-set_global_assignment -name VERILOG_FILE picorisc.v
+#set_global_assignment -name VERILOG_FILE picorisc.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/de2_project.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_master_mux.v

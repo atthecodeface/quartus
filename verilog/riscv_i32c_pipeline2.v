@@ -182,9 +182,10 @@ module riscv_i32c_pipeline2
     reg csr_controls__timer_clear;
     reg csr_controls__timer_load;
     reg [63:0]csr_controls__timer_value;
-    reg csr_controls__interrupt;
     reg csr_controls__trap;
-    reg [3:0]csr_controls__trap_cause;
+    reg [2:0]csr_controls__trap_to_mode;
+    reg csr_controls__mret;
+    reg [4:0]csr_controls__trap_cause;
     reg [31:0]csr_controls__trap_pc;
     reg [31:0]csr_controls__trap_value;
     reg [31:0]rfw_combs__write_data;
@@ -360,8 +361,9 @@ module riscv_i32c_pipeline2
         .csr_controls__trap_value(csr_controls__trap_value),
         .csr_controls__trap_pc(csr_controls__trap_pc),
         .csr_controls__trap_cause(csr_controls__trap_cause),
+        .csr_controls__mret(csr_controls__mret),
+        .csr_controls__trap_to_mode(csr_controls__trap_to_mode),
         .csr_controls__trap(csr_controls__trap),
-        .csr_controls__interrupt(csr_controls__interrupt),
         .csr_controls__timer_value(csr_controls__timer_value),
         .csr_controls__timer_load(csr_controls__timer_load),
         .csr_controls__timer_clear(csr_controls__timer_clear),
@@ -508,9 +510,10 @@ module riscv_i32c_pipeline2
         csr_controls__timer_clear = 1'h0;
         csr_controls__timer_load = 1'h0;
         csr_controls__timer_value = 64'h0;
-        csr_controls__interrupt = 1'h0;
         csr_controls__trap = 1'h0;
-        csr_controls__trap_cause = 4'h0;
+        csr_controls__trap_to_mode = 3'h0;
+        csr_controls__mret = 1'h0;
+        csr_controls__trap_cause = 5'h0;
         csr_controls__trap_pc = 32'h0;
         csr_controls__trap_value = 32'h0;
         csr_controls__retire__var = decexec_state__valid;

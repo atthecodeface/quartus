@@ -95,8 +95,9 @@ module riscv_csrs_minimal
     csr_controls__timer_clear,
     csr_controls__timer_load,
     csr_controls__timer_value,
-    csr_controls__interrupt,
     csr_controls__trap,
+    csr_controls__trap_to_mode,
+    csr_controls__mret,
     csr_controls__trap_cause,
     csr_controls__trap_pc,
     csr_controls__trap_value,
@@ -119,7 +120,43 @@ module riscv_csrs_minimal
     csrs__mepc,
     csrs__mcause,
     csrs__mtval,
-    csrs__mtvec,
+    csrs__mtvec__base,
+    csrs__mtvec__vectored,
+    csrs__mstatus__sd,
+    csrs__mstatus__tsr,
+    csrs__mstatus__tw,
+    csrs__mstatus__tvm,
+    csrs__mstatus__mxr,
+    csrs__mstatus__sum,
+    csrs__mstatus__mprv,
+    csrs__mstatus__xs,
+    csrs__mstatus__fs,
+    csrs__mstatus__mpp,
+    csrs__mstatus__spp,
+    csrs__mstatus__mpie,
+    csrs__mstatus__spie,
+    csrs__mstatus__upie,
+    csrs__mstatus__mie,
+    csrs__mstatus__sie,
+    csrs__mstatus__uie,
+    csrs__mip__meip,
+    csrs__mip__seip,
+    csrs__mip__ueip,
+    csrs__mip__mtip,
+    csrs__mip__stip,
+    csrs__mip__utip,
+    csrs__mip__msip,
+    csrs__mip__ssip,
+    csrs__mip__usip,
+    csrs__mie__meip,
+    csrs__mie__seip,
+    csrs__mie__ueip,
+    csrs__mie__mtip,
+    csrs__mie__stip,
+    csrs__mie__utip,
+    csrs__mie__msip,
+    csrs__mie__ssip,
+    csrs__mie__usip,
     csr_data__read_data,
     csr_data__take_interrupt,
     csr_data__interrupt_mode,
@@ -140,9 +177,10 @@ module riscv_csrs_minimal
     input csr_controls__timer_clear;
     input csr_controls__timer_load;
     input [63:0]csr_controls__timer_value;
-    input csr_controls__interrupt;
     input csr_controls__trap;
-    input [3:0]csr_controls__trap_cause;
+    input [2:0]csr_controls__trap_to_mode;
+    input csr_controls__mret;
+    input [4:0]csr_controls__trap_cause;
     input [31:0]csr_controls__trap_pc;
     input [31:0]csr_controls__trap_value;
         //   Write data for the CSR access, later in the cycle than @csr_access possibly
@@ -170,7 +208,43 @@ module riscv_csrs_minimal
     output [31:0]csrs__mepc;
     output [31:0]csrs__mcause;
     output [31:0]csrs__mtval;
-    output [31:0]csrs__mtvec;
+    output [29:0]csrs__mtvec__base;
+    output csrs__mtvec__vectored;
+    output csrs__mstatus__sd;
+    output csrs__mstatus__tsr;
+    output csrs__mstatus__tw;
+    output csrs__mstatus__tvm;
+    output csrs__mstatus__mxr;
+    output csrs__mstatus__sum;
+    output csrs__mstatus__mprv;
+    output [1:0]csrs__mstatus__xs;
+    output [1:0]csrs__mstatus__fs;
+    output [1:0]csrs__mstatus__mpp;
+    output csrs__mstatus__spp;
+    output csrs__mstatus__mpie;
+    output csrs__mstatus__spie;
+    output csrs__mstatus__upie;
+    output csrs__mstatus__mie;
+    output csrs__mstatus__sie;
+    output csrs__mstatus__uie;
+    output csrs__mip__meip;
+    output csrs__mip__seip;
+    output csrs__mip__ueip;
+    output csrs__mip__mtip;
+    output csrs__mip__stip;
+    output csrs__mip__utip;
+    output csrs__mip__msip;
+    output csrs__mip__ssip;
+    output csrs__mip__usip;
+    output csrs__mie__meip;
+    output csrs__mie__seip;
+    output csrs__mie__ueip;
+    output csrs__mie__mtip;
+    output csrs__mie__stip;
+    output csrs__mie__utip;
+    output csrs__mie__msip;
+    output csrs__mie__ssip;
+    output csrs__mie__usip;
         //   CSR respone (including read data), from the current @a csr_access
     output [31:0]csr_data__read_data;
     output csr_data__take_interrupt;
@@ -198,9 +272,47 @@ module riscv_csrs_minimal
     reg [31:0]csrs__mepc;
     reg [31:0]csrs__mcause;
     reg [31:0]csrs__mtval;
-    reg [31:0]csrs__mtvec;
+    reg [29:0]csrs__mtvec__base;
+    reg csrs__mtvec__vectored;
+    reg csrs__mstatus__sd;
+    reg csrs__mstatus__tsr;
+    reg csrs__mstatus__tw;
+    reg csrs__mstatus__tvm;
+    reg csrs__mstatus__mxr;
+    reg csrs__mstatus__sum;
+    reg csrs__mstatus__mprv;
+    reg [1:0]csrs__mstatus__xs;
+    reg [1:0]csrs__mstatus__fs;
+    reg [1:0]csrs__mstatus__mpp;
+    reg csrs__mstatus__spp;
+    reg csrs__mstatus__mpie;
+    reg csrs__mstatus__spie;
+    reg csrs__mstatus__upie;
+    reg csrs__mstatus__mie;
+    reg csrs__mstatus__sie;
+    reg csrs__mstatus__uie;
+    reg csrs__mip__meip;
+    reg csrs__mip__seip;
+    reg csrs__mip__ueip;
+    reg csrs__mip__mtip;
+    reg csrs__mip__stip;
+    reg csrs__mip__utip;
+    reg csrs__mip__msip;
+    reg csrs__mip__ssip;
+    reg csrs__mip__usip;
+    reg csrs__mie__meip;
+    reg csrs__mie__seip;
+    reg csrs__mie__ueip;
+    reg csrs__mie__mtip;
+    reg csrs__mie__stip;
+    reg csrs__mie__utip;
+    reg csrs__mie__msip;
+    reg csrs__mie__ssip;
+    reg csrs__mie__usip;
 
     //b Internal combinatorials
+    reg [31:0]mtvec;
+    reg [31:0]mstatus;
     reg csr_write__enable;
     reg [31:0]csr_write__data;
 
@@ -229,6 +341,8 @@ module riscv_csrs_minimal
         csr_data__interrupt_cause = 4'h0;
         csr_data__illegal_access__var = 1'h0;
         csr_data__illegal_access__var = 1'h1;
+        mstatus = {{{{{{{{{{{{{{{{{{{{csrs__mstatus__sd,8'h0},csrs__mstatus__tsr},csrs__mstatus__tw},csrs__mstatus__tvm},csrs__mstatus__mxr},csrs__mstatus__sum},csrs__mstatus__mprv},csrs__mstatus__xs},csrs__mstatus__fs},csrs__mstatus__mpp},2'h0},csrs__mstatus__spp},csrs__mstatus__mpie},1'h0},csrs__mstatus__spie},csrs__mstatus__upie},csrs__mstatus__mie},1'h0},csrs__mstatus__sie},csrs__mstatus__uie};
+        mtvec = {{csrs__mtvec__base,1'h0},csrs__mtvec__vectored};
         case (csr_access__address) //synopsys parallel_case
         12'hc00: // req 1
             begin
@@ -303,7 +417,7 @@ module riscv_csrs_minimal
         12'h300: // req 1
             begin
             csr_data__illegal_access__var = 1'h0;
-            csr_data__read_data__var = 32'h0;
+            csr_data__read_data__var = mstatus;
             end
         12'h340: // req 1
             begin
@@ -328,7 +442,7 @@ module riscv_csrs_minimal
         12'h305: // req 1
             begin
             csr_data__illegal_access__var = 1'h0;
-            csr_data__read_data__var = csrs__mtvec;
+            csr_data__read_data__var = mtvec;
             end
         12'h302: // req 1
             begin
@@ -404,11 +518,47 @@ module riscv_csrs_minimal
             csrs__time <= 64'h0;
             csrs__cycles <= 64'h0;
             csrs__instret <= 64'h0;
+            csrs__mip__meip <= 1'h0;
+            csrs__mip__mtip <= 1'h0;
+            csrs__mip__msip <= 1'h0;
+            csrs__mie__meip <= 1'h0;
+            csrs__mie__mtip <= 1'h0;
+            csrs__mie__msip <= 1'h0;
+            csrs__mstatus__mpp <= 2'h0;
+            csrs__mstatus__mpie <= 1'h0;
+            csrs__mstatus__mie <= 1'h0;
             csrs__mepc <= 32'h0;
-            csrs__mtvec <= 32'h0;
+            csrs__mtvec__base <= 30'h0;
+            csrs__mtvec__vectored <= 1'h0;
             csrs__mtval <= 32'h0;
             csrs__mcause <= 32'h0;
             csrs__mscratch <= 32'h0;
+            csrs__mstatus__sd <= 1'h0;
+            csrs__mstatus__tsr <= 1'h0;
+            csrs__mstatus__tw <= 1'h0;
+            csrs__mstatus__tvm <= 1'h0;
+            csrs__mstatus__mxr <= 1'h0;
+            csrs__mstatus__sum <= 1'h0;
+            csrs__mstatus__mprv <= 1'h0;
+            csrs__mstatus__xs <= 2'h0;
+            csrs__mstatus__fs <= 2'h0;
+            csrs__mstatus__spp <= 1'h0;
+            csrs__mstatus__spie <= 1'h0;
+            csrs__mstatus__upie <= 1'h0;
+            csrs__mstatus__sie <= 1'h0;
+            csrs__mstatus__uie <= 1'h0;
+            csrs__mip__seip <= 1'h0;
+            csrs__mip__ueip <= 1'h0;
+            csrs__mip__stip <= 1'h0;
+            csrs__mip__utip <= 1'h0;
+            csrs__mip__ssip <= 1'h0;
+            csrs__mip__usip <= 1'h0;
+            csrs__mie__seip <= 1'h0;
+            csrs__mie__ueip <= 1'h0;
+            csrs__mie__stip <= 1'h0;
+            csrs__mie__utip <= 1'h0;
+            csrs__mie__ssip <= 1'h0;
+            csrs__mie__usip <= 1'h0;
         end
         else if (clk__enable)
         begin
@@ -442,6 +592,37 @@ module riscv_csrs_minimal
             begin
                 csrs__instret[63:32] <= csr_write__data;
             end //if
+            csrs__mip__meip <= irqs__meip;
+            csrs__mip__mtip <= irqs__mtip;
+            csrs__mip__msip <= irqs__msip;
+            if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h304)))
+            begin
+                csrs__mie__meip <= csr_write__data[11];
+                csrs__mie__mtip <= csr_write__data[7];
+                csrs__mie__msip <= csr_write__data[3];
+            end //if
+            if ((csr_controls__trap!=1'h0))
+            begin
+                csrs__mstatus__mpp <= 2'h3;
+                csrs__mstatus__mpie <= csrs__mstatus__mie;
+                csrs__mstatus__mie <= 1'h0;
+            end //if
+            else
+            
+            begin
+                if ((csr_controls__mret!=1'h0))
+                begin
+                    csrs__mstatus__mpp <= 2'h3;
+                    csrs__mstatus__mpie <= 1'h1;
+                    csrs__mstatus__mie <= csrs__mstatus__mpie;
+                end //if
+                if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h300)))
+                begin
+                    csrs__mstatus__mpp <= csr_write__data[12:11];
+                    csrs__mstatus__mpie <= csr_write__data[7];
+                    csrs__mstatus__mie <= csr_write__data[3];
+                end //if
+            end //else
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h341)))
             begin
                 csrs__mepc <= csr_write__data;
@@ -452,7 +633,8 @@ module riscv_csrs_minimal
             end //if
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h305)))
             begin
-                csrs__mtvec <= csr_write__data;
+                csrs__mtvec__base <= csr_write__data[31:2];
+                csrs__mtvec__vectored <= csr_write__data[0];
             end //if
             if ((csr_controls__trap!=1'h0))
             begin
@@ -465,71 +647,91 @@ module riscv_csrs_minimal
             if ((csr_controls__trap!=1'h0))
             begin
                 case (csr_controls__trap_cause) //synopsys parallel_case
-                4'h0: // req 1
+                5'h0: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h0};
                     end
-                4'h1: // req 1
+                5'h1: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h1};
                     end
-                4'h2: // req 1
+                5'h2: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h2};
                     end
-                4'h3: // req 1
+                5'h3: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h3};
                     end
-                4'h4: // req 1
+                5'h4: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h4};
                     end
-                4'h5: // req 1
+                5'h5: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h5};
                     end
-                4'h6: // req 1
+                5'h6: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h6};
                     end
-                4'h7: // req 1
+                5'h7: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h7};
                     end
-                4'h8: // req 1
+                5'h8: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h8};
                     end
-                4'h9: // req 1
+                5'h9: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h9};
                     end
-                4'ha: // req 1
+                5'ha: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'ha};
                     end
-                4'hb: // req 1
+                5'hb: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'hb};
                     end
-    //synopsys  translate_off
-    //pragma coverage off
-                default:
+                default: // req 1
                     begin
-                        if (1)
-                        begin
-                            $display("%t *********CDL ASSERTION FAILURE:riscv_csrs_minimal:csr_state_update: Full switch statement did not cover all values", $time);
-                        end
+                    csrs__mcause <= {{{1'h1,23'h0},4'h0},csr_controls__trap_cause[3:0]};
                     end
-    //pragma coverage on
-    //synopsys  translate_on
                 endcase
             end //if
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h340)))
             begin
                 csrs__mscratch <= csr_write__data;
             end //if
+            csrs__mstatus__mpp <= 2'h3;
+            csrs__mstatus__sd <= 1'h0;
+            csrs__mstatus__tsr <= 1'h0;
+            csrs__mstatus__tw <= 1'h0;
+            csrs__mstatus__tvm <= 1'h0;
+            csrs__mstatus__mxr <= 1'h0;
+            csrs__mstatus__sum <= 1'h0;
+            csrs__mstatus__mprv <= 1'h0;
+            csrs__mstatus__xs <= 2'h0;
+            csrs__mstatus__fs <= 2'h0;
+            csrs__mstatus__spp <= 1'h0;
+            csrs__mstatus__spie <= 1'h0;
+            csrs__mstatus__upie <= 1'h0;
+            csrs__mstatus__sie <= 1'h0;
+            csrs__mstatus__uie <= 1'h0;
+            csrs__mip__seip <= 1'h0;
+            csrs__mip__ueip <= 1'h0;
+            csrs__mip__stip <= 1'h0;
+            csrs__mip__utip <= 1'h0;
+            csrs__mip__ssip <= 1'h0;
+            csrs__mip__usip <= 1'h0;
+            csrs__mie__seip <= 1'h0;
+            csrs__mie__ueip <= 1'h0;
+            csrs__mie__stip <= 1'h0;
+            csrs__mie__utip <= 1'h0;
+            csrs__mie__ssip <= 1'h0;
+            csrs__mie__usip <= 1'h0;
         end //if
     end //always
 
