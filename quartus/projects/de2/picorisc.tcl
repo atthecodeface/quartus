@@ -67,9 +67,8 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/picorisc_de2.v
 
 # e.g. fpga_0|framebuffer_teletext:ftb|se_sram_srw_128x45:character_rom|se_sram_srw:ram
 
-set fpga_hier "fpga_0"
+set fpga_hier "dut"
 
-set_parameter -entity $entity -to "$fpga_hier\|ftb_debug\|character_rom\|ram"   -name initfile $SRAMS_DIR/teletext.qmif
 set_parameter -entity $entity -to "$fpga_hier\|ftb_vga\|character_rom\|ram"     -name initfile $SRAMS_DIR/teletext.qmif
 set_parameter -entity $entity -to "$fpga_hier\|apb_rom\|ram"                    -name initfile $SRAMS_DIR/apb_vga_rom.qmif
 
