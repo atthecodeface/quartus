@@ -10,5 +10,7 @@ quartus/modules/regenerate_date
 *.sopcinfo
 quartus_output
 sram_contents
-quartus/db
-quartus/incremental_db
+quartus/projects/*/db
+quartus/projects/*/incremental_db
+quartus/projects/*/*/db
+quartus/projects/*/*/incremental_db

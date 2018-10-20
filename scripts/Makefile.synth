@@ -2,8 +2,6 @@ CDL_HARDWARE   ?= $(ROOT)/../cdl_hardware
 
 QUARTUS_DIR    ?= $(ROOT)/quartus
 QUARTUS_OUTPUT ?= $(ROOT)/quartus_output
-QUARTUS_DB     ?= $(ROOT)/quartus/db
-QUARTUS_IDB    ?= $(ROOT)/quartus/incremental_db
 PROJECTS_DIR   ?= ${QUARTUS_DIR}/projects
 
 SCRIPT ?= script -ef
@@ -32,7 +30,9 @@ MAKE_PREFIX  := $(MAKE_TARGETS)/${PROJECT_LEAF}.completed
 QUARTUS_PROJECT_DIR := $(PROJECTS_DIR)/$(PROJECT_ROOT)
 
 QUARTUS_PROJECT_MAKEFILE := $(QUARTUS_PROJECT_DIR)$(PROJECT_LEAF).mk
-QUARTUS_PROJECT_INCLUDE := $(shell if [ -f ${QUARTUS_PROJECT_MAKEFILE} ] ; then echo ${QUARTUS_PROJECT_MAKEFILE} ; else echo; fi;)
+QUARTUS_PROJECT_INCLUDE  := $(shell if [ -f ${QUARTUS_PROJECT_MAKEFILE} ] ; then echo ${QUARTUS_PROJECT_MAKEFILE} ; else echo; fi;)
+QUARTUS_PROJECT_DB       := $(QUARTUS_PROJECT_DIR)/db
+QUARTUS_PROJECT_IDB      := $(QUARTUS_PROJECT_DIR)/incremental_db
 
 ifneq ($(QUARTUS_PROJECT_INCLUDE),)
 -include ${QUARTUS_PROJECT_INCLUDE}
@@ -57,20 +57,19 @@ help_synth:
 	$H ""
 	$H "The makefile support different 'project's using the same tree"
 	$H "The project name is specified with 'PROJECT'"
-	$H "PROJECT defaults to 'bbc_project'"
+	$H "PROJECT defaults to 'de1_cl_hps/hps_fpga_debug'"
 	$H ""
-	$H "The first step is synthesis (mapping):"
-	$H "  make PROJECT=<project> synth"
-	$H ""
-	$H "The second step is fitting:"
-	$H "  make PROJECT=<project> fit"
-	$H ""
-	$H "The third step is timing analysis:"
-	$H "  make PROJECT=<project> timing"
+	$H "To make use the following steps:"
+	$H "  make PROJECT=<project> synth fit timing"
+	$H "But HPS requires 'pins' too"
+	$H "  make PROJECT=<project> synth pins fit timing"
 	$H ""
 	$H "After fitting (or timing, indeed) the SRAM's making an"
 	$H "image may be updated with"
 	$H "  make PROJECT=<project> fpga_update_srams"
+	$H ""
+	$H "To load the FPGA (may require sudo powers)"
+	$H "  make PROJECT=<project> jtag_program"
 	$H ""
 	$H "A resynthesis can be performed with"
 	$H "  make PROJECT=<project> resynth"
@@ -78,16 +77,17 @@ help_synth:
 	$H "Rerunning timing can be performed with"
 	$H "  make PROJECT=<project> retime"
 	$H ""
-	$H " make PROJECT=de1_cl_hps/hps_fpga_debug all_sram resynth pins fit timing"
-	$H " make PROJECT=de1_cl_hps/hps_fpga_debug all_sram fpga_update_srams"
-	$H " make PROJECT=de1_cl_hps/hps_fpga_debug jtag_program"
+	$H "Cyclone II projects (de2) require Altera13.0sp1, not Altera15.0"
+	$H ""
+	$H "Available projects are:"
+	$H " de1_cl/bbc_project de1_cl_hps/hps_fpga_debug de2/picorisc"
 	$H ""
 
 clean: clean_synth
 .PHONY: clean_synth
 clean_synth:
 	rm -f ${MAKE_PREFIX}.*
-	rm -rf $(QUARTUS_OUTPUT) $(QUARTUS_DB) $(QUARTUS_IDB)
+	rm -rf $(QUARTUS_OUTPUT)/*$(PROJECT_LEAF)* $(QUARTUS_PROJECT_DB) $(QUARTUS_PROJECT_IDB)
 	mkdir -p $(QUARTUS_OUTPUT) $(MAKE_TARGETS)
 
 .PHONY:synth
@@ -129,7 +129,7 @@ dts : $(PROJECT).dts
 	$(DTS.DTC) -I dts -O dtb -o $@ $<
 
 pins:
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_STA) -t $(QUARTUS_DIR)/modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/pins.log
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_STA) -t $(QUARTUS_DIR)/modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).pins.log
 
 regenerate_modules: $(QUARTUS_DIR)/modules/regenerate_date
 
@@ -139,16 +139,16 @@ $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTU
 	date >> $(QUARTUS_DIR)/modules/regenerate_date
 
 ${MAKE_PREFIX}.synth: $(SCRIPTS_DIR)/synth.tcl
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/synth.log  && date > ${MAKE_PREFIX}.synth
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).synth.log  && date > ${MAKE_PREFIX}.synth
 
 ${MAKE_PREFIX}.fit: ${MAKE_PREFIX}.synth
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/fit.log       && date > ${MAKE_PREFIX}.fit
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).fit.log       && date > ${MAKE_PREFIX}.fit
 
 ${MAKE_PREFIX}.asm: ${MAKE_PREFIX}.fit
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/asm.log       && date > ${MAKE_PREFIX}.asm
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).asm.log       && date > ${MAKE_PREFIX}.asm
 
 ${MAKE_PREFIX}.timing: ${MAKE_PREFIX}.fit
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/timing.log && date > ${MAKE_PREFIX}.timing
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).timing.log && date > ${MAKE_PREFIX}.timing
 
 rebuild_verilog:
 	(cd $(CDL_HARDWARE); git pull && make clean && make -j6 verilog)
@@ -163,12 +163,11 @@ copy_verilog:
 	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
 fpga_update_srams:
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) ' $(QUARTUS_OUTPUT)/fpga_update_srams.log       && date > ${MAKE_PREFIX}.fpga_update_srams
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) ' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).fpga_update_srams.log       && date > ${MAKE_PREFIX}.fpga_update_srams
 	(make force_asm)
 
 quartus_shell:
 	cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -s
-	#$(PROJECT_LEAF) $(PROJECT_LEAF)
 
 quartus_gui:
 	cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -g
