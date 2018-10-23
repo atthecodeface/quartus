@@ -229,8 +229,10 @@ module riscv_i32_muldiv
     coproc_controls__dec_idecode__rs2_valid,
     coproc_controls__dec_idecode__rd,
     coproc_controls__dec_idecode__rd_written,
+    coproc_controls__dec_idecode__csr_access__access_cancelled,
     coproc_controls__dec_idecode__csr_access__access,
     coproc_controls__dec_idecode__csr_access__address,
+    coproc_controls__dec_idecode__csr_access__write_data,
     coproc_controls__dec_idecode__immediate,
     coproc_controls__dec_idecode__immediate_shift,
     coproc_controls__dec_idecode__immediate_valid,
@@ -240,6 +242,7 @@ module riscv_i32_muldiv
     coproc_controls__dec_idecode__memory_read_unsigned,
     coproc_controls__dec_idecode__memory_width,
     coproc_controls__dec_idecode__illegal,
+    coproc_controls__dec_idecode__illegal_pc,
     coproc_controls__dec_idecode__is_compressed,
     coproc_controls__dec_idecode__ext__dummy,
     coproc_controls__dec_to_alu_blocked,
@@ -274,8 +277,10 @@ module riscv_i32_muldiv
     input coproc_controls__dec_idecode__rs2_valid;
     input [4:0]coproc_controls__dec_idecode__rd;
     input coproc_controls__dec_idecode__rd_written;
+    input coproc_controls__dec_idecode__csr_access__access_cancelled;
     input [2:0]coproc_controls__dec_idecode__csr_access__access;
     input [11:0]coproc_controls__dec_idecode__csr_access__address;
+    input [31:0]coproc_controls__dec_idecode__csr_access__write_data;
     input [31:0]coproc_controls__dec_idecode__immediate;
     input [4:0]coproc_controls__dec_idecode__immediate_shift;
     input coproc_controls__dec_idecode__immediate_valid;
@@ -285,6 +290,7 @@ module riscv_i32_muldiv
     input coproc_controls__dec_idecode__memory_read_unsigned;
     input [1:0]coproc_controls__dec_idecode__memory_width;
     input coproc_controls__dec_idecode__illegal;
+    input coproc_controls__dec_idecode__illegal_pc;
     input coproc_controls__dec_idecode__is_compressed;
     input coproc_controls__dec_idecode__ext__dummy;
     input coproc_controls__dec_to_alu_blocked;

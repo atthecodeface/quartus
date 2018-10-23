@@ -1,19 +1,3 @@
-module  pll_lcd_0002(
-
-	// interface 'refclk'
-	input wire refclk,
-
-	// interface 'reset'
-	input wire rst,
-
-	// interface 'outclk0'
-	output wire[1:0] outclk,
-
-	// interface 'locked'
-	output wire[1:0] locked
-);
-
-endmodule
 module pll_lcd (
 		input  wire  refclk,   //  refclk.clk
 		input  wire  rst,      //   reset.reset
@@ -572,18 +556,18 @@ module de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    assign de1_ps2_in__clk  = de1_ps2_clk;
    assign de1_ps2_in__data = de1_ps2_dat;
 
-   wire         de1_ps2b_in__clk;
-   wire         de1_ps2b_in__data;
-   wire         de1_ps2b_out__clk;
-   wire         de1_ps2b_out__data;
-   assign de1_ps2_b_clk = de1_ps2b_out__clk  ? 1'bz: 1'b0;
-   assign de1_ps2_b_dat = de1_ps2b_out__data ? 1'bz: 1'b0;
-   assign de1_ps2b_in__clk  = de1_ps2_b_clk;
-   assign de1_ps2b_in__data = de1_ps2_b_dat;
+   wire         de1_ps2_b_in__clk;
+   wire         de1_ps2_b_in__data;
+   wire         de1_ps2_b_out__clk;
+   wire         de1_ps2_b_out__data;
+   assign de1_ps2_b_clk = de1_ps2_b_out__clk  ? 1'bz: 1'b0;
+   assign de1_ps2_b_dat = de1_ps2_b_out__data ? 1'bz: 1'b0;
+   assign de1_ps2_b_in__clk  = de1_ps2_b_clk;
+   assign de1_ps2_b_in__data = de1_ps2_b_dat;
 
    assign de1_aud__xck = 0;
    
-   `de1_dut_module dut( .clk(clk_50),
+   `de1_hps_dut_module dut( .clk(clk_50),
                         .clk__enable(1'b1),
                         .reset_n(reset_n),
 
@@ -620,6 +604,20 @@ module de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
                         .lw_axi_ar__region(0),
                         .lw_axi_ar__user(0),
 
+                            .lw_axi_r__valid(h2f_lw__rvalid),
+                            .lw_axi_r__id(h2f_lw__rid),
+                            .lw_axi_r__data(h2f_lw__rdata),
+                            .lw_axi_r__resp(h2f_lw__rresp),
+                            .lw_axi_r__last(h2f_lw__rlast),
+                            .lw_axi_r__user(),
+                            .lw_axi_b__valid(h2f_lw__bvalid),
+                            .lw_axi_b__id(h2f_lw__bid),
+                            .lw_axi_b__resp(h2f_lw__bresp),
+                            .lw_axi_b__user(),
+                            .lw_axi_wready(h2f_lw__wready),
+                            .lw_axi_awready(h2f_lw__awready),
+                            .lw_axi_arready(h2f_lw__arready),
+
                         .de1_audio_bclk(de1_aud__bclk),
                         .de1_audio_bclk__enable(1'b1),
                         .de1_audio_adc__data(de1_aud__adcdat),
@@ -632,12 +630,12 @@ module de1_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
                         .de1_inputs__keys(de1_keys),
                         //.de1_irda_txd(de1_irda__txd),
 
-                        .de1_ps2b_in__data(de1_ps2b_in__data),
-                        .de1_ps2b_in__clk(de1_ps2b_in__clk),
+                        .de1_ps2b_in__data(de1_ps2_b_in__data),
+                        .de1_ps2b_in__clk(de1_ps2_b_in__clk),
                         .de1_ps2_in__data(de1_ps2_in__data),
                         .de1_ps2_in__clk(de1_ps2_in__clk),
-                        .de1_ps2b_out__data(de1_ps2b_out__data),
-                        .de1_ps2b_out__clk(de1_ps2b_out__clk),
+                        .de1_ps2b_out__data(de1_ps2_b_out__data),
+                        .de1_ps2b_out__clk(de1_ps2_b_out__clk),
                         .de1_ps2_out__data(de1_ps2_out__data),
                         .de1_ps2_out__clk(de1_ps2_out__clk),
 

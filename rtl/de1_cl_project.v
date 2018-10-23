@@ -35,7 +35,7 @@ endmodule
 module de1_cl_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
 
                      de1_adc__cs_n, de1_adc__din, de1_adc__dout, de1_adc__sclk,
-                     de1_aud__adcdat, de1_aud__adclkrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
+                     de1_aud__adcdat, de1_aud__adclrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
 
                      de1_ddr__clk, de1_ddr__cke, de1_ddr__cs_n,
                      de1_ddr__addr, de1_ddr__ba,
@@ -81,7 +81,7 @@ module de1_cl_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    output  de1_adc__sclk;
 
    input   de1_aud__adcdat;
-   inout   de1_aud__adclkrck;
+   inout   de1_aud__adclrck;
    inout   de1_aud__bclk;
    output  de1_aud__dacdat;
    inout   de1_aud__daclrck;

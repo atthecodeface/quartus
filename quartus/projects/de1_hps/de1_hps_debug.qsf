@@ -1,12 +1,5 @@
-set_global_assignment -name TOP_LEVEL_ENTITY de1_cl_hps_fpga_debug
-#============================================================
-# Build by Terasic V1.0.0
-#============================================================
-
-
-set_global_assignment -name FAMILY "Cyclone V"
-set_global_assignment -name DEVICE 5CSEMA5F31C6
-set_global_assignment -name ORIGINAL_QUARTUS_VERSION 13
+set_global_assignment -name TOP_LEVEL_ENTITY de1_hps_project
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 15.0.0
 set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "MON JUN 17 20:35:29 2013"
 set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
@@ -24,7 +17,7 @@ set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
 set_global_assignment -name ECO_REGENERATE_REPORT ON
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
 
-set_global_assignment -name SOURCE_TCL_SCRIPT_FILE hps_fpga_debug.tcl
+set_global_assignment -name SOURCE_TCL_SCRIPT_FILE de1_hps_debug.tcl
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to hps_ddr3__ck_n -tag __hps_sdram_p0
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to hps_ddr3__ck_p -tag __hps_sdram_p0
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to hps_ddr3__addr[0] -tag __hps_sdram_p0
@@ -208,7 +201,7 @@ set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to hps_ddr3__dm[2] -tag __hps_sdram_p0
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to hps_ddr3__dm[3] -tag __hps_sdram_p0
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to hps_ddr3__addr[14] -tag __hps_sdram_p0
-set_global_assignment -name SOURCE_TCL_SCRIPT_FILE hps_fpga_debug.qip.tcl
+set_global_assignment -name SOURCE_TCL_SCRIPT_FILE de1_hps_debug.qip.tcl
 
 
 set_instance_assignment -name D5_DELAY 2 -to hps_ddr3__ck_p -tag __hps_sdram_p0

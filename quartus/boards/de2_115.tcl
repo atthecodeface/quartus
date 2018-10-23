@@ -14,7 +14,7 @@ pin_lvttl_signal AG15  clk3_50
 
 # Audio DAC/ADC
 pin_lvttl_signal  D2 de2_aud__adcdat
-pin_lvttl_signal  C2 de2_aud__adclkrck
+pin_lvttl_signal  C2 de2_aud__adclrck
 pin_lvttl_signal  F2 de2_aud__bclk
 pin_lvttl_signal  D1 de2_aud__dacdat
 pin_lvttl_signal  E3 de2_aud__daclrck

@@ -527,7 +527,7 @@ module framebuffer_teletext
     begin : csr_interface_logic__posedge_csr_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
-            csr_select <= 16'h4;
+            csr_select <= 16'h0;
             csrs__sram_base_address <= 16'h0;
             csrs__sram_words_per_line <= 16'h0;
             csrs__sram_words_per_line <= 16'h28;

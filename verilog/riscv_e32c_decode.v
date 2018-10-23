@@ -13,9 +13,9 @@
 
 //a Module riscv_e32c_decode
     //   
-    //   Instruction decoder for RISC-V RV32E instruction set.
+    //   Instruction decoder for RISC-V I16 instruction set.
     //   
-    //   This is based on the RISC-V v2.1 specification (hence figure numbers
+    //   This is based on the RISC-V v2.2 specification (hence figure numbers
     //   are from that specification)
     //   
 module riscv_e32c_decode
@@ -36,8 +36,10 @@ module riscv_e32c_decode
     idecode__rs2_valid,
     idecode__rd,
     idecode__rd_written,
+    idecode__csr_access__access_cancelled,
     idecode__csr_access__access,
     idecode__csr_access__address,
+    idecode__csr_access__write_data,
     idecode__immediate,
     idecode__immediate_shift,
     idecode__immediate_valid,
@@ -47,6 +49,7 @@ module riscv_e32c_decode
     idecode__memory_read_unsigned,
     idecode__memory_width,
     idecode__illegal,
+    idecode__illegal_pc,
     idecode__is_compressed,
     idecode__ext__dummy
 );
@@ -70,8 +73,10 @@ module riscv_e32c_decode
     output idecode__rs2_valid;
     output [4:0]idecode__rd;
     output idecode__rd_written;
+    output idecode__csr_access__access_cancelled;
     output [2:0]idecode__csr_access__access;
     output [11:0]idecode__csr_access__address;
+    output [31:0]idecode__csr_access__write_data;
     output [31:0]idecode__immediate;
     output [4:0]idecode__immediate_shift;
     output idecode__immediate_valid;
@@ -81,6 +86,7 @@ module riscv_e32c_decode
     output idecode__memory_read_unsigned;
     output [1:0]idecode__memory_width;
     output idecode__illegal;
+    output idecode__illegal_pc;
     output idecode__is_compressed;
     output idecode__ext__dummy;
 
@@ -93,8 +99,10 @@ module riscv_e32c_decode
     reg idecode__rs2_valid;
     reg [4:0]idecode__rd;
     reg idecode__rd_written;
+    reg idecode__csr_access__access_cancelled;
     reg [2:0]idecode__csr_access__access;
     reg [11:0]idecode__csr_access__address;
+    reg [31:0]idecode__csr_access__write_data;
     reg [31:0]idecode__immediate;
     reg [4:0]idecode__immediate_shift;
     reg idecode__immediate_valid;
@@ -104,6 +112,7 @@ module riscv_e32c_decode
     reg idecode__memory_read_unsigned;
     reg [1:0]idecode__memory_width;
     reg idecode__illegal;
+    reg idecode__illegal_pc;
     reg idecode__is_compressed;
     reg idecode__ext__dummy;
 
@@ -112,97 +121,622 @@ module riscv_e32c_decode
     //b Internal and output registers
 
     //b Internal combinatorials
+        //   Combinatorials used in the module, not exported as the decode
+    reg [1:0]combs__quadrant;
+    reg [2:0]combs__opc;
+    reg [4:0]combs__rd_q0;
+    reg [4:0]combs__rd_q12;
+    reg [4:0]combs__rs1;
+    reg [4:0]combs__rs2;
+    reg [31:0]combs__imm_signed;
+    reg [31:0]combs__imm_ci_v1;
+    reg [31:0]combs__imm_clwsp;
+    reg [31:0]combs__imm_clui;
+    reg [31:0]combs__imm_caddi16sp;
+    reg [31:0]combs__imm_caddi4spn;
+    reg [31:0]combs__imm_cswsp;
+    reg [31:0]combs__imm_clwsw;
+    reg [31:0]combs__imm_cb;
+    reg [31:0]combs__imm_cj;
 
     //b Internal nets
-    wire [4:0]rv32i_idecode__rs1;
-    wire rv32i_idecode__rs1_valid;
-    wire [4:0]rv32i_idecode__rs2;
-    wire rv32i_idecode__rs2_valid;
-    wire [4:0]rv32i_idecode__rd;
-    wire rv32i_idecode__rd_written;
-    wire [2:0]rv32i_idecode__csr_access__access;
-    wire [11:0]rv32i_idecode__csr_access__address;
-    wire [31:0]rv32i_idecode__immediate;
-    wire [4:0]rv32i_idecode__immediate_shift;
-    wire rv32i_idecode__immediate_valid;
-    wire [3:0]rv32i_idecode__op;
-    wire [3:0]rv32i_idecode__subop;
-    wire rv32i_idecode__requires_machine_mode;
-    wire rv32i_idecode__memory_read_unsigned;
-    wire [1:0]rv32i_idecode__memory_width;
-    wire rv32i_idecode__illegal;
-    wire rv32i_idecode__is_compressed;
-    wire rv32i_idecode__ext__dummy;
 
     //b Clock gating module instances
     //b Module instances
-    riscv_i32c_decode rv32ic_decode(
-        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
-        .riscv_config__coproc_disable(riscv_config__coproc_disable),
-        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
-        .riscv_config__i32m(riscv_config__i32m),
-        .riscv_config__e32(riscv_config__e32),
-        .riscv_config__i32c(riscv_config__i32c),
-        .instruction__data(instruction__data),
-        .instruction__mode(instruction__mode),
-        .idecode__ext__dummy(            rv32i_idecode__ext__dummy),
-        .idecode__is_compressed(            rv32i_idecode__is_compressed),
-        .idecode__illegal(            rv32i_idecode__illegal),
-        .idecode__memory_width(            rv32i_idecode__memory_width),
-        .idecode__memory_read_unsigned(            rv32i_idecode__memory_read_unsigned),
-        .idecode__requires_machine_mode(            rv32i_idecode__requires_machine_mode),
-        .idecode__subop(            rv32i_idecode__subop),
-        .idecode__op(            rv32i_idecode__op),
-        .idecode__immediate_valid(            rv32i_idecode__immediate_valid),
-        .idecode__immediate_shift(            rv32i_idecode__immediate_shift),
-        .idecode__immediate(            rv32i_idecode__immediate),
-        .idecode__csr_access__address(            rv32i_idecode__csr_access__address),
-        .idecode__csr_access__access(            rv32i_idecode__csr_access__access),
-        .idecode__rd_written(            rv32i_idecode__rd_written),
-        .idecode__rd(            rv32i_idecode__rd),
-        .idecode__rs2_valid(            rv32i_idecode__rs2_valid),
-        .idecode__rs2(            rv32i_idecode__rs2),
-        .idecode__rs1_valid(            rv32i_idecode__rs1_valid),
-        .idecode__rs1(            rv32i_idecode__rs1)         );
+    //b instruction_breakout combinatorial process
+        //   
+        //       Break out the instruction into fields, using constants from
+        //       riscv_internal_types
+        //   
+        //       Any output ports driven by these signals are simple wires, of
+        //       course.
+        //       
+    always @ ( * )//instruction_breakout
+    begin: instruction_breakout__comb_code
+        combs__quadrant = instruction__data[1:0];
+        combs__opc = instruction__data[15:13];
+        combs__rd_q0 = {2'h1,instruction__data[4:2]};
+        combs__rd_q12 = instruction__data[11:7];
+        combs__rs1 = instruction__data[11:7];
+        combs__rs2 = instruction__data[6:2];
+    end //always
+
+    //b immediate_decode combinatorial process
+        //   
+        //       Decode the immediate value based on the instruction opcode class.
+        //   
+        //       The immediate is sometimes a sign-extended value, with the sign
+        //       bit coming from bit 12 of the instruction.  Hence @a
+        //       combs.imm_signed is created as a 32 bit value of either all ones
+        //       or all zeros, to be used as a sign extension bit vector as required.
+        //       
+        //       The immediate variants of the RISC-V I32C base instruction have to be extracted from section 12 and are:
+        //   
+        //       CI v1  sign extended     i[12],  i[5;2]                                for  li, addi, andi 
+        //       CI v2  zero ext          i[2;2] i[12], i[3;4], 2b0                     for lwsp
+        //       CI v3  sign extended     i[12], i[5;2], 12b0                           for lui
+        //       CI v4  sign extended     i[12], i[2;3], i[5], i[2], i[6], 4b0          for addi16sp
+        //       CIW    zero ext    i[4;7], i[2;11], i[5] i[6], 2b0                     for addi4spn
+        //       CSS,   zero ext               i[2;7], i[4;9], 2b0                      for swsp
+        //       CL, CS zero ext           i[5], i[3;10], i[6], 2b0                     for lw, sw  
+        //       CB,    sign ext  i[12], i[2;5], i[2], i[2;10], i[2;3], 1b0             for beqz/bnez
+        //       CJ     sign ext  i[12], i[8], i[2;9], i[3;6], i[2], i[11], i[3;3], 1b0 for j/jal   
+        //   
+        //       
+    always @ ( * )//immediate_decode
+    begin: immediate_decode__comb_code
+    reg idecode__immediate_valid__var;
+    reg [31:0]idecode__immediate__var;
+        combs__imm_signed = ((instruction__data[12]!=1'h0)?64'hffffffffffffffff:64'h0);
+        idecode__immediate_valid__var = 1'h1;
+        idecode__immediate_shift = instruction__data[6:2];
+        combs__imm_ci_v1 = {combs__imm_signed[26:0],instruction__data[6:2]};
+        combs__imm_clwsp = {{{{24'h0,instruction__data[3:2]},instruction__data[12]},instruction__data[6:4]},2'h0};
+        combs__imm_clui = {{combs__imm_signed[14:0],instruction__data[6:2]},12'h0};
+        combs__imm_caddi16sp = {{{{{combs__imm_signed[22:0],instruction__data[4:3]},instruction__data[5]},instruction__data[2]},instruction__data[6]},4'h0};
+        combs__imm_caddi4spn = {{{{{22'h0,instruction__data[10:7]},instruction__data[12:11]},instruction__data[5]},instruction__data[6]},2'h0};
+        combs__imm_cswsp = {{{24'h0,instruction__data[8:7]},instruction__data[12:9]},2'h0};
+        combs__imm_clwsw = {{{{25'h0,instruction__data[5]},instruction__data[12:10]},instruction__data[6]},2'h0};
+        combs__imm_cb = {{{{{combs__imm_signed[23:0],instruction__data[6:5]},instruction__data[2]},instruction__data[11:10]},instruction__data[4:3]},1'h0};
+        combs__imm_cj = {{{{{{{{combs__imm_signed[20:0],instruction__data[8]},instruction__data[10:9]},instruction__data[6]},instruction__data[7]},instruction__data[2]},instruction__data[11]},instruction__data[5:3]},1'h0};
+        idecode__immediate__var = combs__imm_ci_v1;
+        case (combs__quadrant) //synopsys parallel_case
+        2'h0: // req 1
+            begin
+            idecode__immediate__var = combs__imm_clwsw;
+            case (combs__opc) //synopsys parallel_case
+            3'h0: // req 1
+                begin
+                idecode__immediate__var = combs__imm_caddi4spn;
+                end
+            3'h2: // req 1
+                begin
+                idecode__immediate__var = combs__imm_clwsw;
+                end
+            3'h6: // req 1
+                begin
+                idecode__immediate__var = combs__imm_clwsw;
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
+            end
+        2'h1: // req 1
+            begin
+            idecode__immediate__var = combs__imm_ci_v1;
+            case (combs__opc) //synopsys parallel_case
+            3'h0: // req 1
+                begin
+                idecode__immediate__var = combs__imm_ci_v1;
+                end
+            3'h1: // req 1
+                begin
+                idecode__immediate__var = combs__imm_cj;
+                end
+            3'h2: // req 1
+                begin
+                idecode__immediate__var = combs__imm_ci_v1;
+                end
+            3'h3: // req 1
+                begin
+                idecode__immediate__var = combs__imm_clui;
+                if ((instruction__data[11:7]==5'h2))
+                begin
+                    idecode__immediate__var = combs__imm_caddi16sp;
+                end //if
+                end
+            3'h4: // req 1
+                begin
+                idecode__immediate__var = combs__imm_ci_v1;
+                if ((instruction__data[11:10]==2'h3))
+                begin
+                    idecode__immediate_valid__var = 1'h0;
+                end //if
+                end
+            3'h5: // req 1
+                begin
+                idecode__immediate__var = combs__imm_cj;
+                end
+            3'h6: // req 1
+                begin
+                idecode__immediate__var = combs__imm_cb;
+                end
+            3'h7: // req 1
+                begin
+                idecode__immediate__var = combs__imm_cb;
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
+            end
+        2'h2: // req 1
+            begin
+            idecode__immediate__var = combs__imm_clwsp;
+            case (combs__opc) //synopsys parallel_case
+            3'h4: // req 1
+                begin
+                idecode__immediate_valid__var = 1'h0;
+                idecode__immediate__var = 32'h0;
+                end
+            3'h0: // req 1
+                begin
+                idecode__immediate__var = combs__imm_clwsp;
+                end
+            3'h2: // req 1
+                begin
+                idecode__immediate__var = combs__imm_clwsp;
+                end
+            3'h6: // req 1
+                begin
+                idecode__immediate__var = combs__imm_cswsp;
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
+            end
+        //synopsys  translate_off
+        //pragma coverage off
+        //synopsys  translate_on
+        default:
+            begin
+            //Need a default case to make Cadence Lint happy, even though this is not a full case
+            end
+        //synopsys  translate_off
+        //pragma coverage on
+        //synopsys  translate_on
+        endcase
+        idecode__immediate_valid = idecode__immediate_valid__var;
+        idecode__immediate = idecode__immediate__var;
+    end //always
+
     //b instruction_decode combinatorial process
         //   
-        //       Decode the instruction
+        //       Decode the compressed instruction operation
+        //       Decode the registers based on the instruction opcode class.
+        //   
+        //       For many instructions there is a 3-bit register decode, which operate
+        //       (per table 12.2 in spec v2.2) on actual registers 8 through 15 (5b01000-0b01111)
+        //       These are known as the prime register decodes (rs1', rs2', rd').
+        //   
         //       
     always @ ( * )//instruction_decode
     begin: instruction_decode__comb_code
+    reg [4:0]idecode__rd__var;
+    reg [4:0]idecode__rs1__var;
+    reg [4:0]idecode__rs2__var;
+    reg idecode__rs1_valid__var;
+    reg idecode__rs2_valid__var;
+    reg idecode__rd_written__var;
+    reg [2:0]idecode__csr_access__access__var;
+    reg [3:0]idecode__op__var;
     reg idecode__illegal__var;
-        idecode__rs1 = rv32i_idecode__rs1;
-        idecode__rs1_valid = rv32i_idecode__rs1_valid;
-        idecode__rs2 = rv32i_idecode__rs2;
-        idecode__rs2_valid = rv32i_idecode__rs2_valid;
-        idecode__rd = rv32i_idecode__rd;
-        idecode__rd_written = rv32i_idecode__rd_written;
-        idecode__csr_access__access = rv32i_idecode__csr_access__access;
-        idecode__csr_access__address = rv32i_idecode__csr_access__address;
-        idecode__immediate = rv32i_idecode__immediate;
-        idecode__immediate_shift = rv32i_idecode__immediate_shift;
-        idecode__immediate_valid = rv32i_idecode__immediate_valid;
-        idecode__op = rv32i_idecode__op;
-        idecode__subop = rv32i_idecode__subop;
-        idecode__requires_machine_mode = rv32i_idecode__requires_machine_mode;
-        idecode__memory_read_unsigned = rv32i_idecode__memory_read_unsigned;
-        idecode__memory_width = rv32i_idecode__memory_width;
-        idecode__illegal__var = rv32i_idecode__illegal;
-        idecode__is_compressed = rv32i_idecode__is_compressed;
-        idecode__ext__dummy = rv32i_idecode__ext__dummy;
-        if (((rv32i_idecode__rs1_valid!=1'h0)&&(rv32i_idecode__rs1[4]!=1'h0)))
+    reg [3:0]idecode__subop__var;
+        idecode__ext__dummy = 1'h0;
+        idecode__illegal_pc = 1'h0;
+        idecode__is_compressed = 1'h1;
+        idecode__rd__var = combs__rd_q0;
+        idecode__rs1__var = combs__rs1;
+        idecode__rs2__var = combs__rs2;
+        idecode__rs1_valid__var = 1'h0;
+        idecode__rs2_valid__var = 1'h0;
+        idecode__rd_written__var = 1'h0;
+        idecode__requires_machine_mode = 1'h0;
+        idecode__memory_read_unsigned = 1'h0;
+        idecode__memory_width = 2'h2;
+        idecode__csr_access__access_cancelled = 1'h0;
+        idecode__csr_access__access__var = 3'h0;
+        idecode__csr_access__address = 12'h0;
+        idecode__csr_access__write_data = 32'h0;
+        idecode__csr_access__access__var = 3'h0;
+        idecode__op__var = 4'hd;
+        idecode__illegal__var = 1'h1;
+        idecode__subop__var = 4'h0;
+        case (combs__quadrant) //synopsys parallel_case
+        2'h0: // req 1
+            begin
+            idecode__rd__var = combs__rd_q0;
+            idecode__rs1__var = {2'h1,combs__rs1[2:0]};
+            idecode__rs2__var = {2'h1,combs__rs2[2:0]};
+            idecode__rs1_valid__var = 1'h1;
+            idecode__rs2_valid__var = 1'h0;
+            idecode__rd_written__var = 1'h1;
+            if ((combs__opc[2]!=1'h0))
+            begin
+                idecode__rs2_valid__var = 1'h1;
+                idecode__rd_written__var = 1'h0;
+            end //if
+            case (combs__opc) //synopsys parallel_case
+            3'h0: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h8;
+                idecode__subop__var = 4'h0;
+                idecode__rs1__var = 5'h2;
+                idecode__rs1_valid__var = 1'h1;
+                end
+            3'h2: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h6;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rd_written__var = 1'h1;
+                end
+            3'h6: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h7;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rs2_valid__var = 1'h1;
+                idecode__rd_written__var = 1'h0;
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
+            end
+        2'h1: // req 1
+            begin
+            idecode__rd__var = combs__rd_q12;
+            idecode__rs1__var = combs__rs1;
+            idecode__rs2__var = {2'h1,combs__rs2[2:0]};
+            if ((combs__opc[2]!=1'h0))
+            begin
+                idecode__rd__var[4:3] = 2'h1;
+                idecode__rs1__var[4:3] = 2'h1;
+            end //if
+            idecode__rs1_valid__var = 1'h1;
+            idecode__rs2_valid__var = 1'h0;
+            idecode__rd_written__var = 1'h0;
+            case (combs__opc) //synopsys parallel_case
+            3'h0: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h8;
+                idecode__subop__var = 4'h0;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rd_written__var = 1'h1;
+                end
+            3'h1: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h1;
+                idecode__rd__var = 5'h1;
+                idecode__rd_written__var = 1'h1;
+                end
+            3'h2: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h8;
+                idecode__subop__var = 4'h0;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rd_written__var = 1'h1;
+                idecode__rs1__var = 5'h0;
+                end
+            3'h3: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'hb;
+                idecode__rd_written__var = 1'h1;
+                idecode__subop__var = 4'h0;
+                if ((instruction__data[11:7]==5'h2))
+                begin
+                    idecode__op__var = 4'h8;
+                    idecode__rs1_valid__var = 1'h1;
+                    idecode__rd_written__var = 1'h1;
+                    idecode__rd__var = 5'h2;
+                    idecode__rs1__var = 5'h2;
+                end //if
+                if ((((instruction__data[12]==1'h0)&&(instruction__data[6:2]==5'h0))||(instruction__data[11:7]==5'h0)))
+                begin
+                    idecode__illegal__var = 1'h1;
+                end //if
+                end
+            3'h4: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h8;
+                idecode__subop__var = 4'h7;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rs2_valid__var = 1'h0;
+                idecode__rd_written__var = 1'h1;
+                case (instruction__data[11:10]) //synopsys parallel_case
+                2'h0: // req 1
+                    begin
+                    idecode__subop__var = 4'h5;
+                    idecode__rs2_valid__var = 1'h0;
+                    end
+                2'h1: // req 1
+                    begin
+                    idecode__subop__var = 4'hd;
+                    idecode__rs2_valid__var = 1'h0;
+                    end
+                2'h2: // req 1
+                    begin
+                    idecode__subop__var = 4'h7;
+                    idecode__rs2_valid__var = 1'h0;
+                    end
+                2'h3: // req 1
+                    begin
+                    if ((instruction__data[12]!=1'h0))
+                    begin
+                        idecode__illegal__var = 1'h1;
+                    end //if
+                    idecode__subop__var = 4'h7;
+                    idecode__rs2_valid__var = 1'h1;
+                    case (instruction__data[6:5]) //synopsys parallel_case
+                    2'h0: // req 1
+                        begin
+                        idecode__subop__var = 4'h8;
+                        end
+                    2'h1: // req 1
+                        begin
+                        idecode__subop__var = 4'h4;
+                        end
+                    2'h2: // req 1
+                        begin
+                        idecode__subop__var = 4'h6;
+                        end
+                    2'h3: // req 1
+                        begin
+                        idecode__subop__var = 4'h7;
+                        end
+    //synopsys  translate_off
+    //pragma coverage off
+                    default:
+                        begin
+                            if (1)
+                            begin
+                                $display("%t *********CDL ASSERTION FAILURE:riscv_e32c_decode:instruction_decode: Full switch statement did not cover all values", $time);
+                            end
+                        end
+    //pragma coverage on
+    //synopsys  translate_on
+                    endcase
+                    end
+    //synopsys  translate_off
+    //pragma coverage off
+                default:
+                    begin
+                        if (1)
+                        begin
+                            $display("%t *********CDL ASSERTION FAILURE:riscv_e32c_decode:instruction_decode: Full switch statement did not cover all values", $time);
+                        end
+                    end
+    //pragma coverage on
+    //synopsys  translate_on
+                endcase
+                end
+            3'h5: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h1;
+                idecode__rd_written__var = 1'h0;
+                end
+            3'h6: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h0;
+                idecode__subop__var = 4'h0;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rs2_valid__var = 1'h1;
+                idecode__rs2__var = 5'h0;
+                idecode__rd_written__var = 1'h0;
+                end
+            3'h7: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h0;
+                idecode__subop__var = 4'h1;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rs2_valid__var = 1'h1;
+                idecode__rs2__var = 5'h0;
+                idecode__rd_written__var = 1'h0;
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
+            end
+        2'h2: // req 1
+            begin
+            idecode__rd__var = combs__rd_q12;
+            idecode__rs1__var = combs__rs1;
+            idecode__rs2__var = combs__rs2;
+            idecode__rs1_valid__var = 1'h1;
+            idecode__rs2_valid__var = 1'h0;
+            idecode__rd_written__var = 1'h0;
+            if ((combs__opc[1:0]!=2'h0))
+            begin
+                idecode__rs1__var = 5'h2;
+            end //if
+            case (combs__opc) //synopsys parallel_case
+            3'h4: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                if ((combs__rs2==5'h0))
+                begin
+                    idecode__op__var = 4'h2;
+                    idecode__rs1_valid__var = 1'h1;
+                    idecode__rs2_valid__var = 1'h0;
+                    idecode__rd_written__var = 1'h1;
+                    if ((instruction__data[12]!=1'h0))
+                    begin
+                        idecode__rd__var = 5'h1;
+                        if ((combs__rs1==5'h0))
+                        begin
+                            idecode__op__var = 4'h3;
+                            idecode__subop__var = 4'h1;
+                            idecode__rd_written__var = 1'h0;
+                        end //if
+                    end //if
+                    else
+                    
+                    begin
+                        idecode__rd__var = 5'h0;
+                    end //else
+                end //if
+                else
+                
+                begin
+                    idecode__op__var = 4'h8;
+                    idecode__subop__var = 4'h0;
+                    idecode__rs1_valid__var = 1'h1;
+                    idecode__rs2_valid__var = 1'h1;
+                    idecode__rd_written__var = 1'h1;
+                    if (!(instruction__data[12]!=1'h0))
+                    begin
+                        idecode__rs1__var = 5'h0;
+                    end //if
+                end //else
+                end
+            3'h0: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h8;
+                idecode__subop__var = 4'h1;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rs2_valid__var = 1'h0;
+                idecode__rd_written__var = 1'h1;
+                end
+            3'h2: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h6;
+                idecode__rs1__var = 5'h2;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rs2_valid__var = 1'h0;
+                idecode__rd_written__var = 1'h1;
+                end
+            3'h6: // req 1
+                begin
+                idecode__illegal__var = 1'h0;
+                idecode__op__var = 4'h7;
+                idecode__rs1__var = 5'h2;
+                idecode__rs1_valid__var = 1'h1;
+                idecode__rs2_valid__var = 1'h1;
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
+            end
+        //synopsys  translate_off
+        //pragma coverage off
+        //synopsys  translate_on
+        default:
+            begin
+            //Need a default case to make Cadence Lint happy, even though this is not a full case
+            end
+        //synopsys  translate_off
+        //pragma coverage on
+        //synopsys  translate_on
+        endcase
+        if (((riscv_config__e32!=1'h0)||(1'h1!=64'h0)))
+        begin
+            if (((idecode__rs1_valid__var!=1'h0)&&(idecode__rs1__var[4]!=1'h0)))
+            begin
+                idecode__illegal__var = 1'h1;
+            end //if
+            if (((idecode__rs2_valid__var!=1'h0)&&(idecode__rs2__var[4]!=1'h0)))
+            begin
+                idecode__illegal__var = 1'h1;
+            end //if
+            if (((idecode__rd_written__var!=1'h0)&&(idecode__rd__var[4]!=1'h0)))
+            begin
+                idecode__illegal__var = 1'h1;
+            end //if
+        end //if
+        if ((idecode__rs1__var==5'h0))
+        begin
+            idecode__rs1_valid__var = 1'h0;
+        end //if
+        if ((idecode__rs2__var==5'h0))
+        begin
+            idecode__rs2_valid__var = 1'h0;
+        end //if
+        if ((idecode__rd__var==5'h0))
+        begin
+            idecode__rd_written__var = 1'h0;
+        end //if
+        if ((instruction__data[15:0]==16'h0))
         begin
             idecode__illegal__var = 1'h1;
         end //if
-        if (((rv32i_idecode__rs2_valid!=1'h0)&&(rv32i_idecode__rs2[4]!=1'h0)))
-        begin
-            idecode__illegal__var = 1'h1;
-        end //if
-        if (((rv32i_idecode__rd_written!=1'h0)&&(rv32i_idecode__rd[4]!=1'h0)))
-        begin
-            idecode__illegal__var = 1'h1;
-        end //if
+        idecode__rd = idecode__rd__var;
+        idecode__rs1 = idecode__rs1__var;
+        idecode__rs2 = idecode__rs2__var;
+        idecode__rs1_valid = idecode__rs1_valid__var;
+        idecode__rs2_valid = idecode__rs2_valid__var;
+        idecode__rd_written = idecode__rd_written__var;
+        idecode__csr_access__access = idecode__csr_access__access__var;
+        idecode__op = idecode__op__var;
         idecode__illegal = idecode__illegal__var;
+        idecode__subop = idecode__subop__var;
     end //always
 
 endmodule // riscv_e32c_decode

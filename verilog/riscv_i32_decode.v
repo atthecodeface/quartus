@@ -43,8 +43,10 @@ module riscv_i32_decode
     idecode__rs2_valid,
     idecode__rd,
     idecode__rd_written,
+    idecode__csr_access__access_cancelled,
     idecode__csr_access__access,
     idecode__csr_access__address,
+    idecode__csr_access__write_data,
     idecode__immediate,
     idecode__immediate_shift,
     idecode__immediate_valid,
@@ -54,6 +56,7 @@ module riscv_i32_decode
     idecode__memory_read_unsigned,
     idecode__memory_width,
     idecode__illegal,
+    idecode__illegal_pc,
     idecode__is_compressed,
     idecode__ext__dummy
 );
@@ -77,8 +80,10 @@ module riscv_i32_decode
     output idecode__rs2_valid;
     output [4:0]idecode__rd;
     output idecode__rd_written;
+    output idecode__csr_access__access_cancelled;
     output [2:0]idecode__csr_access__access;
     output [11:0]idecode__csr_access__address;
+    output [31:0]idecode__csr_access__write_data;
     output [31:0]idecode__immediate;
     output [4:0]idecode__immediate_shift;
     output idecode__immediate_valid;
@@ -88,6 +93,7 @@ module riscv_i32_decode
     output idecode__memory_read_unsigned;
     output [1:0]idecode__memory_width;
     output idecode__illegal;
+    output idecode__illegal_pc;
     output idecode__is_compressed;
     output idecode__ext__dummy;
 
@@ -100,8 +106,10 @@ module riscv_i32_decode
     reg idecode__rs2_valid;
     reg [4:0]idecode__rd;
     reg idecode__rd_written;
+    reg idecode__csr_access__access_cancelled;
     reg [2:0]idecode__csr_access__access;
     reg [11:0]idecode__csr_access__address;
+    reg [31:0]idecode__csr_access__write_data;
     reg [31:0]idecode__immediate;
     reg [4:0]idecode__immediate_shift;
     reg idecode__immediate_valid;
@@ -111,6 +119,7 @@ module riscv_i32_decode
     reg idecode__memory_read_unsigned;
     reg [1:0]idecode__memory_width;
     reg idecode__illegal;
+    reg idecode__illegal_pc;
     reg idecode__is_compressed;
     reg idecode__ext__dummy;
 
@@ -262,7 +271,9 @@ module riscv_i32_decode
     reg idecode__illegal__var;
     reg [3:0]idecode__subop__var;
     reg [2:0]idecode__csr_access__access__var;
+    reg [11:0]idecode__csr_access__address__var;
         idecode__ext__dummy = 1'h0;
+        idecode__illegal_pc = 1'h0;
         idecode__is_compressed = 1'h0;
         idecode__rs1_valid__var = 1'h0;
         idecode__rs2_valid__var = 1'h0;
@@ -274,7 +285,11 @@ module riscv_i32_decode
         idecode__op__var = 4'hd;
         idecode__illegal__var = 1'h1;
         idecode__subop__var = 4'h0;
-        idecode__csr_access__address = instruction__data[31:20];
+        idecode__csr_access__access_cancelled = 1'h0;
+        idecode__csr_access__access__var = 3'h0;
+        idecode__csr_access__address__var = 12'h0;
+        idecode__csr_access__write_data = 32'h0;
+        idecode__csr_access__address__var = instruction__data[31:20];
         idecode__csr_access__access__var = 3'h0;
         combs__rs1_nonzero = (idecode__rs1!=5'h0);
         case (combs__opc) //synopsys parallel_case
@@ -740,6 +755,7 @@ module riscv_i32_decode
         idecode__illegal = idecode__illegal__var;
         idecode__subop = idecode__subop__var;
         idecode__csr_access__access = idecode__csr_access__access__var;
+        idecode__csr_access__address = idecode__csr_access__address__var;
     end //always
 
 endmodule // riscv_i32_decode

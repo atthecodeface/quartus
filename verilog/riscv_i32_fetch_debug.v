@@ -44,13 +44,17 @@ module riscv_i32_fetch_debug
     pipeline_ifetch_req__address,
     pipeline_ifetch_req__sequential,
     pipeline_ifetch_req__mode,
-    pipeline_ifetch_req__flush,
+    pipeline_ifetch_req__predicted_branch,
+    pipeline_ifetch_req__pc_if_mispredicted,
+    pipeline_ifetch_req__flush_pipeline,
 
     ifetch_req__valid,
     ifetch_req__address,
     ifetch_req__sequential,
     ifetch_req__mode,
-    ifetch_req__flush,
+    ifetch_req__predicted_branch,
+    ifetch_req__pc_if_mispredicted,
+    ifetch_req__flush_pipeline,
     debug_response__valid,
     debug_response__kill_fetch,
     debug_response__halt_request,
@@ -93,14 +97,18 @@ module riscv_i32_fetch_debug
     input [31:0]pipeline_ifetch_req__address;
     input pipeline_ifetch_req__sequential;
     input [2:0]pipeline_ifetch_req__mode;
-    input pipeline_ifetch_req__flush;
+    input pipeline_ifetch_req__predicted_branch;
+    input [31:0]pipeline_ifetch_req__pc_if_mispredicted;
+    input pipeline_ifetch_req__flush_pipeline;
 
     //b Outputs
     output ifetch_req__valid;
     output [31:0]ifetch_req__address;
     output ifetch_req__sequential;
     output [2:0]ifetch_req__mode;
-    output ifetch_req__flush;
+    output ifetch_req__predicted_branch;
+    output [31:0]ifetch_req__pc_if_mispredicted;
+    output ifetch_req__flush_pipeline;
     output debug_response__valid;
     output debug_response__kill_fetch;
     output debug_response__halt_request;
@@ -120,7 +128,9 @@ module riscv_i32_fetch_debug
     reg [31:0]ifetch_req__address;
     reg ifetch_req__sequential;
     reg [2:0]ifetch_req__mode;
-    reg ifetch_req__flush;
+    reg ifetch_req__predicted_branch;
+    reg [31:0]ifetch_req__pc_if_mispredicted;
+    reg ifetch_req__flush_pipeline;
     reg debug_response__valid;
     reg debug_response__kill_fetch;
     reg debug_response__halt_request;
@@ -152,7 +162,9 @@ module riscv_i32_fetch_debug
         ifetch_req__address = pipeline_ifetch_req__address;
         ifetch_req__sequential = pipeline_ifetch_req__sequential;
         ifetch_req__mode = pipeline_ifetch_req__mode;
-        ifetch_req__flush = pipeline_ifetch_req__flush;
+        ifetch_req__predicted_branch = pipeline_ifetch_req__predicted_branch;
+        ifetch_req__pc_if_mispredicted = pipeline_ifetch_req__pc_if_mispredicted;
+        ifetch_req__flush_pipeline = pipeline_ifetch_req__flush_pipeline;
         pipeline_ifetch_resp__valid = ifetch_resp__valid;
         pipeline_ifetch_resp__debug = ifetch_resp__debug;
         pipeline_ifetch_resp__data = ifetch_resp__data;

@@ -27,8 +27,10 @@ module riscv_i32_alu
     idecode__rs2_valid,
     idecode__rd,
     idecode__rd_written,
+    idecode__csr_access__access_cancelled,
     idecode__csr_access__access,
     idecode__csr_access__address,
+    idecode__csr_access__write_data,
     idecode__immediate,
     idecode__immediate_shift,
     idecode__immediate_valid,
@@ -38,6 +40,7 @@ module riscv_i32_alu
     idecode__memory_read_unsigned,
     idecode__memory_width,
     idecode__illegal,
+    idecode__illegal_pc,
     idecode__is_compressed,
     idecode__ext__dummy,
 
@@ -45,8 +48,10 @@ module riscv_i32_alu
     alu_result__arith_result,
     alu_result__branch_condition_met,
     alu_result__branch_target,
+    alu_result__csr_access__access_cancelled,
     alu_result__csr_access__access,
-    alu_result__csr_access__address
+    alu_result__csr_access__address,
+    alu_result__csr_access__write_data
 );
 
     //b Clocks
@@ -61,8 +66,10 @@ module riscv_i32_alu
     input idecode__rs2_valid;
     input [4:0]idecode__rd;
     input idecode__rd_written;
+    input idecode__csr_access__access_cancelled;
     input [2:0]idecode__csr_access__access;
     input [11:0]idecode__csr_access__address;
+    input [31:0]idecode__csr_access__write_data;
     input [31:0]idecode__immediate;
     input [4:0]idecode__immediate_shift;
     input idecode__immediate_valid;
@@ -72,6 +79,7 @@ module riscv_i32_alu
     input idecode__memory_read_unsigned;
     input [1:0]idecode__memory_width;
     input idecode__illegal;
+    input idecode__illegal_pc;
     input idecode__is_compressed;
     input idecode__ext__dummy;
 
@@ -80,8 +88,10 @@ module riscv_i32_alu
     output [31:0]alu_result__arith_result;
     output alu_result__branch_condition_met;
     output [31:0]alu_result__branch_target;
+    output alu_result__csr_access__access_cancelled;
     output [2:0]alu_result__csr_access__access;
     output [11:0]alu_result__csr_access__address;
+    output [31:0]alu_result__csr_access__write_data;
 
 // output components here
 
@@ -90,8 +100,10 @@ module riscv_i32_alu
     reg [31:0]alu_result__arith_result;
     reg alu_result__branch_condition_met;
     reg [31:0]alu_result__branch_target;
+    reg alu_result__csr_access__access_cancelled;
     reg [2:0]alu_result__csr_access__access;
     reg [11:0]alu_result__csr_access__address;
+    reg [31:0]alu_result__csr_access__write_data;
 
     //b Output nets
 
@@ -136,6 +148,7 @@ module riscv_i32_alu
     reg [31:0]alu_result__result__var;
     reg [31:0]alu_result__branch_target__var;
     reg [2:0]alu_result__csr_access__access__var;
+    reg [11:0]alu_result__csr_access__address__var;
         alu_combs__imm_or_rs2__var = rs2;
         if ((idecode__immediate_valid!=1'h0))
         begin
@@ -317,35 +330,41 @@ module riscv_i32_alu
         //pragma coverage on
         //synopsys  translate_on
         endcase
+        alu_result__csr_access__access_cancelled = 1'h0;
         alu_result__csr_access__access__var = 3'h0;
-        alu_result__csr_access__address = idecode__csr_access__address;
-        if ((idecode__subop==4'h1))
+        alu_result__csr_access__address__var = 12'h0;
+        alu_result__csr_access__write_data = 32'h0;
+        if ((1'h0!=64'h0))
         begin
-            alu_result__csr_access__access__var = 3'h3;
-        end //if
-        else
-        
-        begin
-            if ((idecode__subop==4'h2))
+            alu_result__csr_access__address__var = idecode__csr_access__address;
+            if ((idecode__subop==4'h1))
             begin
-                alu_result__csr_access__access__var = 3'h6;
+                alu_result__csr_access__access__var = 3'h3;
             end //if
             else
             
             begin
-                if ((idecode__subop==4'h3))
+                if ((idecode__subop==4'h2))
                 begin
-                    alu_result__csr_access__access__var = 3'h7;
+                    alu_result__csr_access__access__var = 3'h6;
                 end //if
+                else
+                
+                begin
+                    if ((idecode__subop==4'h3))
+                    begin
+                        alu_result__csr_access__access__var = 3'h7;
+                    end //if
+                end //else
             end //else
-        end //else
-        if ((idecode__rs1==5'h0))
-        begin
-            alu_result__csr_access__access__var = 3'h2;
-        end //if
-        if ((idecode__op!=4'h4))
-        begin
-            alu_result__csr_access__access__var = 3'h0;
+            if ((idecode__rs1==5'h0))
+            begin
+                alu_result__csr_access__access__var = 3'h2;
+            end //if
+            if ((idecode__op!=4'h4))
+            begin
+                alu_result__csr_access__access__var = 3'h0;
+            end //if
         end //if
         alu_combs__imm_or_rs2 = alu_combs__imm_or_rs2__var;
         alu_combs__rshift_operand = alu_combs__rshift_operand__var;
@@ -357,6 +376,7 @@ module riscv_i32_alu
         alu_result__result = alu_result__result__var;
         alu_result__branch_target = alu_result__branch_target__var;
         alu_result__csr_access__access = alu_result__csr_access__access__var;
+        alu_result__csr_access__address = alu_result__csr_access__address__var;
     end //always
 
 endmodule // riscv_i32_alu

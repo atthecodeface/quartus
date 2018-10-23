@@ -1,30 +1,3 @@
-set_global_assignment -name TOP_LEVEL_ENTITY de1_cl_hps_fpga_debug
-#============================================================
-# Build by Terasic V1.0.0
-#============================================================
-
-
-set_global_assignment -name FAMILY "Cyclone V"
-set_global_assignment -name DEVICE 5CSEMA5F31C6
-set_global_assignment -name ORIGINAL_QUARTUS_VERSION 13
-set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
-set_global_assignment -name PROJECT_CREATION_TIME_DATE "MON JUN 17 20:35:29 2013"
-set_global_assignment -name DEVICE_FILTER_PACKAGE FBGA
-
-#Enable Worst-Case Timing Report
-#Report 10 paths per clock domain
-set_global_assignment -name TIMEQUEST_DO_REPORT_TIMING ON
-set_global_assignment -name TIMEQUEST_REPORT_WORST_CASE_TIMING_PATHS ON
-set_global_assignment -name TIMEQUEST_REPORT_NUM_WORST_CASE_TIMING_PATHS 10
-
-set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
-
-set_global_assignment -name UNIPHY_SEQUENCER_DQS_CONFIG_ENABLE ON
-set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
-set_global_assignment -name ECO_REGENERATE_REPORT ON
-set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
-
-set_global_assignment -name SOURCE_TCL_SCRIPT_FILE hps_fpga_debug.tcl
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to hps_ddr3__ck_n -tag __hps_sdram_p0
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to hps_ddr3__ck_p -tag __hps_sdram_p0
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to hps_ddr3__addr[0] -tag __hps_sdram_p0
@@ -207,12 +180,15 @@ set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to hps_ddr3__dm[1] -tag __hps_sdram_p0
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to hps_ddr3__dm[2] -tag __hps_sdram_p0
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to hps_ddr3__dm[3] -tag __hps_sdram_p0
-set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to hps_ddr3__addr[14] -tag __hps_sdram_p0
-set_global_assignment -name SOURCE_TCL_SCRIPT_FILE hps_fpga_debug.qip.tcl
 
-
+set_global_assignment -name USE_DLL_FREQUENCY_FOR_DQS_DELAY_CHAIN ON
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_instance_assignment -name D5_DELAY 2 -to hps_ddr3__ck_p -tag __hps_sdram_p0
 set_instance_assignment -name D5_DELAY 2 -to hps_ddr3__ck_n -tag __hps_sdram_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to hps_ddr3__addr[14] -tag __hps_sdram_p0
 set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to hps_ddr3__dq[0] -tag __hps_sdram_p0
 set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to hps_ddr3__dq[1] -tag __hps_sdram_p0
 set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to hps_ddr3__dq[2] -tag __hps_sdram_p0
@@ -300,4 +276,3 @@ set_instance_assignment -name GLOBAL_SIGNAL OFF -to hps_i|hps_0|hps_io|border|hp
 set_instance_assignment -name GLOBAL_SIGNAL OFF -to hps_i|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[3] -tag __hps_sdram_p0
 set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to hps_i|hps_0|hps_io|border|hps_sdram_inst -tag __hps_sdram_p0
 set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to hps_i|hps_0|hps_io|border|hps_sdram_inst|pll0|fbout -tag __hps_sdram_p0
-set_global_assignment -name USE_DLL_FREQUENCY_FOR_DQS_DELAY_CHAIN ON

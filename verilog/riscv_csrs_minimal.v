@@ -91,19 +91,18 @@ module riscv_csrs_minimal
 
     csr_controls__exec_mode,
     csr_controls__retire,
-    csr_controls__timer_inc,
-    csr_controls__timer_clear,
-    csr_controls__timer_load,
     csr_controls__timer_value,
-    csr_controls__trap,
-    csr_controls__trap_to_mode,
-    csr_controls__mret,
-    csr_controls__trap_cause,
-    csr_controls__trap_pc,
-    csr_controls__trap_value,
-    csr_write_data,
+    csr_controls__trap__valid,
+    csr_controls__trap__to_mode,
+    csr_controls__trap__cause,
+    csr_controls__trap__pc,
+    csr_controls__trap__value,
+    csr_controls__trap__mret,
+    csr_controls__trap__vector,
+    csr_access__access_cancelled,
     csr_access__access,
     csr_access__address,
+    csr_access__write_data,
     irqs__nmi,
     irqs__meip,
     irqs__seip,
@@ -142,6 +141,8 @@ module riscv_csrs_minimal
     csrs__mip__meip,
     csrs__mip__seip,
     csrs__mip__ueip,
+    csrs__mip__seip_sw,
+    csrs__mip__ueip_sw,
     csrs__mip__mtip,
     csrs__mip__stip,
     csrs__mip__utip,
@@ -173,21 +174,19 @@ module riscv_csrs_minimal
         //   Control signals to update the CSRs
     input [2:0]csr_controls__exec_mode;
     input csr_controls__retire;
-    input csr_controls__timer_inc;
-    input csr_controls__timer_clear;
-    input csr_controls__timer_load;
     input [63:0]csr_controls__timer_value;
-    input csr_controls__trap;
-    input [2:0]csr_controls__trap_to_mode;
-    input csr_controls__mret;
-    input [4:0]csr_controls__trap_cause;
-    input [31:0]csr_controls__trap_pc;
-    input [31:0]csr_controls__trap_value;
-        //   Write data for the CSR access, later in the cycle than @csr_access possibly
-    input [31:0]csr_write_data;
+    input csr_controls__trap__valid;
+    input [2:0]csr_controls__trap__to_mode;
+    input [4:0]csr_controls__trap__cause;
+    input [31:0]csr_controls__trap__pc;
+    input [31:0]csr_controls__trap__value;
+    input csr_controls__trap__mret;
+    input csr_controls__trap__vector;
         //   RISC-V CSR access, combinatorially decoded
+    input csr_access__access_cancelled;
     input [2:0]csr_access__access;
     input [11:0]csr_access__address;
+    input [31:0]csr_access__write_data;
         //   Interrupts in to the CPU
     input irqs__nmi;
     input irqs__meip;
@@ -230,6 +229,8 @@ module riscv_csrs_minimal
     output csrs__mip__meip;
     output csrs__mip__seip;
     output csrs__mip__ueip;
+    output csrs__mip__seip_sw;
+    output csrs__mip__ueip_sw;
     output csrs__mip__mtip;
     output csrs__mip__stip;
     output csrs__mip__utip;
@@ -294,6 +295,8 @@ module riscv_csrs_minimal
     reg csrs__mip__meip;
     reg csrs__mip__seip;
     reg csrs__mip__ueip;
+    reg csrs__mip__seip_sw;
+    reg csrs__mip__ueip_sw;
     reg csrs__mip__mtip;
     reg csrs__mip__stip;
     reg csrs__mip__utip;
@@ -471,37 +474,40 @@ module riscv_csrs_minimal
         //synopsys  translate_on
         endcase
         csr_write__enable__var = 1'h0;
-        csr_write__data__var = csr_write_data;
-        case (csr_access__access) //synopsys parallel_case
-        3'h1: // req 1
-            begin
-            csr_write__enable__var = 1'h1;
-            end
-        3'h3: // req 1
-            begin
-            csr_write__enable__var = 1'h1;
-            end
-        3'h6: // req 1
-            begin
-            csr_write__enable__var = 1'h1;
-            csr_write__data__var = csr_write__data__var | csr_data__read_data__var;
-            end
-        3'h7: // req 1
-            begin
-            csr_write__enable__var = 1'h1;
-            csr_write__data__var = (csr_data__read_data__var & ~csr_write_data);
-            end
-        //synopsys  translate_off
-        //pragma coverage off
-        //synopsys  translate_on
-        default:
-            begin
-            //Need a default case to make Cadence Lint happy, even though this is not a full case
-            end
-        //synopsys  translate_off
-        //pragma coverage on
-        //synopsys  translate_on
-        endcase
+        csr_write__data__var = csr_access__write_data;
+        if (!(csr_access__access_cancelled!=1'h0))
+        begin
+            case (csr_access__access) //synopsys parallel_case
+            3'h1: // req 1
+                begin
+                csr_write__enable__var = 1'h1;
+                end
+            3'h3: // req 1
+                begin
+                csr_write__enable__var = 1'h1;
+                end
+            3'h6: // req 1
+                begin
+                csr_write__enable__var = 1'h1;
+                csr_write__data__var = csr_write__data__var | csr_data__read_data__var;
+                end
+            3'h7: // req 1
+                begin
+                csr_write__enable__var = 1'h1;
+                csr_write__data__var = (csr_data__read_data__var & ~csr_access__write_data);
+                end
+            //synopsys  translate_off
+            //pragma coverage off
+            //synopsys  translate_on
+            default:
+                begin
+                //Need a default case to make Cadence Lint happy, even though this is not a full case
+                end
+            //synopsys  translate_off
+            //pragma coverage on
+            //synopsys  translate_on
+            endcase
+        end //if
         csr_data__read_data = csr_data__read_data__var;
         csr_data__illegal_access = csr_data__illegal_access__var;
         csr_write__enable = csr_write__enable__var;
@@ -548,7 +554,9 @@ module riscv_csrs_minimal
             csrs__mstatus__sie <= 1'h0;
             csrs__mstatus__uie <= 1'h0;
             csrs__mip__seip <= 1'h0;
+            csrs__mip__seip_sw <= 1'h0;
             csrs__mip__ueip <= 1'h0;
+            csrs__mip__ueip_sw <= 1'h0;
             csrs__mip__stip <= 1'h0;
             csrs__mip__utip <= 1'h0;
             csrs__mip__ssip <= 1'h0;
@@ -601,7 +609,7 @@ module riscv_csrs_minimal
                 csrs__mie__mtip <= csr_write__data[7];
                 csrs__mie__msip <= csr_write__data[3];
             end //if
-            if ((csr_controls__trap!=1'h0))
+            if ((csr_controls__trap__valid!=1'h0))
             begin
                 csrs__mstatus__mpp <= 2'h3;
                 csrs__mstatus__mpie <= csrs__mstatus__mie;
@@ -610,7 +618,7 @@ module riscv_csrs_minimal
             else
             
             begin
-                if ((csr_controls__mret!=1'h0))
+                if ((csr_controls__trap__mret!=1'h0))
                 begin
                     csrs__mstatus__mpp <= 2'h3;
                     csrs__mstatus__mpie <= 1'h1;
@@ -627,26 +635,26 @@ module riscv_csrs_minimal
             begin
                 csrs__mepc <= csr_write__data;
             end //if
-            if ((csr_controls__trap!=1'h0))
+            if ((csr_controls__trap__valid!=1'h0))
             begin
-                csrs__mepc <= csr_controls__trap_pc;
+                csrs__mepc <= csr_controls__trap__pc;
             end //if
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h305)))
             begin
                 csrs__mtvec__base <= csr_write__data[31:2];
                 csrs__mtvec__vectored <= csr_write__data[0];
             end //if
-            if ((csr_controls__trap!=1'h0))
+            if ((csr_controls__trap__valid!=1'h0))
             begin
-                csrs__mtval <= csr_controls__trap_value;
+                csrs__mtval <= csr_controls__trap__value;
             end //if
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h342)))
             begin
                 csrs__mcause <= csr_write__data;
             end //if
-            if ((csr_controls__trap!=1'h0))
+            if ((csr_controls__trap__valid!=1'h0))
             begin
-                case (csr_controls__trap_cause) //synopsys parallel_case
+                case (csr_controls__trap__cause) //synopsys parallel_case
                 5'h0: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h0};
@@ -697,7 +705,7 @@ module riscv_csrs_minimal
                     end
                 default: // req 1
                     begin
-                    csrs__mcause <= {{{1'h1,23'h0},4'h0},csr_controls__trap_cause[3:0]};
+                    csrs__mcause <= {{{1'h1,23'h0},4'h0},csr_controls__trap__cause[3:0]};
                     end
                 endcase
             end //if
@@ -721,7 +729,9 @@ module riscv_csrs_minimal
             csrs__mstatus__sie <= 1'h0;
             csrs__mstatus__uie <= 1'h0;
             csrs__mip__seip <= 1'h0;
+            csrs__mip__seip_sw <= 1'h0;
             csrs__mip__ueip <= 1'h0;
+            csrs__mip__ueip_sw <= 1'h0;
             csrs__mip__stip <= 1'h0;
             csrs__mip__utip <= 1'h0;
             csrs__mip__ssip <= 1'h0;

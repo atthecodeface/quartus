@@ -14,6 +14,8 @@
 #============================================================
 #source "modules/hps/synthesis/submodules/hps_sdram_p0_pin_assignments.tcl"
 
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CSEMA5F31C6
 
 set_instance_assignment -name D5_DELAY 2 -to hps_ddr3__ck_p -tag __hps_sdram_p0
 set_instance_assignment -name D5_DELAY 2 -to hps_ddr3__ck_n -tag __hps_sdram_p0

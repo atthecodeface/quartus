@@ -1,0 +1,6 @@
+QUARTUS_VERSION = "15.0"
+DATE = "15:04:24  October 01, 2018"
+
+# Revisions
+
+PROJECT_REVISION = "de1_hps_debug"

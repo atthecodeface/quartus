@@ -9,7 +9,7 @@ pin_lvttl_signal N2    clk_50
 
 # Audio DAC/ADC
 pin_lvttl_signal  B5 de2_aud__adcdat
-pin_lvttl_signal  C5 de2_aud__adclkrck
+pin_lvttl_signal  C5 de2_aud__adclrck
 pin_lvttl_signal  B4 de2_aud__bclk
 pin_lvttl_signal  A4 de2_aud__dacdat
 pin_lvttl_signal  C6 de2_aud__daclrck

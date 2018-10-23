@@ -1,19 +1,3 @@
-module  pll_lcd_0002(
-
-	// interface 'refclk'
-	input wire refclk,
-
-	// interface 'reset'
-	input wire rst,
-
-	// interface 'outclk0'
-	output wire[1:0] outclk,
-
-	// interface 'locked'
-	output wire[1:0] locked
-);
-
-endmodule
 module pll_lcd (
 		input  wire  refclk,   //  refclk.clk
 		input  wire  rst,      //   reset.reset
@@ -48,10 +32,10 @@ module pll_lcd (
 	);
 
 endmodule
-module de1_cl_hps_fpga_debug ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
+module de1_cl_hps_project ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
 
                      de1_adc__cs_n, de1_adc__din, de1_adc__dout, de1_adc__sclk,
-                     de1_aud__adcdat, de1_aud__adclkrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
+                     de1_aud__adcdat, de1_aud__adclrck, de1_aud__bclk, de1_aud__dacdat, de1_aud__daclrck, de1_aud__xck,
 
                      de1_ddr__clk, de1_ddr__cke, de1_ddr__cs_n,
                      de1_ddr__addr, de1_ddr__ba,
@@ -124,7 +108,7 @@ module de1_cl_hps_fpga_debug ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    output  de1_adc__sclk;
 
    input   de1_aud__adcdat;
-   inout   de1_aud__adclkrck;
+   inout   de1_aud__adclrck;
    inout   de1_aud__bclk;
    output  de1_aud__dacdat;
    inout   de1_aud__daclrck;
@@ -378,9 +362,10 @@ module de1_cl_hps_fpga_debug ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
   
    wire         vga_clk;
    wire         vga_clk_locked;
-   wire         lcdo_clk;
+   wire         lcd_clk;
    wire         lcd_clk_locked;
    wire         de1_cl_lcd__clock;
+   wire         de1_cl_lcd_reset_n;
    wire         de1_vga_clock;
    wire         de1_vga_reset_n;
    pll_lcd video_clk_gen( .refclk(clk_50), .rst(!reset_n),
@@ -402,14 +387,14 @@ module de1_cl_hps_fpga_debug ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    assign de1_ps2_in__clk  = de1_ps2_clk;
    assign de1_ps2_in__data = de1_ps2_dat;
 
-   wire         de1_ps2b_in__clk;
-   wire         de1_ps2b_in__data;
-   wire         de1_ps2b_out__clk;
-   wire         de1_ps2b_out__data;
-   assign de1_ps2b_clk = de1_ps2b_out__clk  ? 1'bz: 1'b0;
-   assign de1_ps2b_dat = de1_ps2b_out__data ? 1'bz: 1'b0;
-   assign de1_ps2b_in__clk  = de1_ps2b_clk;
-   assign de1_ps2b_in__data = de1_ps2b_dat;
+   wire         de1_ps2_b_in__clk;
+   wire         de1_ps2_b_in__data;
+   wire         de1_ps2_b_out__clk;
+   wire         de1_ps2_b_out__data;
+   assign de1_ps2_b_clk = de1_ps2_b_out__clk  ? 1'bz: 1'b0;
+   assign de1_ps2_b_dat = de1_ps2_b_out__data ? 1'bz: 1'b0;
+   assign de1_ps2_b_in__clk  = de1_ps2_b_clk;
+   assign de1_ps2_b_in__data = de1_ps2_b_dat;
    
    hps hps_i(.clk_clk(clk_50),
              .hps_0_f2h_axi_clock_clk( hps_0_f2h_axi_clock_clk),
@@ -626,105 +611,105 @@ module de1_cl_hps_fpga_debug ( clk_50, clk2_50, clk3_50, clk4_50, // reset_n,
    
 
    assign hps_0_h2f_lw_axi_clock_clk = clk_50;
-   hps_fpga_debug fpga_0( .de1_vga_clock(de1_vga_clock),
-                          .de1_vga_clock__enable(1'b1),
-                          .de1_cl_lcd_clock(de1_cl_lcd__clock),
-                          .de1_cl_lcd_clock__enable(1'b1),
-                          .lw_axi_clock_clk(hps_0_h2f_lw_axi_clock_clk),
-                          .lw_axi_clock_clk__enable(1'b1),
-                          .clk(hps_0_h2f_lw_axi_clock_clk),
-                          .clk__enable(1'b1),
-    .reset_n(reset_n),
+   `de1_cl_hps_dut_module dut(.de1_vga_clock(de1_vga_clock),
+                              .de1_vga_clock__enable(1'b1),
+                              .de1_cl_lcd_clock(de1_cl_lcd__clock),
+                              .de1_cl_lcd_clock__enable(1'b1),
+                              .lw_axi_clock_clk(hps_0_h2f_lw_axi_clock_clk),
+                              .lw_axi_clock_clk__enable(1'b1),
+                              .clk(hps_0_h2f_lw_axi_clock_clk),
+                              .clk__enable(1'b1),
+                              .reset_n(reset_n),
 
-    .de1_irda_rxd(de1_irda__rxd),
-    .de1_switches(de1_switches),
-    .de1_keys(de1_keys),
-    .de1_vga_reset_n(de1_vga_reset_n),
-    .de1_ps2b_in__data(de1_ps2b_in__data),
-    .de1_ps2b_in__clk(de1_ps2b_in__clk),
-    .de1_ps2_in__data(de1_ps2_in__data),
-    .de1_ps2_in__clk(de1_ps2_in__clk),
-    .de1_cl_inputs_status__sr_data(de1_cl_inputs_status__sr_data),
-    .de1_cl_inputs_status__left_rotary__direction_pin(de1_cl_inputs_status__left_rotary__direction_pin),
-    .de1_cl_inputs_status__left_rotary__transition_pin(de1_cl_inputs_status__left_rotary__transition_pin),
-    .de1_cl_inputs_status__right_rotary__direction_pin(de1_cl_inputs_status__right_rotary__direction_pin),
-    .de1_cl_inputs_status__right_rotary__transition_pin(de1_cl_inputs_status__right_rotary__transition_pin),
-    .lw_axi_rready(h2f_lw__rready),
-    .lw_axi_bready(h2f_lw__bready),
-    .lw_axi_w__valid(h2f_lw__wvalid),
-    .lw_axi_w__id(h2f_lw__wid),
-    .lw_axi_w__data(h2f_lw__wdata),
-    .lw_axi_w__strb(h2f_lw__wstrb),
-    .lw_axi_w__last(h2f_lw__wlast),
-    .lw_axi_w__user(0),
-    .lw_axi_aw__valid(h2f_lw__awvalid),
-    .lw_axi_aw__id(h2f_lw__awid),
-    .lw_axi_aw__addr(h2f_lw__awaddr),
-    .lw_axi_aw__len(h2f_lw__awlen),
-    .lw_axi_aw__size(h2f_lw__awsize),
-    .lw_axi_aw__burst(h2f_lw__awburst),
-    .lw_axi_aw__lock(h2f_lw__awlock),
-    .lw_axi_aw__cache(h2f_lw__awcache),
-    .lw_axi_aw__prot(h2f_lw__awprot),
-    .lw_axi_aw__qos(0),
-    .lw_axi_aw__region(0),
-    .lw_axi_aw__user(0),
-    .lw_axi_ar__valid(h2f_lw__arvalid),
-    .lw_axi_ar__id(h2f_lw__arid),
-    .lw_axi_ar__addr(h2f_lw__araddr),
-    .lw_axi_ar__len(h2f_lw__arlen),
-    .lw_axi_ar__size(h2f_lw__arsize),
-    .lw_axi_ar__burst(h2f_lw__arburst),
-    .lw_axi_ar__lock(h2f_lw__arlock),
-    .lw_axi_ar__cache(h2f_lw__arcache),
-    .lw_axi_ar__prot(h2f_lw__arprot),
-    .lw_axi_ar__qos(0),
-    .lw_axi_ar__region(0),
-    .lw_axi_ar__user(0),
+                              .de1_irda_rxd(de1_irda__rxd),
+                              .de1_switches(de1_switches),
+                              .de1_keys(de1_keys),
+                              .de1_vga_reset_n(de1_vga_reset_n),
+                              .de1_ps2b_in__data(de1_ps2_b_in__data),
+                              .de1_ps2b_in__clk(de1_ps2_b_in__clk),
+                              .de1_ps2_in__data(de1_ps2_in__data),
+                              .de1_ps2_in__clk(de1_ps2_in__clk),
+                              .de1_cl_inputs_status__sr_data(de1_cl_inputs_status__sr_data),
+                              .de1_cl_inputs_status__left_rotary__direction_pin(de1_cl_inputs_status__left_rotary__direction_pin),
+                              .de1_cl_inputs_status__left_rotary__transition_pin(de1_cl_inputs_status__left_rotary__transition_pin),
+                              .de1_cl_inputs_status__right_rotary__direction_pin(de1_cl_inputs_status__right_rotary__direction_pin),
+                              .de1_cl_inputs_status__right_rotary__transition_pin(de1_cl_inputs_status__right_rotary__transition_pin),
+                              .lw_axi_rready(h2f_lw__rready),
+                              .lw_axi_bready(h2f_lw__bready),
+                              .lw_axi_w__valid(h2f_lw__wvalid),
+                              .lw_axi_w__id(h2f_lw__wid),
+                              .lw_axi_w__data(h2f_lw__wdata),
+                              .lw_axi_w__strb(h2f_lw__wstrb),
+                              .lw_axi_w__last(h2f_lw__wlast),
+                              .lw_axi_w__user(0),
+                              .lw_axi_aw__valid(h2f_lw__awvalid),
+                              .lw_axi_aw__id(h2f_lw__awid),
+                              .lw_axi_aw__addr(h2f_lw__awaddr),
+                              .lw_axi_aw__len(h2f_lw__awlen),
+                              .lw_axi_aw__size(h2f_lw__awsize),
+                              .lw_axi_aw__burst(h2f_lw__awburst),
+                              .lw_axi_aw__lock(h2f_lw__awlock),
+                              .lw_axi_aw__cache(h2f_lw__awcache),
+                              .lw_axi_aw__prot(h2f_lw__awprot),
+                              .lw_axi_aw__qos(0),
+                              .lw_axi_aw__region(0),
+                              .lw_axi_aw__user(0),
+                              .lw_axi_ar__valid(h2f_lw__arvalid),
+                              .lw_axi_ar__id(h2f_lw__arid),
+                              .lw_axi_ar__addr(h2f_lw__araddr),
+                              .lw_axi_ar__len(h2f_lw__arlen),
+                              .lw_axi_ar__size(h2f_lw__arsize),
+                              .lw_axi_ar__burst(h2f_lw__arburst),
+                              .lw_axi_ar__lock(h2f_lw__arlock),
+                              .lw_axi_ar__cache(h2f_lw__arcache),
+                              .lw_axi_ar__prot(h2f_lw__arprot),
+                              .lw_axi_ar__qos(0),
+                              .lw_axi_ar__region(0),
+                              .lw_axi_ar__user(0),
 
-    .de1_vga__vs(de1_vga__vs),
-    .de1_vga__hs(de1_vga__hs),
-    .de1_vga__blank_n(de1_vga__blank_n),
-    .de1_vga__sync_n(de1_vga__sync_n),
-    .de1_vga__red(de1_vga__r),
-    .de1_vga__green(de1_vga__g),
-    .de1_vga__blue(de1_vga__b),
-    .de1_cl_lcd_reset_n(de1_cl_lcd_reset_n),
-    .de1_cl_lcd__vsync_n(de1_cl_lcd__vsync_n),
-    .de1_cl_lcd__hsync_n(de1_cl_lcd__hsync_n),
-    .de1_cl_lcd__display_enable(de1_cl_lcd__display_enable),
-    .de1_cl_lcd__red(de1_cl_lcd__red),
-    .de1_cl_lcd__green(de1_cl_lcd__green),
-    .de1_cl_lcd__blue(de1_cl_lcd__blue),
-    .de1_cl_lcd__backlight(de1_cl_lcd__backlight),
-    .de1_irda_txd(de1_irda__txd),
-    .de1_ps2b_out__data(de1_ps2b_out__data),
-    .de1_ps2b_out__clk(de1_ps2b_out__clk),
-    .de1_ps2_out__data(de1_ps2_out__data),
-    .de1_ps2_out__clk(de1_ps2_out__clk),
-    .de1_leds__leds(de1_leds),
-    .de1_leds__h0(de1_hex0),
-    .de1_leds__h1(de1_hex1),
-    .de1_leds__h2(de1_hex2),
-    .de1_leds__h3(de1_hex3),
-    .de1_leds__h4(de1_hex4),
-    .de1_leds__h5(de1_hex5),
-    .de1_cl_led_data_pin(de1_cl_led_data_pin),
-    .de1_cl_inputs_control__sr_clock(de1_cl_inputs_control__sr_clock),
-    .de1_cl_inputs_control__sr_shift(de1_cl_inputs_control__sr_shift),
-    .lw_axi_r__valid(h2f_lw__rvalid),
-    .lw_axi_r__id(h2f_lw__rid),
-    .lw_axi_r__data(h2f_lw__rdata),
-    .lw_axi_r__resp(h2f_lw__rresp),
-    .lw_axi_r__last(h2f_lw__rlast),
-    .lw_axi_r__user(),
-    .lw_axi_b__valid(h2f_lw__bvalid),
-    .lw_axi_b__id(h2f_lw__bid),
-    .lw_axi_b__resp(h2f_lw__bresp),
-    .lw_axi_b__user(),
-    .lw_axi_wready(h2f_lw__wready),
-    .lw_axi_awready(h2f_lw__awready),
-    .lw_axi_arready(h2f_lw__arready)
-);
+                              .de1_vga__vs(de1_vga__vs),
+                              .de1_vga__hs(de1_vga__hs),
+                              .de1_vga__blank_n(de1_vga__blank_n),
+                              .de1_vga__sync_n(de1_vga__sync_n),
+                              .de1_vga__red(de1_vga__r),
+                              .de1_vga__green(de1_vga__g),
+                              .de1_vga__blue(de1_vga__b),
+                              .de1_cl_lcd_reset_n(de1_cl_lcd_reset_n),
+                              .de1_cl_lcd__vsync_n(de1_cl_lcd__vsync_n),
+                              .de1_cl_lcd__hsync_n(de1_cl_lcd__hsync_n),
+                              .de1_cl_lcd__display_enable(de1_cl_lcd__display_enable),
+                              .de1_cl_lcd__red(de1_cl_lcd__red),
+                              .de1_cl_lcd__green(de1_cl_lcd__green),
+                              .de1_cl_lcd__blue(de1_cl_lcd__blue),
+                              .de1_cl_lcd__backlight(de1_cl_lcd__backlight),
+                              .de1_irda_txd(de1_irda__txd),
+                              .de1_ps2b_out__data(de1_ps2_b_out__data),
+                              .de1_ps2b_out__clk(de1_ps2_b_out__clk),
+                              .de1_ps2_out__data(de1_ps2_out__data),
+                              .de1_ps2_out__clk(de1_ps2_out__clk),
+                              .de1_leds__leds(de1_leds),
+                              .de1_leds__h0(de1_hex0),
+                              .de1_leds__h1(de1_hex1),
+                              .de1_leds__h2(de1_hex2),
+                              .de1_leds__h3(de1_hex3),
+                              .de1_leds__h4(de1_hex4),
+                              .de1_leds__h5(de1_hex5),
+                              .de1_cl_led_data_pin(de1_cl_led_data_pin),
+                              .de1_cl_inputs_control__sr_clock(de1_cl_inputs_control__sr_clock),
+                              .de1_cl_inputs_control__sr_shift(de1_cl_inputs_control__sr_shift),
+                              .lw_axi_r__valid(h2f_lw__rvalid),
+                              .lw_axi_r__id(h2f_lw__rid),
+                              .lw_axi_r__data(h2f_lw__rdata),
+                              .lw_axi_r__resp(h2f_lw__rresp),
+                              .lw_axi_r__last(h2f_lw__rlast),
+                              .lw_axi_r__user(),
+                              .lw_axi_b__valid(h2f_lw__bvalid),
+                              .lw_axi_b__id(h2f_lw__bid),
+                              .lw_axi_b__resp(h2f_lw__bresp),
+                              .lw_axi_b__user(),
+                              .lw_axi_wready(h2f_lw__wready),
+                              .lw_axi_awready(h2f_lw__awready),
+                              .lw_axi_arready(h2f_lw__arready)
+                              );
 
 endmodule

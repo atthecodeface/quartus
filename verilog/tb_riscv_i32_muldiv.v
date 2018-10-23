@@ -46,8 +46,10 @@ module tb_riscv_i32_muldiv
     reg coproc_controls_with_feedback__dec_idecode__rs2_valid;
     reg [4:0]coproc_controls_with_feedback__dec_idecode__rd;
     reg coproc_controls_with_feedback__dec_idecode__rd_written;
+    reg coproc_controls_with_feedback__dec_idecode__csr_access__access_cancelled;
     reg [2:0]coproc_controls_with_feedback__dec_idecode__csr_access__access;
     reg [11:0]coproc_controls_with_feedback__dec_idecode__csr_access__address;
+    reg [31:0]coproc_controls_with_feedback__dec_idecode__csr_access__write_data;
     reg [31:0]coproc_controls_with_feedback__dec_idecode__immediate;
     reg [4:0]coproc_controls_with_feedback__dec_idecode__immediate_shift;
     reg coproc_controls_with_feedback__dec_idecode__immediate_valid;
@@ -57,6 +59,7 @@ module tb_riscv_i32_muldiv
     reg coproc_controls_with_feedback__dec_idecode__memory_read_unsigned;
     reg [1:0]coproc_controls_with_feedback__dec_idecode__memory_width;
     reg coproc_controls_with_feedback__dec_idecode__illegal;
+    reg coproc_controls_with_feedback__dec_idecode__illegal_pc;
     reg coproc_controls_with_feedback__dec_idecode__is_compressed;
     reg coproc_controls_with_feedback__dec_idecode__ext__dummy;
     reg coproc_controls_with_feedback__dec_to_alu_blocked;
@@ -84,8 +87,10 @@ module tb_riscv_i32_muldiv
     wire coproc_controls__dec_idecode__rs2_valid;
     wire [4:0]coproc_controls__dec_idecode__rd;
     wire coproc_controls__dec_idecode__rd_written;
+    wire coproc_controls__dec_idecode__csr_access__access_cancelled;
     wire [2:0]coproc_controls__dec_idecode__csr_access__access;
     wire [11:0]coproc_controls__dec_idecode__csr_access__address;
+    wire [31:0]coproc_controls__dec_idecode__csr_access__write_data;
     wire [31:0]coproc_controls__dec_idecode__immediate;
     wire [4:0]coproc_controls__dec_idecode__immediate_shift;
     wire coproc_controls__dec_idecode__immediate_valid;
@@ -95,6 +100,7 @@ module tb_riscv_i32_muldiv
     wire coproc_controls__dec_idecode__memory_read_unsigned;
     wire [1:0]coproc_controls__dec_idecode__memory_width;
     wire coproc_controls__dec_idecode__illegal;
+    wire coproc_controls__dec_idecode__illegal_pc;
     wire coproc_controls__dec_idecode__is_compressed;
     wire coproc_controls__dec_idecode__ext__dummy;
     wire coproc_controls__dec_to_alu_blocked;
@@ -127,6 +133,7 @@ module tb_riscv_i32_muldiv
         .coproc_controls__dec_to_alu_blocked(            coproc_controls__dec_to_alu_blocked),
         .coproc_controls__dec_idecode__ext__dummy(            coproc_controls__dec_idecode__ext__dummy),
         .coproc_controls__dec_idecode__is_compressed(            coproc_controls__dec_idecode__is_compressed),
+        .coproc_controls__dec_idecode__illegal_pc(            coproc_controls__dec_idecode__illegal_pc),
         .coproc_controls__dec_idecode__illegal(            coproc_controls__dec_idecode__illegal),
         .coproc_controls__dec_idecode__memory_width(            coproc_controls__dec_idecode__memory_width),
         .coproc_controls__dec_idecode__memory_read_unsigned(            coproc_controls__dec_idecode__memory_read_unsigned),
@@ -136,8 +143,10 @@ module tb_riscv_i32_muldiv
         .coproc_controls__dec_idecode__immediate_valid(            coproc_controls__dec_idecode__immediate_valid),
         .coproc_controls__dec_idecode__immediate_shift(            coproc_controls__dec_idecode__immediate_shift),
         .coproc_controls__dec_idecode__immediate(            coproc_controls__dec_idecode__immediate),
+        .coproc_controls__dec_idecode__csr_access__write_data(            coproc_controls__dec_idecode__csr_access__write_data),
         .coproc_controls__dec_idecode__csr_access__address(            coproc_controls__dec_idecode__csr_access__address),
         .coproc_controls__dec_idecode__csr_access__access(            coproc_controls__dec_idecode__csr_access__access),
+        .coproc_controls__dec_idecode__csr_access__access_cancelled(            coproc_controls__dec_idecode__csr_access__access_cancelled),
         .coproc_controls__dec_idecode__rd_written(            coproc_controls__dec_idecode__rd_written),
         .coproc_controls__dec_idecode__rd(            coproc_controls__dec_idecode__rd),
         .coproc_controls__dec_idecode__rs2_valid(            coproc_controls__dec_idecode__rs2_valid),
@@ -162,6 +171,7 @@ module tb_riscv_i32_muldiv
         .coproc_controls__dec_to_alu_blocked(coproc_controls_with_feedback__dec_to_alu_blocked),
         .coproc_controls__dec_idecode__ext__dummy(coproc_controls_with_feedback__dec_idecode__ext__dummy),
         .coproc_controls__dec_idecode__is_compressed(coproc_controls_with_feedback__dec_idecode__is_compressed),
+        .coproc_controls__dec_idecode__illegal_pc(coproc_controls_with_feedback__dec_idecode__illegal_pc),
         .coproc_controls__dec_idecode__illegal(coproc_controls_with_feedback__dec_idecode__illegal),
         .coproc_controls__dec_idecode__memory_width(coproc_controls_with_feedback__dec_idecode__memory_width),
         .coproc_controls__dec_idecode__memory_read_unsigned(coproc_controls_with_feedback__dec_idecode__memory_read_unsigned),
@@ -171,8 +181,10 @@ module tb_riscv_i32_muldiv
         .coproc_controls__dec_idecode__immediate_valid(coproc_controls_with_feedback__dec_idecode__immediate_valid),
         .coproc_controls__dec_idecode__immediate_shift(coproc_controls_with_feedback__dec_idecode__immediate_shift),
         .coproc_controls__dec_idecode__immediate(coproc_controls_with_feedback__dec_idecode__immediate),
+        .coproc_controls__dec_idecode__csr_access__write_data(coproc_controls_with_feedback__dec_idecode__csr_access__write_data),
         .coproc_controls__dec_idecode__csr_access__address(coproc_controls_with_feedback__dec_idecode__csr_access__address),
         .coproc_controls__dec_idecode__csr_access__access(coproc_controls_with_feedback__dec_idecode__csr_access__access),
+        .coproc_controls__dec_idecode__csr_access__access_cancelled(coproc_controls_with_feedback__dec_idecode__csr_access__access_cancelled),
         .coproc_controls__dec_idecode__rd_written(coproc_controls_with_feedback__dec_idecode__rd_written),
         .coproc_controls__dec_idecode__rd(coproc_controls_with_feedback__dec_idecode__rd),
         .coproc_controls__dec_idecode__rs2_valid(coproc_controls_with_feedback__dec_idecode__rs2_valid),
@@ -198,8 +210,10 @@ module tb_riscv_i32_muldiv
         coproc_controls_with_feedback__dec_idecode__rs2_valid = coproc_controls__dec_idecode__rs2_valid;
         coproc_controls_with_feedback__dec_idecode__rd = coproc_controls__dec_idecode__rd;
         coproc_controls_with_feedback__dec_idecode__rd_written = coproc_controls__dec_idecode__rd_written;
+        coproc_controls_with_feedback__dec_idecode__csr_access__access_cancelled = coproc_controls__dec_idecode__csr_access__access_cancelled;
         coproc_controls_with_feedback__dec_idecode__csr_access__access = coproc_controls__dec_idecode__csr_access__access;
         coproc_controls_with_feedback__dec_idecode__csr_access__address = coproc_controls__dec_idecode__csr_access__address;
+        coproc_controls_with_feedback__dec_idecode__csr_access__write_data = coproc_controls__dec_idecode__csr_access__write_data;
         coproc_controls_with_feedback__dec_idecode__immediate = coproc_controls__dec_idecode__immediate;
         coproc_controls_with_feedback__dec_idecode__immediate_shift = coproc_controls__dec_idecode__immediate_shift;
         coproc_controls_with_feedback__dec_idecode__immediate_valid = coproc_controls__dec_idecode__immediate_valid;
@@ -209,6 +223,7 @@ module tb_riscv_i32_muldiv
         coproc_controls_with_feedback__dec_idecode__memory_read_unsigned = coproc_controls__dec_idecode__memory_read_unsigned;
         coproc_controls_with_feedback__dec_idecode__memory_width = coproc_controls__dec_idecode__memory_width;
         coproc_controls_with_feedback__dec_idecode__illegal = coproc_controls__dec_idecode__illegal;
+        coproc_controls_with_feedback__dec_idecode__illegal_pc = coproc_controls__dec_idecode__illegal_pc;
         coproc_controls_with_feedback__dec_idecode__is_compressed = coproc_controls__dec_idecode__is_compressed;
         coproc_controls_with_feedback__dec_idecode__ext__dummy = coproc_controls__dec_idecode__ext__dummy;
         coproc_controls_with_feedback__dec_to_alu_blocked__var = coproc_controls__dec_to_alu_blocked;

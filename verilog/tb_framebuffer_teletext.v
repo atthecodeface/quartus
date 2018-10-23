@@ -101,7 +101,7 @@ module tb_framebuffer_teletext
         .csr_request__select(csr_request__select),
         .csr_request__read_not_write(csr_request__read_not_write),
         .csr_request__valid(csr_request__valid),
-        .csr_select_in(16'h0),
+        .csr_select_in(16'h4),
         .display_sram_write__write_data(display_sram_write__write_data),
         .display_sram_write__address(display_sram_write__address),
         .display_sram_write__byte_enable(display_sram_write__byte_enable),
