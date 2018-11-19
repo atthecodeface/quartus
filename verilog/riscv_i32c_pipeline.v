@@ -44,6 +44,7 @@ module riscv_i32c_pipeline
     riscv_config__e32,
     riscv_config__i32m,
     riscv_config__i32m_fuse,
+    riscv_config__debug_enable,
     riscv_config__coproc_disable,
     riscv_config__unaligned_mem,
     csr_read_data,
@@ -53,20 +54,28 @@ module riscv_i32c_pipeline
     coproc_response__cannot_complete,
     pipeline_fetch_data__valid,
     pipeline_fetch_data__pc,
-    pipeline_fetch_data__data,
+    pipeline_fetch_data__instruction__data,
+    pipeline_fetch_data__instruction__debug__valid,
+    pipeline_fetch_data__instruction__debug__debug_op,
+    pipeline_fetch_data__instruction__debug__data,
     pipeline_fetch_data__dec_flush_pipeline,
     pipeline_fetch_data__dec_predicted_branch,
     pipeline_fetch_data__dec_pc_if_mispredicted,
     pipeline_control__valid,
-    pipeline_control__debug,
     pipeline_control__fetch_action,
     pipeline_control__decode_pc,
     pipeline_control__mode,
     pipeline_control__error,
     pipeline_control__tag,
+    pipeline_control__halt,
+    pipeline_control__ebreak_to_dbg,
     pipeline_control__interrupt_req,
     pipeline_control__interrupt_number,
     pipeline_control__interrupt_to_mode,
+    pipeline_control__instruction_data,
+    pipeline_control__instruction_debug__valid,
+    pipeline_control__instruction_debug__debug_op,
+    pipeline_control__instruction_debug__data,
     dmem_access_resp__wait,
     dmem_access_resp__read_data,
     reset_n,
@@ -76,7 +85,7 @@ module riscv_i32c_pipeline
     csr_access__address,
     csr_access__write_data,
     pipeline_response__decode__valid,
-    pipeline_response__decode__decode_blocked,
+    pipeline_response__decode__blocked,
     pipeline_response__decode__branch_target,
     pipeline_response__decode__idecode__rs1,
     pipeline_response__decode__idecode__rs1_valid,
@@ -111,11 +120,14 @@ module riscv_i32c_pipeline
     pipeline_response__exec__trap__cause,
     pipeline_response__exec__trap__pc,
     pipeline_response__exec__trap__value,
-    pipeline_response__exec__trap__mret,
+    pipeline_response__exec__trap__ret,
     pipeline_response__exec__trap__vector,
+    pipeline_response__exec__trap__ebreak_to_dbg,
     pipeline_response__exec__is_compressed,
-    pipeline_response__exec__instruction__mode,
     pipeline_response__exec__instruction__data,
+    pipeline_response__exec__instruction__debug__valid,
+    pipeline_response__exec__instruction__debug__debug_op,
+    pipeline_response__exec__instruction__debug__data,
     pipeline_response__exec__rs1,
     pipeline_response__exec__rs2,
     pipeline_response__exec__pc,
@@ -125,6 +137,7 @@ module riscv_i32c_pipeline
     pipeline_response__rfw__rd_written,
     pipeline_response__rfw__rd,
     pipeline_response__rfw__data,
+    pipeline_response__pipeline_empty,
     dmem_access_req__address,
     dmem_access_req__byte_enable,
     dmem_access_req__write_enable,
@@ -141,6 +154,7 @@ module riscv_i32c_pipeline
     input riscv_config__e32;
     input riscv_config__i32m;
     input riscv_config__i32m_fuse;
+    input riscv_config__debug_enable;
     input riscv_config__coproc_disable;
     input riscv_config__unaligned_mem;
     input [31:0]csr_read_data;
@@ -150,20 +164,28 @@ module riscv_i32c_pipeline
     input coproc_response__cannot_complete;
     input pipeline_fetch_data__valid;
     input [31:0]pipeline_fetch_data__pc;
-    input [31:0]pipeline_fetch_data__data;
+    input [31:0]pipeline_fetch_data__instruction__data;
+    input pipeline_fetch_data__instruction__debug__valid;
+    input [1:0]pipeline_fetch_data__instruction__debug__debug_op;
+    input [15:0]pipeline_fetch_data__instruction__debug__data;
     input pipeline_fetch_data__dec_flush_pipeline;
     input pipeline_fetch_data__dec_predicted_branch;
     input [31:0]pipeline_fetch_data__dec_pc_if_mispredicted;
     input pipeline_control__valid;
-    input pipeline_control__debug;
-    input [1:0]pipeline_control__fetch_action;
+    input [2:0]pipeline_control__fetch_action;
     input [31:0]pipeline_control__decode_pc;
     input [2:0]pipeline_control__mode;
     input pipeline_control__error;
     input [1:0]pipeline_control__tag;
+    input pipeline_control__halt;
+    input pipeline_control__ebreak_to_dbg;
     input pipeline_control__interrupt_req;
     input [3:0]pipeline_control__interrupt_number;
     input [2:0]pipeline_control__interrupt_to_mode;
+    input [31:0]pipeline_control__instruction_data;
+    input pipeline_control__instruction_debug__valid;
+    input [1:0]pipeline_control__instruction_debug__debug_op;
+    input [15:0]pipeline_control__instruction_debug__data;
     input dmem_access_resp__wait;
     input [31:0]dmem_access_resp__read_data;
     input reset_n;
@@ -174,7 +196,7 @@ module riscv_i32c_pipeline
     output [11:0]csr_access__address;
     output [31:0]csr_access__write_data;
     output pipeline_response__decode__valid;
-    output pipeline_response__decode__decode_blocked;
+    output pipeline_response__decode__blocked;
     output [31:0]pipeline_response__decode__branch_target;
     output [4:0]pipeline_response__decode__idecode__rs1;
     output pipeline_response__decode__idecode__rs1_valid;
@@ -206,14 +228,17 @@ module riscv_i32c_pipeline
     output pipeline_response__exec__branch_taken;
     output pipeline_response__exec__trap__valid;
     output [2:0]pipeline_response__exec__trap__to_mode;
-    output [4:0]pipeline_response__exec__trap__cause;
+    output [3:0]pipeline_response__exec__trap__cause;
     output [31:0]pipeline_response__exec__trap__pc;
     output [31:0]pipeline_response__exec__trap__value;
-    output pipeline_response__exec__trap__mret;
+    output pipeline_response__exec__trap__ret;
     output pipeline_response__exec__trap__vector;
+    output pipeline_response__exec__trap__ebreak_to_dbg;
     output pipeline_response__exec__is_compressed;
-    output [2:0]pipeline_response__exec__instruction__mode;
     output [31:0]pipeline_response__exec__instruction__data;
+    output pipeline_response__exec__instruction__debug__valid;
+    output [1:0]pipeline_response__exec__instruction__debug__debug_op;
+    output [15:0]pipeline_response__exec__instruction__debug__data;
     output [31:0]pipeline_response__exec__rs1;
     output [31:0]pipeline_response__exec__rs2;
     output [31:0]pipeline_response__exec__pc;
@@ -223,6 +248,7 @@ module riscv_i32c_pipeline
     output pipeline_response__rfw__rd_written;
     output [4:0]pipeline_response__rfw__rd;
     output [31:0]pipeline_response__rfw__data;
+    output pipeline_response__pipeline_empty;
     output [31:0]dmem_access_req__address;
     output [3:0]dmem_access_req__byte_enable;
     output dmem_access_req__write_enable;
@@ -237,7 +263,7 @@ module riscv_i32c_pipeline
     reg [11:0]csr_access__address;
     reg [31:0]csr_access__write_data;
     reg pipeline_response__decode__valid;
-    reg pipeline_response__decode__decode_blocked;
+    reg pipeline_response__decode__blocked;
     reg [31:0]pipeline_response__decode__branch_target;
     reg [4:0]pipeline_response__decode__idecode__rs1;
     reg pipeline_response__decode__idecode__rs1_valid;
@@ -269,14 +295,17 @@ module riscv_i32c_pipeline
     reg pipeline_response__exec__branch_taken;
     reg pipeline_response__exec__trap__valid;
     reg [2:0]pipeline_response__exec__trap__to_mode;
-    reg [4:0]pipeline_response__exec__trap__cause;
+    reg [3:0]pipeline_response__exec__trap__cause;
     reg [31:0]pipeline_response__exec__trap__pc;
     reg [31:0]pipeline_response__exec__trap__value;
-    reg pipeline_response__exec__trap__mret;
+    reg pipeline_response__exec__trap__ret;
     reg pipeline_response__exec__trap__vector;
+    reg pipeline_response__exec__trap__ebreak_to_dbg;
     reg pipeline_response__exec__is_compressed;
-    reg [2:0]pipeline_response__exec__instruction__mode;
     reg [31:0]pipeline_response__exec__instruction__data;
+    reg pipeline_response__exec__instruction__debug__valid;
+    reg [1:0]pipeline_response__exec__instruction__debug__debug_op;
+    reg [15:0]pipeline_response__exec__instruction__debug__data;
     reg [31:0]pipeline_response__exec__rs1;
     reg [31:0]pipeline_response__exec__rs2;
     reg [31:0]pipeline_response__exec__pc;
@@ -286,6 +315,7 @@ module riscv_i32c_pipeline
     reg pipeline_response__rfw__rd_written;
     reg [4:0]pipeline_response__rfw__rd;
     reg [31:0]pipeline_response__rfw__data;
+    reg pipeline_response__pipeline_empty;
     reg [31:0]dmem_access_req__address;
     reg [3:0]dmem_access_req__byte_enable;
     reg dmem_access_req__write_enable;
@@ -299,8 +329,10 @@ module riscv_i32c_pipeline
     reg rfw_state__rd_written;
     reg [4:0]rfw_state__rd;
     reg [31:0]rfw_state__data;
-    reg [2:0]decexecrfw_state__instruction__mode;
     reg [31:0]decexecrfw_state__instruction__data;
+    reg decexecrfw_state__instruction__debug__valid;
+    reg [1:0]decexecrfw_state__instruction__debug__debug_op;
+    reg [15:0]decexecrfw_state__instruction__debug__data;
     reg decexecrfw_state__valid;
         //   Register 0 is tied to 0 - so it is written on every cycle to zero...
     reg [31:0]registers[31:0];
@@ -408,16 +440,18 @@ module riscv_i32c_pipeline
     wire [2:0]decexecrfw_alu_result__csr_access__access;
     wire [11:0]decexecrfw_alu_result__csr_access__address;
     wire [31:0]decexecrfw_alu_result__csr_access__write_data;
+    wire decexecrfw_control_flow__async_cancel;
     wire decexecrfw_control_flow__branch_taken;
     wire decexecrfw_control_flow__jalr;
     wire [31:0]decexecrfw_control_flow__next_pc;
     wire decexecrfw_control_flow__trap__valid;
     wire [2:0]decexecrfw_control_flow__trap__to_mode;
-    wire [4:0]decexecrfw_control_flow__trap__cause;
+    wire [3:0]decexecrfw_control_flow__trap__cause;
     wire [31:0]decexecrfw_control_flow__trap__pc;
     wire [31:0]decexecrfw_control_flow__trap__value;
-    wire decexecrfw_control_flow__trap__mret;
+    wire decexecrfw_control_flow__trap__ret;
     wire decexecrfw_control_flow__trap__vector;
+    wire decexecrfw_control_flow__trap__ebreak_to_dbg;
     wire [31:0]decexecrfw_dmem_read_data;
         //   Data memory request data
     wire [31:0]decexecrfw_dmem_request__access__address;
@@ -434,6 +468,28 @@ module riscv_i32c_pipeline
     wire decexecrfw_dmem_request__sign_extend_byte;
     wire decexecrfw_dmem_request__sign_extend_half;
     wire decexecrfw_dmem_request__multicycle;
+    wire [4:0]decexecrfw_idecode_debug__rs1;
+    wire decexecrfw_idecode_debug__rs1_valid;
+    wire [4:0]decexecrfw_idecode_debug__rs2;
+    wire decexecrfw_idecode_debug__rs2_valid;
+    wire [4:0]decexecrfw_idecode_debug__rd;
+    wire decexecrfw_idecode_debug__rd_written;
+    wire decexecrfw_idecode_debug__csr_access__access_cancelled;
+    wire [2:0]decexecrfw_idecode_debug__csr_access__access;
+    wire [11:0]decexecrfw_idecode_debug__csr_access__address;
+    wire [31:0]decexecrfw_idecode_debug__csr_access__write_data;
+    wire [31:0]decexecrfw_idecode_debug__immediate;
+    wire [4:0]decexecrfw_idecode_debug__immediate_shift;
+    wire decexecrfw_idecode_debug__immediate_valid;
+    wire [3:0]decexecrfw_idecode_debug__op;
+    wire [3:0]decexecrfw_idecode_debug__subop;
+    wire decexecrfw_idecode_debug__requires_machine_mode;
+    wire decexecrfw_idecode_debug__memory_read_unsigned;
+    wire [1:0]decexecrfw_idecode_debug__memory_width;
+    wire decexecrfw_idecode_debug__illegal;
+    wire decexecrfw_idecode_debug__illegal_pc;
+    wire decexecrfw_idecode_debug__is_compressed;
+    wire decexecrfw_idecode_debug__ext__dummy;
     wire [4:0]decexecrfw_idecode_i32c__rs1;
     wire decexecrfw_idecode_i32c__rs1_valid;
     wire [4:0]decexecrfw_idecode_i32c__rs2;
@@ -484,12 +540,15 @@ module riscv_i32c_pipeline
     riscv_i32_decode decode_i32(
         .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
         .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__debug_enable(riscv_config__debug_enable),
         .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
         .riscv_config__i32c(riscv_config__i32c),
+        .instruction__debug__data(decexecrfw_state__instruction__debug__data),
+        .instruction__debug__debug_op(decexecrfw_state__instruction__debug__debug_op),
+        .instruction__debug__valid(decexecrfw_state__instruction__debug__valid),
         .instruction__data(decexecrfw_state__instruction__data),
-        .instruction__mode(decexecrfw_state__instruction__mode),
         .idecode__ext__dummy(            decexecrfw_idecode_i32__ext__dummy),
         .idecode__is_compressed(            decexecrfw_idecode_i32__is_compressed),
         .idecode__illegal_pc(            decexecrfw_idecode_i32__illegal_pc),
@@ -515,12 +574,15 @@ module riscv_i32c_pipeline
     riscv_i32c_decode decode_i32c(
         .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
         .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__debug_enable(riscv_config__debug_enable),
         .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
         .riscv_config__i32c(riscv_config__i32c),
+        .instruction__debug__data(decexecrfw_state__instruction__debug__data),
+        .instruction__debug__debug_op(decexecrfw_state__instruction__debug__debug_op),
+        .instruction__debug__valid(decexecrfw_state__instruction__debug__valid),
         .instruction__data(decexecrfw_state__instruction__data),
-        .instruction__mode(decexecrfw_state__instruction__mode),
         .idecode__ext__dummy(            decexecrfw_idecode_i32c__ext__dummy),
         .idecode__is_compressed(            decexecrfw_idecode_i32c__is_compressed),
         .idecode__illegal_pc(            decexecrfw_idecode_i32c__illegal_pc),
@@ -543,6 +605,40 @@ module riscv_i32c_pipeline
         .idecode__rs2(            decexecrfw_idecode_i32c__rs2),
         .idecode__rs1_valid(            decexecrfw_idecode_i32c__rs1_valid),
         .idecode__rs1(            decexecrfw_idecode_i32c__rs1)         );
+    riscv_i32_debug_decode decode_i32_debug(
+        .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
+        .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__debug_enable(riscv_config__debug_enable),
+        .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
+        .riscv_config__i32m(riscv_config__i32m),
+        .riscv_config__e32(riscv_config__e32),
+        .riscv_config__i32c(riscv_config__i32c),
+        .instruction__debug__data(decexecrfw_state__instruction__debug__data),
+        .instruction__debug__debug_op(decexecrfw_state__instruction__debug__debug_op),
+        .instruction__debug__valid(decexecrfw_state__instruction__debug__valid),
+        .instruction__data(decexecrfw_state__instruction__data),
+        .idecode__ext__dummy(            decexecrfw_idecode_debug__ext__dummy),
+        .idecode__is_compressed(            decexecrfw_idecode_debug__is_compressed),
+        .idecode__illegal_pc(            decexecrfw_idecode_debug__illegal_pc),
+        .idecode__illegal(            decexecrfw_idecode_debug__illegal),
+        .idecode__memory_width(            decexecrfw_idecode_debug__memory_width),
+        .idecode__memory_read_unsigned(            decexecrfw_idecode_debug__memory_read_unsigned),
+        .idecode__requires_machine_mode(            decexecrfw_idecode_debug__requires_machine_mode),
+        .idecode__subop(            decexecrfw_idecode_debug__subop),
+        .idecode__op(            decexecrfw_idecode_debug__op),
+        .idecode__immediate_valid(            decexecrfw_idecode_debug__immediate_valid),
+        .idecode__immediate_shift(            decexecrfw_idecode_debug__immediate_shift),
+        .idecode__immediate(            decexecrfw_idecode_debug__immediate),
+        .idecode__csr_access__write_data(            decexecrfw_idecode_debug__csr_access__write_data),
+        .idecode__csr_access__address(            decexecrfw_idecode_debug__csr_access__address),
+        .idecode__csr_access__access(            decexecrfw_idecode_debug__csr_access__access),
+        .idecode__csr_access__access_cancelled(            decexecrfw_idecode_debug__csr_access__access_cancelled),
+        .idecode__rd_written(            decexecrfw_idecode_debug__rd_written),
+        .idecode__rd(            decexecrfw_idecode_debug__rd),
+        .idecode__rs2_valid(            decexecrfw_idecode_debug__rs2_valid),
+        .idecode__rs2(            decexecrfw_idecode_debug__rs2),
+        .idecode__rs1_valid(            decexecrfw_idecode_debug__rs1_valid),
+        .idecode__rs1(            decexecrfw_idecode_debug__rs1)         );
     riscv_i32_alu alu(
         .rs2(decexecrfw_combs__rs2),
         .rs1(decexecrfw_combs__rs1),
@@ -655,18 +751,24 @@ module riscv_i32c_pipeline
         .control_data__exec_committed(decexecrfw_combs__control_data__exec_committed),
         .control_data__valid(decexecrfw_combs__control_data__valid),
         .control_data__interrupt_ack(decexecrfw_combs__control_data__interrupt_ack),
+        .pipeline_control__instruction_debug__data(pipeline_control__instruction_debug__data),
+        .pipeline_control__instruction_debug__debug_op(pipeline_control__instruction_debug__debug_op),
+        .pipeline_control__instruction_debug__valid(pipeline_control__instruction_debug__valid),
+        .pipeline_control__instruction_data(pipeline_control__instruction_data),
         .pipeline_control__interrupt_to_mode(pipeline_control__interrupt_to_mode),
         .pipeline_control__interrupt_number(pipeline_control__interrupt_number),
         .pipeline_control__interrupt_req(pipeline_control__interrupt_req),
+        .pipeline_control__ebreak_to_dbg(pipeline_control__ebreak_to_dbg),
+        .pipeline_control__halt(pipeline_control__halt),
         .pipeline_control__tag(pipeline_control__tag),
         .pipeline_control__error(pipeline_control__error),
         .pipeline_control__mode(pipeline_control__mode),
         .pipeline_control__decode_pc(pipeline_control__decode_pc),
         .pipeline_control__fetch_action(pipeline_control__fetch_action),
-        .pipeline_control__debug(pipeline_control__debug),
         .pipeline_control__valid(pipeline_control__valid),
+        .control_flow__trap__ebreak_to_dbg(            decexecrfw_control_flow__trap__ebreak_to_dbg),
         .control_flow__trap__vector(            decexecrfw_control_flow__trap__vector),
-        .control_flow__trap__mret(            decexecrfw_control_flow__trap__mret),
+        .control_flow__trap__ret(            decexecrfw_control_flow__trap__ret),
         .control_flow__trap__value(            decexecrfw_control_flow__trap__value),
         .control_flow__trap__pc(            decexecrfw_control_flow__trap__pc),
         .control_flow__trap__cause(            decexecrfw_control_flow__trap__cause),
@@ -674,7 +776,8 @@ module riscv_i32c_pipeline
         .control_flow__trap__valid(            decexecrfw_control_flow__trap__valid),
         .control_flow__next_pc(            decexecrfw_control_flow__next_pc),
         .control_flow__jalr(            decexecrfw_control_flow__jalr),
-        .control_flow__branch_taken(            decexecrfw_control_flow__branch_taken)         );
+        .control_flow__branch_taken(            decexecrfw_control_flow__branch_taken),
+        .control_flow__async_cancel(            decexecrfw_control_flow__async_cancel)         );
     riscv_i32_dmem_read_data dmem_data(
         .dmem_access_resp__read_data(dmem_access_resp__read_data),
         .dmem_access_resp__wait(dmem_access_resp__wait),
@@ -736,7 +839,6 @@ module riscv_i32c_pipeline
     reg decexecrfw_combs__idecode__ext__dummy__var;
     reg decexecrfw_combs__exec_committed__var;
     reg decexecrfw_combs__csr_access__access_cancelled__var;
-    reg [31:0]decexecrfw_combs__csr_access__write_data__var;
     reg [31:0]decexecrfw_combs__rfw_write_data__var;
         decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_i32__rs1;
         decexecrfw_combs__idecode__rs1_valid__var = decexecrfw_idecode_i32__rs1_valid;
@@ -788,27 +890,47 @@ module riscv_i32c_pipeline
                 decexecrfw_combs__idecode__ext__dummy__var = decexecrfw_idecode_i32c__ext__dummy;
             end //if
         end //if
+        if (((1'h1&&(riscv_config__debug_enable!=1'h0))&&(decexecrfw_state__instruction__debug__valid!=1'h0)))
+        begin
+            decexecrfw_combs__idecode__rs1__var = decexecrfw_idecode_debug__rs1;
+            decexecrfw_combs__idecode__rs1_valid__var = decexecrfw_idecode_debug__rs1_valid;
+            decexecrfw_combs__idecode__rs2__var = decexecrfw_idecode_debug__rs2;
+            decexecrfw_combs__idecode__rs2_valid__var = decexecrfw_idecode_debug__rs2_valid;
+            decexecrfw_combs__idecode__rd__var = decexecrfw_idecode_debug__rd;
+            decexecrfw_combs__idecode__rd_written__var = decexecrfw_idecode_debug__rd_written;
+            decexecrfw_combs__idecode__csr_access__access_cancelled__var = decexecrfw_idecode_debug__csr_access__access_cancelled;
+            decexecrfw_combs__idecode__csr_access__access__var = decexecrfw_idecode_debug__csr_access__access;
+            decexecrfw_combs__idecode__csr_access__address__var = decexecrfw_idecode_debug__csr_access__address;
+            decexecrfw_combs__idecode__csr_access__write_data__var = decexecrfw_idecode_debug__csr_access__write_data;
+            decexecrfw_combs__idecode__immediate__var = decexecrfw_idecode_debug__immediate;
+            decexecrfw_combs__idecode__immediate_shift__var = decexecrfw_idecode_debug__immediate_shift;
+            decexecrfw_combs__idecode__immediate_valid__var = decexecrfw_idecode_debug__immediate_valid;
+            decexecrfw_combs__idecode__op__var = decexecrfw_idecode_debug__op;
+            decexecrfw_combs__idecode__subop__var = decexecrfw_idecode_debug__subop;
+            decexecrfw_combs__idecode__requires_machine_mode__var = decexecrfw_idecode_debug__requires_machine_mode;
+            decexecrfw_combs__idecode__memory_read_unsigned__var = decexecrfw_idecode_debug__memory_read_unsigned;
+            decexecrfw_combs__idecode__memory_width__var = decexecrfw_idecode_debug__memory_width;
+            decexecrfw_combs__idecode__illegal__var = decexecrfw_idecode_debug__illegal;
+            decexecrfw_combs__idecode__illegal_pc__var = decexecrfw_idecode_debug__illegal_pc;
+            decexecrfw_combs__idecode__is_compressed__var = decexecrfw_idecode_debug__is_compressed;
+            decexecrfw_combs__idecode__ext__dummy__var = decexecrfw_idecode_debug__ext__dummy;
+        end //if
         decexecrfw_combs__exec_committed__var = decexecrfw_state__valid;
         if (((decexecrfw_combs__idecode__illegal__var!=1'h0)||(decexecrfw_combs__idecode__illegal_pc__var!=1'h0)))
         begin
             decexecrfw_combs__exec_committed__var = 1'h0;
         end //if
-        if ((pipeline_control__interrupt_req!=1'h0))
-        begin
-            decexecrfw_combs__exec_committed__var = 1'h0;
-        end //if
         decexecrfw_combs__rs1 = registers[decexecrfw_combs__idecode__rs1__var];
         decexecrfw_combs__rs2 = registers[decexecrfw_combs__idecode__rs2__var];
-        decexecrfw_combs__csr_access__access_cancelled__var = decexecrfw_combs__idecode__csr_access__access_cancelled__var;
-        decexecrfw_combs__csr_access__access = decexecrfw_combs__idecode__csr_access__access__var;
-        decexecrfw_combs__csr_access__address = decexecrfw_combs__idecode__csr_access__address__var;
-        decexecrfw_combs__csr_access__write_data__var = decexecrfw_combs__idecode__csr_access__write_data__var;
-        decexecrfw_combs__csr_access__access_cancelled__var = !(decexecrfw_combs__exec_committed__var!=1'h0);
-        decexecrfw_combs__csr_access__write_data__var = ((decexecrfw_combs__idecode__immediate_valid__var!=1'h0)?{27'h0,decexecrfw_combs__idecode__rs1__var}:decexecrfw_combs__rs1);
+        decexecrfw_combs__csr_access__access_cancelled__var = decexecrfw_alu_result__csr_access__access_cancelled;
+        decexecrfw_combs__csr_access__access = decexecrfw_alu_result__csr_access__access;
+        decexecrfw_combs__csr_access__address = decexecrfw_alu_result__csr_access__address;
+        decexecrfw_combs__csr_access__write_data = decexecrfw_alu_result__csr_access__write_data;
+        decexecrfw_combs__csr_access__access_cancelled__var = (!(decexecrfw_combs__exec_committed__var!=1'h0)||(decexecrfw_control_flow__async_cancel!=1'h0));
         csr_access__access_cancelled = decexecrfw_combs__csr_access__access_cancelled__var;
         csr_access__access = decexecrfw_combs__csr_access__access;
         csr_access__address = decexecrfw_combs__csr_access__address;
-        csr_access__write_data = decexecrfw_combs__csr_access__write_data__var;
+        csr_access__write_data = decexecrfw_combs__csr_access__write_data;
         decexecrfw_combs__dmem_exec__idecode__rs1 = decexecrfw_combs__idecode__rs1__var;
         decexecrfw_combs__dmem_exec__idecode__rs1_valid = decexecrfw_combs__idecode__rs1_valid__var;
         decexecrfw_combs__dmem_exec__idecode__rs2 = decexecrfw_combs__idecode__rs2__var;
@@ -833,7 +955,7 @@ module riscv_i32c_pipeline
         decexecrfw_combs__dmem_exec__idecode__ext__dummy = decexecrfw_combs__idecode__ext__dummy__var;
         decexecrfw_combs__dmem_exec__arith_result = decexecrfw_alu_result__arith_result;
         decexecrfw_combs__dmem_exec__rs2 = decexecrfw_combs__rs2;
-        decexecrfw_combs__dmem_exec__exec_committed = decexecrfw_combs__exec_committed__var;
+        decexecrfw_combs__dmem_exec__exec_committed = ((decexecrfw_combs__exec_committed__var!=1'h0)&&!(decexecrfw_control_flow__async_cancel!=1'h0));
         decexecrfw_combs__dmem_exec__first_cycle = 1'h1;
         dmem_access_req__address = decexecrfw_dmem_request__access__address;
         dmem_access_req__byte_enable = decexecrfw_dmem_request__access__byte_enable;
@@ -899,7 +1021,7 @@ module riscv_i32c_pipeline
         pipeline_response__decode__idecode__illegal_pc = decexecrfw_combs__idecode__illegal_pc__var;
         pipeline_response__decode__idecode__is_compressed = decexecrfw_combs__idecode__is_compressed__var;
         pipeline_response__decode__idecode__ext__dummy = decexecrfw_combs__idecode__ext__dummy__var;
-        pipeline_response__decode__decode_blocked = 1'h0;
+        pipeline_response__decode__blocked = 1'h0;
         pipeline_response__decode__branch_target = 32'h0;
         pipeline_response__decode__enable_branch_prediction = 1'h0;
         pipeline_response__exec__valid = decexecrfw_state__valid;
@@ -908,8 +1030,10 @@ module riscv_i32c_pipeline
         pipeline_response__exec__interrupt_ack = pipeline_control__interrupt_req;
         pipeline_response__exec__is_compressed = decexecrfw_combs__idecode__is_compressed__var;
         pipeline_response__exec__pc = pipeline_control__decode_pc;
-        pipeline_response__exec__instruction__mode = decexecrfw_state__instruction__mode;
         pipeline_response__exec__instruction__data = decexecrfw_state__instruction__data;
+        pipeline_response__exec__instruction__debug__valid = decexecrfw_state__instruction__debug__valid;
+        pipeline_response__exec__instruction__debug__debug_op = decexecrfw_state__instruction__debug__debug_op;
+        pipeline_response__exec__instruction__debug__data = decexecrfw_state__instruction__debug__data;
         pipeline_response__exec__rs1 = decexecrfw_combs__rs1;
         pipeline_response__exec__rs2 = decexecrfw_combs__rs2;
         pipeline_response__exec__predicted_branch = 1'h0;
@@ -920,12 +1044,14 @@ module riscv_i32c_pipeline
         pipeline_response__exec__trap__cause = decexecrfw_control_flow__trap__cause;
         pipeline_response__exec__trap__pc = decexecrfw_control_flow__trap__pc;
         pipeline_response__exec__trap__value = decexecrfw_control_flow__trap__value;
-        pipeline_response__exec__trap__mret = decexecrfw_control_flow__trap__mret;
+        pipeline_response__exec__trap__ret = decexecrfw_control_flow__trap__ret;
         pipeline_response__exec__trap__vector = decexecrfw_control_flow__trap__vector;
+        pipeline_response__exec__trap__ebreak_to_dbg = decexecrfw_control_flow__trap__ebreak_to_dbg;
         pipeline_response__rfw__valid = rfw_state__valid;
         pipeline_response__rfw__rd_written = rfw_state__rd_written;
         pipeline_response__rfw__rd = rfw_state__rd;
         pipeline_response__rfw__data = rfw_state__data;
+        pipeline_response__pipeline_empty = !(decexecrfw_state__valid!=1'h0);
         decexecrfw_combs__rfw_write_data__var = (decexecrfw_alu_result__result | coproc_response__result);
         if (((1'h0!=64'h0)||(riscv_config__coproc_disable!=1'h0)))
         begin
@@ -963,7 +1089,6 @@ module riscv_i32c_pipeline
         decexecrfw_combs__idecode__ext__dummy = decexecrfw_combs__idecode__ext__dummy__var;
         decexecrfw_combs__exec_committed = decexecrfw_combs__exec_committed__var;
         decexecrfw_combs__csr_access__access_cancelled = decexecrfw_combs__csr_access__access_cancelled__var;
-        decexecrfw_combs__csr_access__write_data = decexecrfw_combs__csr_access__write_data__var;
         decexecrfw_combs__rfw_write_data = decexecrfw_combs__rfw_write_data__var;
     end //always
 
@@ -989,7 +1114,9 @@ module riscv_i32c_pipeline
         begin
             decexecrfw_state__valid <= 1'h0;
             decexecrfw_state__instruction__data <= 32'h0;
-            decexecrfw_state__instruction__mode <= 3'h0;
+            decexecrfw_state__instruction__debug__valid <= 1'h0;
+            decexecrfw_state__instruction__debug__debug_op <= 2'h0;
+            decexecrfw_state__instruction__debug__data <= 16'h0;
             registers[0] <= 32'h0;
             registers[1] <= 32'h0;
             registers[2] <= 32'h0;
@@ -1032,16 +1159,24 @@ module riscv_i32c_pipeline
             decexecrfw_state__valid <= 1'h0;
             if ((pipeline_fetch_data__valid!=1'h0))
             begin
-                decexecrfw_state__instruction__data <= pipeline_fetch_data__data;
-                decexecrfw_state__instruction__mode <= pipeline_control__mode;
+                decexecrfw_state__instruction__data <= pipeline_fetch_data__instruction__data;
+                decexecrfw_state__instruction__debug__valid <= pipeline_fetch_data__instruction__debug__valid;
+                decexecrfw_state__instruction__debug__debug_op <= pipeline_fetch_data__instruction__debug__debug_op;
+                decexecrfw_state__instruction__debug__data <= pipeline_fetch_data__instruction__debug__data;
+                if (((1'h0!=64'h0)||!(riscv_config__debug_enable!=1'h0)))
+                begin
+                    decexecrfw_state__instruction__debug__valid <= 1'h0;
+                    decexecrfw_state__instruction__debug__debug_op <= 2'h0;
+                    decexecrfw_state__instruction__debug__data <= 16'h0;
+                end //if
                 decexecrfw_state__valid <= 1'h1;
             end //if
-            if (((decexecrfw_combs__exec_committed!=1'h0)&&(decexecrfw_combs__idecode__rd_written!=1'h0)))
+            if ((((decexecrfw_combs__exec_committed!=1'h0)&&(decexecrfw_combs__idecode__rd_written!=1'h0))&&!(decexecrfw_control_flow__async_cancel!=1'h0)))
             begin
                 registers[decexecrfw_combs__idecode__rd] <= decexecrfw_combs__rfw_write_data;
             end //if
             registers[0] <= 32'h0;
-            rfw_state__valid <= decexecrfw_combs__exec_committed;
+            rfw_state__valid <= ((decexecrfw_combs__exec_committed!=1'h0)&&!(decexecrfw_control_flow__async_cancel!=1'h0));
             rfw_state__rd_written <= ((decexecrfw_combs__exec_committed!=1'h0)&&(decexecrfw_combs__idecode__rd_written!=1'h0));
             rfw_state__rd <= decexecrfw_combs__idecode__rd;
             rfw_state__data <= decexecrfw_combs__rfw_write_data;

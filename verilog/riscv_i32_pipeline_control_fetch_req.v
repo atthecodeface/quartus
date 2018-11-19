@@ -16,7 +16,7 @@ module riscv_i32_pipeline_control_fetch_req
 (
 
     pipeline_response__decode__valid,
-    pipeline_response__decode__decode_blocked,
+    pipeline_response__decode__blocked,
     pipeline_response__decode__branch_target,
     pipeline_response__decode__idecode__rs1,
     pipeline_response__decode__idecode__rs1_valid,
@@ -51,11 +51,14 @@ module riscv_i32_pipeline_control_fetch_req
     pipeline_response__exec__trap__cause,
     pipeline_response__exec__trap__pc,
     pipeline_response__exec__trap__value,
-    pipeline_response__exec__trap__mret,
+    pipeline_response__exec__trap__ret,
     pipeline_response__exec__trap__vector,
+    pipeline_response__exec__trap__ebreak_to_dbg,
     pipeline_response__exec__is_compressed,
-    pipeline_response__exec__instruction__mode,
     pipeline_response__exec__instruction__data,
+    pipeline_response__exec__instruction__debug__valid,
+    pipeline_response__exec__instruction__debug__debug_op,
+    pipeline_response__exec__instruction__debug__data,
     pipeline_response__exec__rs1,
     pipeline_response__exec__rs2,
     pipeline_response__exec__pc,
@@ -65,77 +68,37 @@ module riscv_i32_pipeline_control_fetch_req
     pipeline_response__rfw__rd_written,
     pipeline_response__rfw__rd,
     pipeline_response__rfw__data,
+    pipeline_response__pipeline_empty,
     pipeline_control__valid,
-    pipeline_control__debug,
     pipeline_control__fetch_action,
     pipeline_control__decode_pc,
     pipeline_control__mode,
     pipeline_control__error,
     pipeline_control__tag,
+    pipeline_control__halt,
+    pipeline_control__ebreak_to_dbg,
     pipeline_control__interrupt_req,
     pipeline_control__interrupt_number,
     pipeline_control__interrupt_to_mode,
-    csrs__cycles,
-    csrs__instret,
-    csrs__time,
-    csrs__mscratch,
-    csrs__mepc,
-    csrs__mcause,
-    csrs__mtval,
-    csrs__mtvec__base,
-    csrs__mtvec__vectored,
-    csrs__mstatus__sd,
-    csrs__mstatus__tsr,
-    csrs__mstatus__tw,
-    csrs__mstatus__tvm,
-    csrs__mstatus__mxr,
-    csrs__mstatus__sum,
-    csrs__mstatus__mprv,
-    csrs__mstatus__xs,
-    csrs__mstatus__fs,
-    csrs__mstatus__mpp,
-    csrs__mstatus__spp,
-    csrs__mstatus__mpie,
-    csrs__mstatus__spie,
-    csrs__mstatus__upie,
-    csrs__mstatus__mie,
-    csrs__mstatus__sie,
-    csrs__mstatus__uie,
-    csrs__mip__meip,
-    csrs__mip__seip,
-    csrs__mip__ueip,
-    csrs__mip__seip_sw,
-    csrs__mip__ueip_sw,
-    csrs__mip__mtip,
-    csrs__mip__stip,
-    csrs__mip__utip,
-    csrs__mip__msip,
-    csrs__mip__ssip,
-    csrs__mip__usip,
-    csrs__mie__meip,
-    csrs__mie__seip,
-    csrs__mie__ueip,
-    csrs__mie__mtip,
-    csrs__mie__stip,
-    csrs__mie__utip,
-    csrs__mie__msip,
-    csrs__mie__ssip,
-    csrs__mie__usip,
+    pipeline_control__instruction_data,
+    pipeline_control__instruction_debug__valid,
+    pipeline_control__instruction_debug__debug_op,
+    pipeline_control__instruction_debug__data,
 
-    ifetch_req__valid,
+    ifetch_req__flush_pipeline,
+    ifetch_req__req_type,
+    ifetch_req__debug_fetch,
     ifetch_req__address,
-    ifetch_req__sequential,
     ifetch_req__mode,
     ifetch_req__predicted_branch,
-    ifetch_req__pc_if_mispredicted,
-    ifetch_req__flush_pipeline
+    ifetch_req__pc_if_mispredicted
 );
 
     //b Clocks
 
     //b Inputs
     input pipeline_response__decode__valid;
-    input pipeline_response__decode__decode_blocked;
+    input pipeline_response__decode__blocked;
     input [31:0]pipeline_response__decode__branch_target;
     input [4:0]pipeline_response__decode__idecode__rs1;
     input pipeline_response__decode__idecode__rs1_valid;
@@ -167,14 +130,17 @@ module riscv_i32_pipeline_control_fetch_req
     input pipeline_response__exec__branch_taken;
     input pipeline_response__exec__trap__valid;
     input [2:0]pipeline_response__exec__trap__to_mode;
-    input [4:0]pipeline_response__exec__trap__cause;
+    input [3:0]pipeline_response__exec__trap__cause;
     input [31:0]pipeline_response__exec__trap__pc;
     input [31:0]pipeline_response__exec__trap__value;
-    input pipeline_response__exec__trap__mret;
+    input pipeline_response__exec__trap__ret;
     input pipeline_response__exec__trap__vector;
+    input pipeline_response__exec__trap__ebreak_to_dbg;
     input pipeline_response__exec__is_compressed;
-    input [2:0]pipeline_response__exec__instruction__mode;
     input [31:0]pipeline_response__exec__instruction__data;
+    input pipeline_response__exec__instruction__debug__valid;
+    input [1:0]pipeline_response__exec__instruction__debug__debug_op;
+    input [15:0]pipeline_response__exec__instruction__debug__data;
     input [31:0]pipeline_response__exec__rs1;
     input [31:0]pipeline_response__exec__rs2;
     input [31:0]pipeline_response__exec__pc;
@@ -184,82 +150,42 @@ module riscv_i32_pipeline_control_fetch_req
     input pipeline_response__rfw__rd_written;
     input [4:0]pipeline_response__rfw__rd;
     input [31:0]pipeline_response__rfw__data;
+    input pipeline_response__pipeline_empty;
     input pipeline_control__valid;
-    input pipeline_control__debug;
-    input [1:0]pipeline_control__fetch_action;
+    input [2:0]pipeline_control__fetch_action;
     input [31:0]pipeline_control__decode_pc;
     input [2:0]pipeline_control__mode;
     input pipeline_control__error;
     input [1:0]pipeline_control__tag;
+    input pipeline_control__halt;
+    input pipeline_control__ebreak_to_dbg;
     input pipeline_control__interrupt_req;
     input [3:0]pipeline_control__interrupt_number;
     input [2:0]pipeline_control__interrupt_to_mode;
-    input [63:0]csrs__cycles;
-    input [63:0]csrs__instret;
-    input [63:0]csrs__time;
-    input [31:0]csrs__mscratch;
-    input [31:0]csrs__mepc;
-    input [31:0]csrs__mcause;
-    input [31:0]csrs__mtval;
-    input [29:0]csrs__mtvec__base;
-    input csrs__mtvec__vectored;
-    input csrs__mstatus__sd;
-    input csrs__mstatus__tsr;
-    input csrs__mstatus__tw;
-    input csrs__mstatus__tvm;
-    input csrs__mstatus__mxr;
-    input csrs__mstatus__sum;
-    input csrs__mstatus__mprv;
-    input [1:0]csrs__mstatus__xs;
-    input [1:0]csrs__mstatus__fs;
-    input [1:0]csrs__mstatus__mpp;
-    input csrs__mstatus__spp;
-    input csrs__mstatus__mpie;
-    input csrs__mstatus__spie;
-    input csrs__mstatus__upie;
-    input csrs__mstatus__mie;
-    input csrs__mstatus__sie;
-    input csrs__mstatus__uie;
-    input csrs__mip__meip;
-    input csrs__mip__seip;
-    input csrs__mip__ueip;
-    input csrs__mip__seip_sw;
-    input csrs__mip__ueip_sw;
-    input csrs__mip__mtip;
-    input csrs__mip__stip;
-    input csrs__mip__utip;
-    input csrs__mip__msip;
-    input csrs__mip__ssip;
-    input csrs__mip__usip;
-    input csrs__mie__meip;
-    input csrs__mie__seip;
-    input csrs__mie__ueip;
-    input csrs__mie__mtip;
-    input csrs__mie__stip;
-    input csrs__mie__utip;
-    input csrs__mie__msip;
-    input csrs__mie__ssip;
-    input csrs__mie__usip;
+    input [31:0]pipeline_control__instruction_data;
+    input pipeline_control__instruction_debug__valid;
+    input [1:0]pipeline_control__instruction_debug__debug_op;
+    input [15:0]pipeline_control__instruction_debug__data;
 
     //b Outputs
-    output ifetch_req__valid;
+    output ifetch_req__flush_pipeline;
+    output [2:0]ifetch_req__req_type;
+    output ifetch_req__debug_fetch;
     output [31:0]ifetch_req__address;
-    output ifetch_req__sequential;
     output [2:0]ifetch_req__mode;
     output ifetch_req__predicted_branch;
     output [31:0]ifetch_req__pc_if_mispredicted;
-    output ifetch_req__flush_pipeline;
 
 // output components here
 
     //b Output combinatorials
-    reg ifetch_req__valid;
+    reg ifetch_req__flush_pipeline;
+    reg [2:0]ifetch_req__req_type;
+    reg ifetch_req__debug_fetch;
     reg [31:0]ifetch_req__address;
-    reg ifetch_req__sequential;
     reg [2:0]ifetch_req__mode;
     reg ifetch_req__predicted_branch;
     reg [31:0]ifetch_req__pc_if_mispredicted;
-    reg ifetch_req__flush_pipeline;
 
     //b Output nets
 
@@ -293,26 +219,17 @@ module riscv_i32_pipeline_control_fetch_req
         //       
     always @ ( * )//pipeline_control_logic
     begin: pipeline_control_logic__comb_code
-    reg ifetch_req__valid__var;
-    reg [31:0]ifetch_req__address__var;
-    reg ifetch_req__sequential__var;
-    reg ifetch_req__predicted_branch__var;
-    reg [31:0]ifetch_req__pc_if_mispredicted__var;
-    reg ifetch_req__flush_pipeline__var;
     reg [31:0]ifetch_combs__pc_plus_inst__var;
     reg ifetch_combs__predict_branch__var;
     reg [31:0]ifetch_combs__fetch_next_pc__var;
     reg ifetch_combs__fetch_sequential__var;
     reg [31:0]ifetch_combs__pc_if_mispredicted__var;
-        ifetch_req__valid__var = 1'h0;
-        ifetch_req__address__var = 32'h0;
-        ifetch_req__sequential__var = 1'h0;
-        ifetch_req__mode = 3'h0;
-        ifetch_req__predicted_branch__var = 1'h0;
-        ifetch_req__pc_if_mispredicted__var = 32'h0;
-        ifetch_req__flush_pipeline__var = 1'h0;
-        ifetch_req__valid__var = 1'h0;
-        ifetch_req__sequential__var = 1'h0;
+    reg ifetch_req__flush_pipeline__var;
+    reg [2:0]ifetch_req__req_type__var;
+    reg ifetch_req__debug_fetch__var;
+    reg [31:0]ifetch_req__address__var;
+    reg ifetch_req__predicted_branch__var;
+    reg [31:0]ifetch_req__pc_if_mispredicted__var;
         ifetch_combs__pc_plus_4 = (pipeline_control__decode_pc+32'h4);
         ifetch_combs__pc_plus_2 = (pipeline_control__decode_pc+32'h2);
         ifetch_combs__pc_plus_inst__var = ifetch_combs__pc_plus_4;
@@ -354,72 +271,69 @@ module riscv_i32_pipeline_control_fetch_req
             ifetch_combs__fetch_sequential__var = 1'h0;
             ifetch_combs__pc_if_mispredicted__var = ifetch_combs__pc_plus_inst__var;
         end //if
+        ifetch_req__flush_pipeline__var = 1'h0;
+        ifetch_req__req_type__var = 3'h0;
+        ifetch_req__debug_fetch__var = 1'h0;
+        ifetch_req__address__var = 32'h0;
+        ifetch_req__mode = 3'h0;
+        ifetch_req__predicted_branch__var = 1'h0;
+        ifetch_req__pc_if_mispredicted__var = 32'h0;
         ifetch_req__predicted_branch__var = ifetch_combs__predict_branch__var;
         ifetch_req__pc_if_mispredicted__var = ifetch_combs__pc_if_mispredicted__var;
         ifetch_req__flush_pipeline__var = 1'h1;
-        if ((pipeline_control__fetch_action==2'h1))
-        begin
-            ifetch_req__valid__var = 1'h1;
-            ifetch_req__address__var = pipeline_control__decode_pc;
-            ifetch_req__flush_pipeline__var = 1'h1;
-        end //if
-        else
-        
-        begin
-            if ((pipeline_control__fetch_action==2'h2))
+        ifetch_req__req_type__var = 3'h0;
+        case (pipeline_control__fetch_action) //synopsys parallel_case
+        3'h2: // req 1
             begin
-                ifetch_req__valid__var = 1'h1;
-                ifetch_req__sequential__var = 1'h1;
-                ifetch_req__flush_pipeline__var = 1'h0;
-                if (((pipeline_response__exec__valid!=1'h0)&&(pipeline_response__exec__branch_taken!=pipeline_response__exec__predicted_branch)))
-                begin
-                    ifetch_req__address__var = pipeline_response__exec__pc_if_mispredicted;
-                    ifetch_req__sequential__var = 1'h0;
-                    ifetch_req__flush_pipeline__var = 1'h1;
-                end //if
-                else
-                
-                begin
-                    if ((pipeline_response__decode__valid!=1'h0))
-                    begin
-                        ifetch_req__address__var = ifetch_combs__fetch_next_pc__var;
-                        ifetch_req__sequential__var = ifetch_combs__fetch_sequential__var;
-                        ifetch_req__flush_pipeline__var = 1'h0;
-                    end //if
-                    else
-                    
-                    begin
-                        ifetch_req__valid__var = 1'h1;
-                        ifetch_req__address__var = pipeline_control__decode_pc;
-                        ifetch_req__sequential__var = 1'h0;
-                        ifetch_req__flush_pipeline__var = 1'h0;
-                    end //else
-                end //else
-                if ((pipeline_response__exec__trap__valid!=1'h0))
-                begin
-                    ifetch_req__address__var = {csrs__mtvec__base,2'h0};
-                    ifetch_req__sequential__var = 1'h0;
-                    ifetch_req__flush_pipeline__var = 1'h1;
-                end //if
-                if ((pipeline_response__exec__trap__mret!=1'h0))
-                begin
-                    ifetch_req__address__var = csrs__mepc;
-                    ifetch_req__sequential__var = 1'h0;
-                    ifetch_req__flush_pipeline__var = 1'h1;
-                end //if
+            ifetch_req__flush_pipeline__var = 1'h1;
+            ifetch_req__req_type__var = 3'h1;
+            ifetch_req__address__var = pipeline_control__decode_pc;
+            end
+        3'h3: // req 1
+            begin
+            ifetch_req__flush_pipeline__var = 1'h0;
+            ifetch_req__req_type__var = 3'h3;
+            ifetch_req__address__var = ifetch_combs__fetch_next_pc__var;
+            end
+        3'h4: // req 1
+            begin
+            ifetch_req__flush_pipeline__var = 1'h0;
+            ifetch_req__req_type__var = 3'h1;
+            if ((ifetch_combs__fetch_sequential__var!=1'h0))
+            begin
+                ifetch_req__req_type__var = ((pipeline_response__decode__idecode__is_compressed!=1'h0)?3'h6:3'h2);
             end //if
-        end //else
-        ifetch_req__valid = ifetch_req__valid__var;
-        ifetch_req__address = ifetch_req__address__var;
-        ifetch_req__sequential = ifetch_req__sequential__var;
-        ifetch_req__predicted_branch = ifetch_req__predicted_branch__var;
-        ifetch_req__pc_if_mispredicted = ifetch_req__pc_if_mispredicted__var;
-        ifetch_req__flush_pipeline = ifetch_req__flush_pipeline__var;
+            ifetch_req__address__var = ifetch_combs__fetch_next_pc__var;
+            end
+        3'h1: // req 1
+            begin
+            ifetch_req__flush_pipeline__var = 1'h0;
+            end
+        default: // req 1
+            begin
+            ifetch_req__flush_pipeline__var = 1'h1;
+            end
+        endcase
+        ifetch_req__debug_fetch__var = 1'h0;
+        if ((pipeline_control__mode==3'h7))
+        begin
+            if ((((pipeline_control__fetch_action!=3'h0)&&(pipeline_control__fetch_action!=3'h1))&&(ifetch_req__address__var[31:8]==24'hffffff)))
+            begin
+                ifetch_req__req_type__var = 3'h0;
+                ifetch_req__debug_fetch__var = 1'h1;
+            end //if
+        end //if
         ifetch_combs__pc_plus_inst = ifetch_combs__pc_plus_inst__var;
         ifetch_combs__predict_branch = ifetch_combs__predict_branch__var;
         ifetch_combs__fetch_next_pc = ifetch_combs__fetch_next_pc__var;
         ifetch_combs__fetch_sequential = ifetch_combs__fetch_sequential__var;
         ifetch_combs__pc_if_mispredicted = ifetch_combs__pc_if_mispredicted__var;
+        ifetch_req__flush_pipeline = ifetch_req__flush_pipeline__var;
+        ifetch_req__req_type = ifetch_req__req_type__var;
+        ifetch_req__debug_fetch = ifetch_req__debug_fetch__var;
+        ifetch_req__address = ifetch_req__address__var;
+        ifetch_req__predicted_branch = ifetch_req__predicted_branch__var;
+        ifetch_req__pc_if_mispredicted = ifetch_req__pc_if_mispredicted__var;
     end //always
 
 endmodule // riscv_i32_pipeline_control_fetch_req

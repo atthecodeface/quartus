@@ -82,7 +82,7 @@ module riscv_i32_pipeline_debug
     output debug_tgt__resumed;
     output debug_tgt__hit_breakpoint;
     output debug_tgt__op_was_none;
-    output debug_tgt__resp;
+    output [1:0]debug_tgt__resp;
     output [31:0]debug_tgt__data;
     output debug_tgt__attention;
 
@@ -100,7 +100,7 @@ module riscv_i32_pipeline_debug
     reg debug_tgt__resumed;
     reg debug_tgt__hit_breakpoint;
     reg debug_tgt__op_was_none;
-    reg debug_tgt__resp;
+    reg [1:0]debug_tgt__resp;
     reg [31:0]debug_tgt__data;
     reg debug_tgt__attention;
 
@@ -117,7 +117,8 @@ module riscv_i32_pipeline_debug
     reg debug_state__attention;
     reg debug_state__hit_breakpoint;
     reg [15:0]debug_state__arg;
-    reg debug_state__resp;
+    reg [5:0]debug_state__rv_select;
+    reg [1:0]debug_state__resp;
     reg [31:0]debug_state__data0;
 
     //b Internal combinatorials
@@ -212,7 +213,7 @@ module riscv_i32_pipeline_debug
             debug_state__resume_req <= 1'h0;
             debug_state__arg <= 16'h0;
             debug_state__data0 <= 32'h0;
-            debug_state__resp <= 1'h0;
+            debug_state__resp <= 2'h0;
             debug_state__resumed <= 1'h0;
             debug_state__fsm_state <= 2'h0;
             debug_state__halted <= 1'h0;
@@ -223,18 +224,18 @@ module riscv_i32_pipeline_debug
             if ((debug_combs__mst_valid!=1'h0))
             begin
                 debug_state__attention <= 1'h0;
-                if ((debug_mst__op==4'h0))
+                if ((debug_mst__op==4'h1))
                 begin
                     debug_state__halt_req <= debug_mst__arg[0];
                     debug_state__resume_req <= debug_mst__arg[1];
                 end //if
-                if ((debug_mst__op==4'h1))
+                if ((debug_mst__op==4'h2))
                 begin
                     debug_state__arg <= debug_mst__arg;
                     debug_state__data0 <= debug_mst__data;
                 end //if
             end //if
-            debug_state__resp <= 1'h0;
+            debug_state__resp <= 2'h0;
             if (((debug_state__resumed!=1'h0)&&!(debug_state__resume_req!=1'h0)))
             begin
                 debug_state__resumed <= 1'h0;
@@ -307,7 +308,7 @@ module riscv_i32_pipeline_debug
     reg debug_tgt__halted__var;
     reg debug_tgt__resumed__var;
     reg debug_tgt__hit_breakpoint__var;
-    reg debug_tgt__resp__var;
+    reg [1:0]debug_tgt__resp__var;
     reg [31:0]debug_tgt__data__var;
     reg debug_tgt__attention__var;
         debug_tgt__valid__var = 1'h0;
@@ -316,7 +317,7 @@ module riscv_i32_pipeline_debug
         debug_tgt__resumed__var = 1'h0;
         debug_tgt__hit_breakpoint__var = 1'h0;
         debug_tgt__op_was_none = 1'h0;
-        debug_tgt__resp__var = 1'h0;
+        debug_tgt__resp__var = 2'h0;
         debug_tgt__data__var = 32'h0;
         debug_tgt__attention__var = 1'h0;
         if ((debug_state__drive_attention!=1'h0))
@@ -326,7 +327,7 @@ module riscv_i32_pipeline_debug
         if ((debug_state__drive_response!=1'h0))
         begin
             debug_tgt__valid__var = 1'h1;
-            debug_tgt__selected__var = rv_select;
+            debug_tgt__selected__var = debug_state__rv_select;
             debug_tgt__halted__var = debug_state__halted;
             debug_tgt__resumed__var = debug_state__resumed;
             debug_tgt__hit_breakpoint__var = debug_state__hit_breakpoint;
@@ -352,6 +353,7 @@ module riscv_i32_pipeline_debug
         begin
             debug_state__drive_attention <= 1'h0;
             debug_state__drive_response <= 1'h0;
+            debug_state__rv_select <= 6'h0;
         end
         else if (clk__enable)
         begin
@@ -364,6 +366,10 @@ module riscv_i32_pipeline_debug
             if (((debug_mst__valid!=1'h0)&&(rv_select==debug_mst__select)))
             begin
                 debug_state__drive_response <= 1'h1;
+            end //if
+            if ((debug_state__rv_select!=6'h0))
+            begin
+                debug_state__rv_select <= rv_select;
             end //if
         end //if
     end //always

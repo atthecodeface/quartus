@@ -31,8 +31,10 @@ module riscv_i32_fetch_debug
     debug_control__data,
     pipeline_trace__instr_valid,
     pipeline_trace__instr_pc,
-    pipeline_trace__instruction__mode,
     pipeline_trace__instruction__data,
+    pipeline_trace__instruction__debug__valid,
+    pipeline_trace__instruction__debug__debug_op,
+    pipeline_trace__instruction__debug__data,
     pipeline_trace__rfw_retire,
     pipeline_trace__rfw_data_valid,
     pipeline_trace__rfw_rd,
@@ -40,21 +42,21 @@ module riscv_i32_fetch_debug
     pipeline_trace__branch_taken,
     pipeline_trace__branch_target,
     pipeline_trace__trap,
-    pipeline_ifetch_req__valid,
+    pipeline_ifetch_req__flush_pipeline,
+    pipeline_ifetch_req__req_type,
+    pipeline_ifetch_req__debug_fetch,
     pipeline_ifetch_req__address,
-    pipeline_ifetch_req__sequential,
     pipeline_ifetch_req__mode,
     pipeline_ifetch_req__predicted_branch,
     pipeline_ifetch_req__pc_if_mispredicted,
-    pipeline_ifetch_req__flush_pipeline,
 
-    ifetch_req__valid,
+    ifetch_req__flush_pipeline,
+    ifetch_req__req_type,
+    ifetch_req__debug_fetch,
     ifetch_req__address,
-    ifetch_req__sequential,
     ifetch_req__mode,
     ifetch_req__predicted_branch,
     ifetch_req__pc_if_mispredicted,
-    ifetch_req__flush_pipeline,
     debug_response__valid,
     debug_response__kill_fetch,
     debug_response__halt_request,
@@ -84,8 +86,10 @@ module riscv_i32_fetch_debug
     input [31:0]debug_control__data;
     input pipeline_trace__instr_valid;
     input [31:0]pipeline_trace__instr_pc;
-    input [2:0]pipeline_trace__instruction__mode;
     input [31:0]pipeline_trace__instruction__data;
+    input pipeline_trace__instruction__debug__valid;
+    input [1:0]pipeline_trace__instruction__debug__debug_op;
+    input [15:0]pipeline_trace__instruction__debug__data;
     input pipeline_trace__rfw_retire;
     input pipeline_trace__rfw_data_valid;
     input [4:0]pipeline_trace__rfw_rd;
@@ -93,22 +97,22 @@ module riscv_i32_fetch_debug
     input pipeline_trace__branch_taken;
     input [31:0]pipeline_trace__branch_target;
     input pipeline_trace__trap;
-    input pipeline_ifetch_req__valid;
+    input pipeline_ifetch_req__flush_pipeline;
+    input [2:0]pipeline_ifetch_req__req_type;
+    input pipeline_ifetch_req__debug_fetch;
     input [31:0]pipeline_ifetch_req__address;
-    input pipeline_ifetch_req__sequential;
     input [2:0]pipeline_ifetch_req__mode;
     input pipeline_ifetch_req__predicted_branch;
     input [31:0]pipeline_ifetch_req__pc_if_mispredicted;
-    input pipeline_ifetch_req__flush_pipeline;
 
     //b Outputs
-    output ifetch_req__valid;
+    output ifetch_req__flush_pipeline;
+    output [2:0]ifetch_req__req_type;
+    output ifetch_req__debug_fetch;
     output [31:0]ifetch_req__address;
-    output ifetch_req__sequential;
     output [2:0]ifetch_req__mode;
     output ifetch_req__predicted_branch;
     output [31:0]ifetch_req__pc_if_mispredicted;
-    output ifetch_req__flush_pipeline;
     output debug_response__valid;
     output debug_response__kill_fetch;
     output debug_response__halt_request;
@@ -124,13 +128,13 @@ module riscv_i32_fetch_debug
 // output components here
 
     //b Output combinatorials
-    reg ifetch_req__valid;
+    reg ifetch_req__flush_pipeline;
+    reg [2:0]ifetch_req__req_type;
+    reg ifetch_req__debug_fetch;
     reg [31:0]ifetch_req__address;
-    reg ifetch_req__sequential;
     reg [2:0]ifetch_req__mode;
     reg ifetch_req__predicted_branch;
     reg [31:0]ifetch_req__pc_if_mispredicted;
-    reg ifetch_req__flush_pipeline;
     reg debug_response__valid;
     reg debug_response__kill_fetch;
     reg debug_response__halt_request;
@@ -158,13 +162,13 @@ module riscv_i32_fetch_debug
         //       
     always @ ( * )//fetch_debug_operation
     begin: fetch_debug_operation__comb_code
-        ifetch_req__valid = pipeline_ifetch_req__valid;
+        ifetch_req__flush_pipeline = pipeline_ifetch_req__flush_pipeline;
+        ifetch_req__req_type = pipeline_ifetch_req__req_type;
+        ifetch_req__debug_fetch = pipeline_ifetch_req__debug_fetch;
         ifetch_req__address = pipeline_ifetch_req__address;
-        ifetch_req__sequential = pipeline_ifetch_req__sequential;
         ifetch_req__mode = pipeline_ifetch_req__mode;
         ifetch_req__predicted_branch = pipeline_ifetch_req__predicted_branch;
         ifetch_req__pc_if_mispredicted = pipeline_ifetch_req__pc_if_mispredicted;
-        ifetch_req__flush_pipeline = pipeline_ifetch_req__flush_pipeline;
         pipeline_ifetch_resp__valid = ifetch_resp__valid;
         pipeline_ifetch_resp__debug = ifetch_resp__debug;
         pipeline_ifetch_resp__data = ifetch_resp__data;

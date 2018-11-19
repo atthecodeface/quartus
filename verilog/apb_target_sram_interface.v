@@ -13,7 +13,23 @@
 
 //a Module apb_target_sram_interface
     //   
-    //   Generate SRAM read/write requests
+    //   APB target peripheral that generates SRAM read/write requests
+    //   
+    //   The module maintains a 32-bit SRAM address that is used in the
+    //   requests, which is a read/write register. There is also a 32-bit
+    //   control register, that can be used for any purpose by the client.
+    //   
+    //   SRAM requests occur when the data register is accessed; it can be
+    //   accessed in one of three different ways. Firstly, it may be accessed
+    //   simply read/write, with either generating the appropriate SRAM request
+    //   to the address given by the SRAM address register. Secondly, it may be
+    //   accessed with a post-increment, where the SRAM address register value
+    //   is used as-is in the request, but it is incremented ready for a
+    //   subsequent transaction. Thirdly, it may be accessed 'windowed'; in
+    //   this manner the bottom 7 bits of the APB address are used in
+    //   conjunction with the top 25 bits of the SRAM address register to
+    //   generate the address for the SRAM request.
+    //   
     //   
 module apb_target_sram_interface
 (
@@ -218,6 +234,13 @@ module apb_target_sram_interface
 
     //b sram_request_logic clock process
         //   
+        //       While an SRAM request is in progress the APB side is ignored; it
+        //       should be held as busy. Hence an acknowledged valid request can be
+        //       removed, and a valid SRAM response completes the SRAM request in
+        //       progress.
+        //   
+        //       If an SRAM request is not in progress then one may be started,
+        //       depending on the APB access being presented.
         //       
     always @( posedge clk or negedge reset_n)
     begin : sram_request_logic__code

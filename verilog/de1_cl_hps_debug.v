@@ -124,6 +124,8 @@ module de1_cl_hps_debug
     input lw_axi_clock_clk__enable;
     input clk;
     input clk__enable;
+    wire jtag_tck; // Gated version of clock 'clk' enabled by 'jtag_tck_enable'
+    wire jtag_tck__enable;
 
     //b Inputs
     input de1_irda_rxd;
@@ -251,6 +253,7 @@ module de1_cl_hps_debug
     wire lw_axi_arready;
 
     //b Internal and output registers
+    reg jtag_tck_go_reg;
     reg [31:0]lcd_counters[3:0];
     reg [3:0]lcd_seconds_sr;
     reg [31:0]vga_counters[3:0];
@@ -296,6 +299,11 @@ module de1_cl_hps_debug
     reg de1_cl_lcd__backlight;
 
     //b Internal combinatorials
+    reg jtag_tck_enable;
+    reg jtag_tck_go;
+    reg jtag__ntrst;
+    reg jtag__tms;
+    reg jtag__tdi;
     reg fb_sram_access_resp__ack;
     reg fb_sram_access_resp__valid;
     reg [3:0]fb_sram_access_resp__id;
@@ -311,6 +319,7 @@ module de1_cl_hps_debug
     reg riscv_config__e32;
     reg riscv_config__i32m;
     reg riscv_config__i32m_fuse;
+    reg riscv_config__debug_enable;
     reg riscv_config__coproc_disable;
     reg riscv_config__unaligned_mem;
     reg tt_display_sram_access_req__valid;
@@ -335,6 +344,11 @@ module de1_cl_hps_debug
     reg [31:0]apb_response__prdata;
     reg apb_response__pready;
     reg apb_response__perr;
+    reg [31:0]debug_apb_request__paddr;
+    reg debug_apb_request__penable;
+    reg debug_apb_request__psel;
+    reg debug_apb_request__pwrite;
+    reg [31:0]debug_apb_request__pwdata;
     reg [31:0]ps2_apb_request__paddr;
     reg ps2_apb_request__penable;
     reg ps2_apb_request__psel;
@@ -381,8 +395,34 @@ module de1_cl_hps_debug
     reg timer_apb_request__pwrite;
     reg [31:0]timer_apb_request__pwdata;
     reg [3:0]apb_request_sel;
+    reg [31:0]jtag_mod_apb_request__paddr;
+    reg jtag_mod_apb_request__penable;
+    reg jtag_mod_apb_request__psel;
+    reg jtag_mod_apb_request__pwrite;
+    reg [31:0]jtag_mod_apb_request__pwdata;
 
     //b Internal nets
+    wire jtag_tdo;
+    wire [49:0]dr_out;
+    wire [49:0]dr_tdi_mask;
+    wire [49:0]dr_in;
+    wire [1:0]dr_action;
+    wire [4:0]ir;
+    wire debug_tgt__valid;
+    wire [5:0]debug_tgt__selected;
+    wire debug_tgt__halted;
+    wire debug_tgt__resumed;
+    wire debug_tgt__hit_breakpoint;
+    wire debug_tgt__op_was_none;
+    wire [1:0]debug_tgt__resp;
+    wire [31:0]debug_tgt__data;
+    wire debug_tgt__attention;
+    wire debug_mst__valid;
+    wire [5:0]debug_mst__select;
+    wire [5:0]debug_mst__mask;
+    wire [3:0]debug_mst__op;
+    wire [15:0]debug_mst__arg;
+    wire [31:0]debug_mst__data;
     wire [6:0]de1_hex_leds[5:0];
     wire ps2_out__data;
     wire ps2_out__clk;
@@ -411,8 +451,10 @@ module de1_cl_hps_debug
     wire [31:0]data_access_req__write_data;
     wire riscv_trace__instr_valid;
     wire [31:0]riscv_trace__instr_pc;
-    wire [2:0]riscv_trace__instruction__mode;
     wire [31:0]riscv_trace__instruction__data;
+    wire riscv_trace__instruction__debug__valid;
+    wire [1:0]riscv_trace__instruction__debug__debug_op;
+    wire [15:0]riscv_trace__instruction__debug__data;
     wire riscv_trace__rfw_retire;
     wire riscv_trace__rfw_data_valid;
     wire [4:0]riscv_trace__rfw_rd;
@@ -501,6 +543,9 @@ module de1_cl_hps_debug
     wire de1_cl_user_inputs__right_dial__direction_pulse;
     wire de1_cl_user_inputs__touchpanel_irq;
     wire de1_cl_user_inputs__temperature_alarm;
+    wire [31:0]jtag_apb_response__prdata;
+    wire jtag_apb_response__pready;
+    wire jtag_apb_response__perr;
     wire [31:0]riscv_apb_response__prdata;
     wire riscv_apb_response__pready;
     wire riscv_apb_response__perr;
@@ -510,9 +555,15 @@ module de1_cl_hps_debug
     wire [31:0]axi_apb_response__prdata;
     wire axi_apb_response__pready;
     wire axi_apb_response__perr;
-    wire [31:0]rp_apb_response__prdata;
-    wire rp_apb_response__pready;
-    wire rp_apb_response__perr;
+    wire [31:0]rjp_apb_response__prdata;
+    wire rjp_apb_response__pready;
+    wire rjp_apb_response__perr;
+    wire [31:0]jp_apb_response__prdata;
+    wire jp_apb_response__pready;
+    wire jp_apb_response__perr;
+    wire [31:0]debug_apb_response__prdata;
+    wire debug_apb_response__pready;
+    wire debug_apb_response__perr;
     wire [31:0]ps2_apb_response__prdata;
     wire ps2_apb_response__pready;
     wire ps2_apb_response__perr;
@@ -545,11 +596,16 @@ module de1_cl_hps_debug
     wire apb_request__psel;
     wire apb_request__pwrite;
     wire [31:0]apb_request__pwdata;
-    wire [31:0]rp_apb_request__paddr;
-    wire rp_apb_request__penable;
-    wire rp_apb_request__psel;
-    wire rp_apb_request__pwrite;
-    wire [31:0]rp_apb_request__pwdata;
+    wire [31:0]rjp_apb_request__paddr;
+    wire rjp_apb_request__penable;
+    wire rjp_apb_request__psel;
+    wire rjp_apb_request__pwrite;
+    wire [31:0]rjp_apb_request__pwdata;
+    wire [31:0]jp_apb_request__paddr;
+    wire jp_apb_request__penable;
+    wire jp_apb_request__psel;
+    wire jp_apb_request__pwrite;
+    wire [31:0]jp_apb_request__pwdata;
     wire [31:0]proc_apb_request__paddr;
     wire proc_apb_request__penable;
     wire proc_apb_request__psel;
@@ -565,18 +621,90 @@ module de1_cl_hps_debug
     wire riscv_apb_request__psel;
     wire riscv_apb_request__pwrite;
     wire [31:0]riscv_apb_request__pwdata;
+    wire [31:0]jtag_apb_request__paddr;
+    wire jtag_apb_request__penable;
+    wire jtag_apb_request__psel;
+    wire jtag_apb_request__pwrite;
+    wire [31:0]jtag_apb_request__pwdata;
 
     //b Clock gating module instances
+    assign jtag_tck__enable = (clk__enable && jtag_tck_enable);
     //b Module instances
+    jtag_tap tap(
+        .jtag_tck(clk),
+        .jtag_tck__enable(jtag_tck__enable),
+        .dr_out(dr_out),
+        .dr_tdi_mask(dr_tdi_mask),
+        .jtag__tdi(jtag__tdi),
+        .jtag__tms(jtag__tms),
+        .jtag__ntrst(jtag__ntrst),
+        .reset_n(reset_n),
+        .dr_in(            dr_in),
+        .dr_action(            dr_action),
+        .ir(            ir),
+        .tdo(            jtag_tdo)         );
+    riscv_jtag_apb_dm dm_apb(
+        .apb_clock(clk),
+        .apb_clock__enable(1'b1),
+        .jtag_tck(clk),
+        .jtag_tck__enable(jtag_tck__enable),
+        .apb_response__perr(jtag_apb_response__perr),
+        .apb_response__pready(jtag_apb_response__pready),
+        .apb_response__prdata(jtag_apb_response__prdata),
+        .dr_in(dr_in),
+        .dr_action(dr_action),
+        .ir(ir),
+        .reset_n(reset_n),
+        .apb_request__pwdata(            jtag_apb_request__pwdata),
+        .apb_request__pwrite(            jtag_apb_request__pwrite),
+        .apb_request__psel(            jtag_apb_request__psel),
+        .apb_request__penable(            jtag_apb_request__penable),
+        .apb_request__paddr(            jtag_apb_request__paddr),
+        .dr_out(            dr_out),
+        .dr_tdi_mask(            dr_tdi_mask)         );
+    riscv_i32_debug dm(
+        .clk(clk),
+        .clk__enable(1'b1),
+        .debug_tgt__attention(debug_tgt__attention),
+        .debug_tgt__data(debug_tgt__data),
+        .debug_tgt__resp(debug_tgt__resp),
+        .debug_tgt__op_was_none(debug_tgt__op_was_none),
+        .debug_tgt__hit_breakpoint(debug_tgt__hit_breakpoint),
+        .debug_tgt__resumed(debug_tgt__resumed),
+        .debug_tgt__halted(debug_tgt__halted),
+        .debug_tgt__selected(debug_tgt__selected),
+        .debug_tgt__valid(debug_tgt__valid),
+        .apb_request__pwdata(debug_apb_request__pwdata),
+        .apb_request__pwrite(debug_apb_request__pwrite),
+        .apb_request__psel(debug_apb_request__psel),
+        .apb_request__penable(debug_apb_request__penable),
+        .apb_request__paddr(debug_apb_request__paddr),
+        .reset_n(reset_n),
+        .debug_mst__data(            debug_mst__data),
+        .debug_mst__arg(            debug_mst__arg),
+        .debug_mst__op(            debug_mst__op),
+        .debug_mst__mask(            debug_mst__mask),
+        .debug_mst__select(            debug_mst__select),
+        .debug_mst__valid(            debug_mst__valid),
+        .apb_response__perr(            debug_apb_response__perr),
+        .apb_response__pready(            debug_apb_response__pready),
+        .apb_response__prdata(            debug_apb_response__prdata)         );
     riscv_i32_minimal riscv(
         .clk(lw_axi_clock_clk),
         .clk__enable(1'b1),
         .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
         .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__debug_enable(riscv_config__debug_enable),
         .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
         .riscv_config__i32c(riscv_config__i32c),
+        .debug_mst__data(debug_mst__data),
+        .debug_mst__arg(debug_mst__arg),
+        .debug_mst__op(debug_mst__op),
+        .debug_mst__mask(debug_mst__mask),
+        .debug_mst__select(debug_mst__select),
+        .debug_mst__valid(debug_mst__valid),
         .sram_access_req__write_data(rv_sram_access_req__write_data),
         .sram_access_req__address(rv_sram_access_req__address),
         .sram_access_req__byte_enable(rv_sram_access_req__byte_enable),
@@ -601,10 +729,21 @@ module de1_cl_hps_debug
         .trace__rfw_rd(            riscv_trace__rfw_rd),
         .trace__rfw_data_valid(            riscv_trace__rfw_data_valid),
         .trace__rfw_retire(            riscv_trace__rfw_retire),
+        .trace__instruction__debug__data(            riscv_trace__instruction__debug__data),
+        .trace__instruction__debug__debug_op(            riscv_trace__instruction__debug__debug_op),
+        .trace__instruction__debug__valid(            riscv_trace__instruction__debug__valid),
         .trace__instruction__data(            riscv_trace__instruction__data),
-        .trace__instruction__mode(            riscv_trace__instruction__mode),
         .trace__instr_pc(            riscv_trace__instr_pc),
         .trace__instr_valid(            riscv_trace__instr_valid),
+        .debug_tgt__attention(            debug_tgt__attention),
+        .debug_tgt__data(            debug_tgt__data),
+        .debug_tgt__resp(            debug_tgt__resp),
+        .debug_tgt__op_was_none(            debug_tgt__op_was_none),
+        .debug_tgt__hit_breakpoint(            debug_tgt__hit_breakpoint),
+        .debug_tgt__resumed(            debug_tgt__resumed),
+        .debug_tgt__halted(            debug_tgt__halted),
+        .debug_tgt__selected(            debug_tgt__selected),
+        .debug_tgt__valid(            debug_tgt__valid),
         .sram_access_resp__data(            rv_sram_access_resp__data),
         .sram_access_resp__id(            rv_sram_access_resp__id),
         .sram_access_resp__valid(            rv_sram_access_resp__valid),
@@ -624,8 +763,10 @@ module de1_cl_hps_debug
         .trace__rfw_rd(riscv_trace__rfw_rd),
         .trace__rfw_data_valid(riscv_trace__rfw_data_valid),
         .trace__rfw_retire(riscv_trace__rfw_retire),
+        .trace__instruction__debug__data(riscv_trace__instruction__debug__data),
+        .trace__instruction__debug__debug_op(riscv_trace__instruction__debug__debug_op),
+        .trace__instruction__debug__valid(riscv_trace__instruction__debug__valid),
         .trace__instruction__data(riscv_trace__instruction__data),
-        .trace__instruction__mode(riscv_trace__instruction__mode),
         .trace__instr_pc(riscv_trace__instr_pc),
         .trace__instr_valid(riscv_trace__instr_valid),
         .reset_n(reset_n)         );
@@ -732,31 +873,59 @@ module de1_cl_hps_debug
         .wready(            lw_axi_wready),
         .awready(            lw_axi_awready),
         .arready(            lw_axi_arready)         );
-    apb_master_mux apb_mux_rp(
+    apb_master_mux apb_mux_jp(
         .clk(lw_axi_clock_clk),
         .clk__enable(1'b1),
-        .apb_response__perr(rp_apb_response__perr),
-        .apb_response__pready(rp_apb_response__pready),
-        .apb_response__prdata(rp_apb_response__prdata),
+        .apb_response__perr(jp_apb_response__perr),
+        .apb_response__pready(jp_apb_response__pready),
+        .apb_response__prdata(jp_apb_response__prdata),
         .apb_request_1__pwdata(proc_apb_request__pwdata),
         .apb_request_1__pwrite(proc_apb_request__pwrite),
         .apb_request_1__psel(proc_apb_request__psel),
         .apb_request_1__penable(proc_apb_request__penable),
         .apb_request_1__paddr(proc_apb_request__paddr),
+        .apb_request_0__pwdata(jtag_mod_apb_request__pwdata),
+        .apb_request_0__pwrite(jtag_mod_apb_request__pwrite),
+        .apb_request_0__psel(jtag_mod_apb_request__psel),
+        .apb_request_0__penable(jtag_mod_apb_request__penable),
+        .apb_request_0__paddr(jtag_mod_apb_request__paddr),
+        .reset_n(reset_n),
+        .apb_request__pwdata(            jp_apb_request__pwdata),
+        .apb_request__pwrite(            jp_apb_request__pwrite),
+        .apb_request__psel(            jp_apb_request__psel),
+        .apb_request__penable(            jp_apb_request__penable),
+        .apb_request__paddr(            jp_apb_request__paddr),
+        .apb_response_1__perr(            proc_apb_response__perr),
+        .apb_response_1__pready(            proc_apb_response__pready),
+        .apb_response_1__prdata(            proc_apb_response__prdata),
+        .apb_response_0__perr(            jtag_apb_response__perr),
+        .apb_response_0__pready(            jtag_apb_response__pready),
+        .apb_response_0__prdata(            jtag_apb_response__prdata)         );
+    apb_master_mux apb_mux_rjp(
+        .clk(lw_axi_clock_clk),
+        .clk__enable(1'b1),
+        .apb_response__perr(rjp_apb_response__perr),
+        .apb_response__pready(rjp_apb_response__pready),
+        .apb_response__prdata(rjp_apb_response__prdata),
+        .apb_request_1__pwdata(jp_apb_request__pwdata),
+        .apb_request_1__pwrite(jp_apb_request__pwrite),
+        .apb_request_1__psel(jp_apb_request__psel),
+        .apb_request_1__penable(jp_apb_request__penable),
+        .apb_request_1__paddr(jp_apb_request__paddr),
         .apb_request_0__pwdata(riscv_apb_request__pwdata),
         .apb_request_0__pwrite(riscv_apb_request__pwrite),
         .apb_request_0__psel(riscv_apb_request__psel),
         .apb_request_0__penable(riscv_apb_request__penable),
         .apb_request_0__paddr(riscv_apb_request__paddr),
         .reset_n(reset_n),
-        .apb_request__pwdata(            rp_apb_request__pwdata),
-        .apb_request__pwrite(            rp_apb_request__pwrite),
-        .apb_request__psel(            rp_apb_request__psel),
-        .apb_request__penable(            rp_apb_request__penable),
-        .apb_request__paddr(            rp_apb_request__paddr),
-        .apb_response_1__perr(            proc_apb_response__perr),
-        .apb_response_1__pready(            proc_apb_response__pready),
-        .apb_response_1__prdata(            proc_apb_response__prdata),
+        .apb_request__pwdata(            rjp_apb_request__pwdata),
+        .apb_request__pwrite(            rjp_apb_request__pwrite),
+        .apb_request__psel(            rjp_apb_request__psel),
+        .apb_request__penable(            rjp_apb_request__penable),
+        .apb_request__paddr(            rjp_apb_request__paddr),
+        .apb_response_1__perr(            jp_apb_response__perr),
+        .apb_response_1__pready(            jp_apb_response__pready),
+        .apb_response_1__prdata(            jp_apb_response__prdata),
         .apb_response_0__perr(            riscv_apb_response__perr),
         .apb_response_0__pready(            riscv_apb_response__pready),
         .apb_response_0__prdata(            riscv_apb_response__prdata)         );
@@ -766,11 +935,11 @@ module de1_cl_hps_debug
         .apb_response__perr(apb_response__perr),
         .apb_response__pready(apb_response__pready),
         .apb_response__prdata(apb_response__prdata),
-        .apb_request_1__pwdata(rp_apb_request__pwdata),
-        .apb_request_1__pwrite(rp_apb_request__pwrite),
-        .apb_request_1__psel(rp_apb_request__psel),
-        .apb_request_1__penable(rp_apb_request__penable),
-        .apb_request_1__paddr(rp_apb_request__paddr),
+        .apb_request_1__pwdata(rjp_apb_request__pwdata),
+        .apb_request_1__pwrite(rjp_apb_request__pwrite),
+        .apb_request_1__psel(rjp_apb_request__psel),
+        .apb_request_1__penable(rjp_apb_request__penable),
+        .apb_request_1__paddr(rjp_apb_request__paddr),
         .apb_request_0__pwdata(axi_apb_request__pwdata),
         .apb_request_0__pwrite(axi_apb_request__pwrite),
         .apb_request_0__psel(axi_apb_request__psel),
@@ -782,9 +951,9 @@ module de1_cl_hps_debug
         .apb_request__psel(            apb_request__psel),
         .apb_request__penable(            apb_request__penable),
         .apb_request__paddr(            apb_request__paddr),
-        .apb_response_1__perr(            rp_apb_response__perr),
-        .apb_response_1__pready(            rp_apb_response__pready),
-        .apb_response_1__prdata(            rp_apb_response__prdata),
+        .apb_response_1__perr(            rjp_apb_response__perr),
+        .apb_response_1__pready(            rjp_apb_response__pready),
+        .apb_response_1__prdata(            rjp_apb_response__prdata),
         .apb_response_0__perr(            axi_apb_response__perr),
         .apb_response_0__pready(            axi_apb_response__pready),
         .apb_response_0__prdata(            axi_apb_response__prdata)         );
@@ -1487,6 +1656,7 @@ module de1_cl_hps_debug
     begin: riscv_instance__comb_code
     reg riscv_config__i32c__var;
     reg riscv_config__e32__var;
+    reg riscv_config__debug_enable__var;
     reg irqs__mtip__var;
     reg timer_control__enable_counter__var;
     reg [7:0]timer_control__integer_adder__var;
@@ -1494,10 +1664,12 @@ module de1_cl_hps_debug
         riscv_config__e32__var = 1'h0;
         riscv_config__i32m = 1'h0;
         riscv_config__i32m_fuse = 1'h0;
+        riscv_config__debug_enable__var = 1'h0;
         riscv_config__coproc_disable = 1'h0;
         riscv_config__unaligned_mem = 1'h0;
         riscv_config__e32__var = 1'h0;
         riscv_config__i32c__var = 1'h1;
+        riscv_config__debug_enable__var = rv_sram_ctrl[12];
         irqs__nmi = 1'h0;
         irqs__meip = 1'h0;
         irqs__seip = 1'h0;
@@ -1517,6 +1689,7 @@ module de1_cl_hps_debug
         timer_control__integer_adder__var = 8'h14;
         riscv_config__i32c = riscv_config__i32c__var;
         riscv_config__e32 = riscv_config__e32__var;
+        riscv_config__debug_enable = riscv_config__debug_enable__var;
         irqs__mtip = irqs__mtip__var;
         timer_control__enable_counter = timer_control__enable_counter__var;
         timer_control__integer_adder = timer_control__integer_adder__var;
@@ -1546,6 +1719,7 @@ module de1_cl_hps_debug
     //b apb_multiplexing_decode combinatorial process
     always @ ( * )//apb_multiplexing_decode
     begin: apb_multiplexing_decode__comb_code
+    reg [31:0]jtag_mod_apb_request__paddr__var;
     reg [31:0]timer_apb_request__paddr__var;
     reg timer_apb_request__psel__var;
     reg [31:0]gpio_apb_request__paddr__var;
@@ -1564,9 +1738,17 @@ module de1_cl_hps_debug
     reg fb_sram_apb_request__psel__var;
     reg [31:0]ps2_apb_request__paddr__var;
     reg ps2_apb_request__psel__var;
+    reg [31:0]debug_apb_request__paddr__var;
+    reg debug_apb_request__psel__var;
     reg [31:0]apb_response__prdata__var;
     reg apb_response__pready__var;
     reg apb_response__perr__var;
+        jtag_mod_apb_request__paddr__var = jtag_apb_request__paddr;
+        jtag_mod_apb_request__penable = jtag_apb_request__penable;
+        jtag_mod_apb_request__psel = jtag_apb_request__psel;
+        jtag_mod_apb_request__pwrite = jtag_apb_request__pwrite;
+        jtag_mod_apb_request__pwdata = jtag_apb_request__pwdata;
+        jtag_mod_apb_request__paddr__var = {{{{12'h0,(4'h9 ^ jtag_apb_request__paddr[19:16])},6'h0},jtag_apb_request__paddr[7:0]},2'h0};
         apb_request_sel = apb_request__paddr[19:16];
         timer_apb_request__paddr__var = apb_request__paddr;
         timer_apb_request__penable = apb_request__penable;
@@ -1613,6 +1795,11 @@ module de1_cl_hps_debug
         ps2_apb_request__psel__var = apb_request__psel;
         ps2_apb_request__pwrite = apb_request__pwrite;
         ps2_apb_request__pwdata = apb_request__pwdata;
+        debug_apb_request__paddr__var = apb_request__paddr;
+        debug_apb_request__penable = apb_request__penable;
+        debug_apb_request__psel__var = apb_request__psel;
+        debug_apb_request__pwrite = apb_request__pwrite;
+        debug_apb_request__pwdata = apb_request__pwdata;
         timer_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         gpio_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         led_chain_apb_request__paddr__var = (apb_request__paddr>>64'h2);
@@ -1621,6 +1808,7 @@ module de1_cl_hps_debug
         rv_sram_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         fb_sram_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         ps2_apb_request__paddr__var = (apb_request__paddr>>64'h2);
+        debug_apb_request__paddr__var = (apb_request__paddr>>64'h2);
         timer_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h0));
         gpio_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h1));
         dprintf_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h2));
@@ -1630,6 +1818,7 @@ module de1_cl_hps_debug
         inputs_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h6));
         fb_sram_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h7));
         ps2_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h8));
+        debug_apb_request__psel__var = ((apb_request__psel!=1'h0)&&(apb_request_sel==4'h9));
         csr_apb_request__paddr__var[31:16] = {12'h0,apb_request__paddr[15:12]};
         csr_apb_request__paddr__var[15:0] = {6'h0,apb_request__paddr[11:2]};
         apb_response__prdata__var = timer_apb_response__prdata;
@@ -1683,6 +1872,13 @@ module de1_cl_hps_debug
             apb_response__pready__var = ps2_apb_response__pready;
             apb_response__perr__var = ps2_apb_response__perr;
         end //if
+        if ((apb_request_sel==4'h9))
+        begin
+            apb_response__prdata__var = debug_apb_response__prdata;
+            apb_response__pready__var = debug_apb_response__pready;
+            apb_response__perr__var = debug_apb_response__perr;
+        end //if
+        jtag_mod_apb_request__paddr = jtag_mod_apb_request__paddr__var;
         timer_apb_request__paddr = timer_apb_request__paddr__var;
         timer_apb_request__psel = timer_apb_request__psel__var;
         gpio_apb_request__paddr = gpio_apb_request__paddr__var;
@@ -1701,6 +1897,8 @@ module de1_cl_hps_debug
         fb_sram_apb_request__psel = fb_sram_apb_request__psel__var;
         ps2_apb_request__paddr = ps2_apb_request__paddr__var;
         ps2_apb_request__psel = ps2_apb_request__psel__var;
+        debug_apb_request__paddr = debug_apb_request__paddr__var;
+        debug_apb_request__psel = debug_apb_request__psel__var;
         apb_response__prdata = apb_response__prdata__var;
         apb_response__pready = apb_response__pready__var;
         apb_response__perr = apb_response__perr__var;
@@ -2213,6 +2411,11 @@ module de1_cl_hps_debug
         de1_leds__h4 = ~de1_hex_leds[4];
         de1_leds__h5 = ~de1_hex_leds[5];
         de1_cl_led_data_pin = !(led_chain!=1'h0);
+        jtag_tck_go = rv_sram_ctrl[8];
+        jtag__ntrst = rv_sram_ctrl[9];
+        jtag__tms = rv_sram_ctrl[10];
+        jtag__tdi = rv_sram_ctrl[11];
+        jtag_tck_enable = ((jtag_tck_go!=1'h0)&&!(jtag_tck_go_reg!=1'h0));
         de1_ps2b_out__data = 1'h0;
         de1_ps2b_out__clk = 1'h0;
         de1_irda_txd = 1'h0;
@@ -2275,11 +2478,25 @@ module de1_cl_hps_debug
                 riscv_last_pc <= riscv_trace__instr_pc;
             end //if
             gpio_input <= 16'h0;
-            gpio_input[3:0] <= de1_keys;
-            gpio_input[13:4] <= de1_switches;
-            gpio_input[14] <= de1_irda_rxd;
+            gpio_input[0] <= jtag_tdo;
+            gpio_input[4:1] <= de1_keys;
+            gpio_input[14:5] <= de1_switches;
+            gpio_input[15] <= de1_irda_rxd;
             de1_ps2_out__data <= ps2_out__data;
             de1_ps2_out__clk <= ps2_out__clk;
+        end //if
+    end //always
+
+    //b stubs__posedge_clk_active_low_de1_cl_lcd_reset_n clock process
+    always @( posedge clk or negedge de1_cl_lcd_reset_n)
+    begin : stubs__posedge_clk_active_low_de1_cl_lcd_reset_n__code
+        if (de1_cl_lcd_reset_n==1'b0)
+        begin
+            jtag_tck_go_reg <= 1'h0;
+        end
+        else if (clk__enable)
+        begin
+            jtag_tck_go_reg <= jtag_tck_go;
         end //if
     end //always
 

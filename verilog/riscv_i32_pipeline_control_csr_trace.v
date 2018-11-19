@@ -23,16 +23,20 @@ module riscv_i32_pipeline_control_csr_trace
     riscv_config__e32,
     riscv_config__i32m,
     riscv_config__i32m_fuse,
+    riscv_config__debug_enable,
     riscv_config__coproc_disable,
     riscv_config__unaligned_mem,
     pipeline_fetch_data__valid,
     pipeline_fetch_data__pc,
-    pipeline_fetch_data__data,
+    pipeline_fetch_data__instruction__data,
+    pipeline_fetch_data__instruction__debug__valid,
+    pipeline_fetch_data__instruction__debug__debug_op,
+    pipeline_fetch_data__instruction__debug__data,
     pipeline_fetch_data__dec_flush_pipeline,
     pipeline_fetch_data__dec_predicted_branch,
     pipeline_fetch_data__dec_pc_if_mispredicted,
     pipeline_response__decode__valid,
-    pipeline_response__decode__decode_blocked,
+    pipeline_response__decode__blocked,
     pipeline_response__decode__branch_target,
     pipeline_response__decode__idecode__rs1,
     pipeline_response__decode__idecode__rs1_valid,
@@ -67,11 +71,14 @@ module riscv_i32_pipeline_control_csr_trace
     pipeline_response__exec__trap__cause,
     pipeline_response__exec__trap__pc,
     pipeline_response__exec__trap__value,
-    pipeline_response__exec__trap__mret,
+    pipeline_response__exec__trap__ret,
     pipeline_response__exec__trap__vector,
+    pipeline_response__exec__trap__ebreak_to_dbg,
     pipeline_response__exec__is_compressed,
-    pipeline_response__exec__instruction__mode,
     pipeline_response__exec__instruction__data,
+    pipeline_response__exec__instruction__debug__valid,
+    pipeline_response__exec__instruction__debug__debug_op,
+    pipeline_response__exec__instruction__debug__data,
     pipeline_response__exec__rs1,
     pipeline_response__exec__rs2,
     pipeline_response__exec__pc,
@@ -81,21 +88,29 @@ module riscv_i32_pipeline_control_csr_trace
     pipeline_response__rfw__rd_written,
     pipeline_response__rfw__rd,
     pipeline_response__rfw__data,
+    pipeline_response__pipeline_empty,
     pipeline_control__valid,
-    pipeline_control__debug,
     pipeline_control__fetch_action,
     pipeline_control__decode_pc,
     pipeline_control__mode,
     pipeline_control__error,
     pipeline_control__tag,
+    pipeline_control__halt,
+    pipeline_control__ebreak_to_dbg,
     pipeline_control__interrupt_req,
     pipeline_control__interrupt_number,
     pipeline_control__interrupt_to_mode,
+    pipeline_control__instruction_data,
+    pipeline_control__instruction_debug__valid,
+    pipeline_control__instruction_debug__debug_op,
+    pipeline_control__instruction_debug__data,
 
     trace__instr_valid,
     trace__instr_pc,
-    trace__instruction__mode,
     trace__instruction__data,
+    trace__instruction__debug__valid,
+    trace__instruction__debug__debug_op,
+    trace__instruction__debug__data,
     trace__rfw_retire,
     trace__rfw_data_valid,
     trace__rfw_rd,
@@ -111,8 +126,9 @@ module riscv_i32_pipeline_control_csr_trace
     csr_controls__trap__cause,
     csr_controls__trap__pc,
     csr_controls__trap__value,
-    csr_controls__trap__mret,
+    csr_controls__trap__ret,
     csr_controls__trap__vector,
+    csr_controls__trap__ebreak_to_dbg,
     coproc_controls__dec_idecode_valid,
     coproc_controls__dec_idecode__rs1,
     coproc_controls__dec_idecode__rs1_valid,
@@ -155,16 +171,20 @@ module riscv_i32_pipeline_control_csr_trace
     input riscv_config__e32;
     input riscv_config__i32m;
     input riscv_config__i32m_fuse;
+    input riscv_config__debug_enable;
     input riscv_config__coproc_disable;
     input riscv_config__unaligned_mem;
     input pipeline_fetch_data__valid;
     input [31:0]pipeline_fetch_data__pc;
-    input [31:0]pipeline_fetch_data__data;
+    input [31:0]pipeline_fetch_data__instruction__data;
+    input pipeline_fetch_data__instruction__debug__valid;
+    input [1:0]pipeline_fetch_data__instruction__debug__debug_op;
+    input [15:0]pipeline_fetch_data__instruction__debug__data;
     input pipeline_fetch_data__dec_flush_pipeline;
     input pipeline_fetch_data__dec_predicted_branch;
     input [31:0]pipeline_fetch_data__dec_pc_if_mispredicted;
     input pipeline_response__decode__valid;
-    input pipeline_response__decode__decode_blocked;
+    input pipeline_response__decode__blocked;
     input [31:0]pipeline_response__decode__branch_target;
     input [4:0]pipeline_response__decode__idecode__rs1;
     input pipeline_response__decode__idecode__rs1_valid;
@@ -196,14 +216,17 @@ module riscv_i32_pipeline_control_csr_trace
     input pipeline_response__exec__branch_taken;
     input pipeline_response__exec__trap__valid;
     input [2:0]pipeline_response__exec__trap__to_mode;
-    input [4:0]pipeline_response__exec__trap__cause;
+    input [3:0]pipeline_response__exec__trap__cause;
     input [31:0]pipeline_response__exec__trap__pc;
     input [31:0]pipeline_response__exec__trap__value;
-    input pipeline_response__exec__trap__mret;
+    input pipeline_response__exec__trap__ret;
     input pipeline_response__exec__trap__vector;
+    input pipeline_response__exec__trap__ebreak_to_dbg;
     input pipeline_response__exec__is_compressed;
-    input [2:0]pipeline_response__exec__instruction__mode;
     input [31:0]pipeline_response__exec__instruction__data;
+    input pipeline_response__exec__instruction__debug__valid;
+    input [1:0]pipeline_response__exec__instruction__debug__debug_op;
+    input [15:0]pipeline_response__exec__instruction__debug__data;
     input [31:0]pipeline_response__exec__rs1;
     input [31:0]pipeline_response__exec__rs2;
     input [31:0]pipeline_response__exec__pc;
@@ -213,22 +236,30 @@ module riscv_i32_pipeline_control_csr_trace
     input pipeline_response__rfw__rd_written;
     input [4:0]pipeline_response__rfw__rd;
     input [31:0]pipeline_response__rfw__data;
+    input pipeline_response__pipeline_empty;
     input pipeline_control__valid;
-    input pipeline_control__debug;
-    input [1:0]pipeline_control__fetch_action;
+    input [2:0]pipeline_control__fetch_action;
     input [31:0]pipeline_control__decode_pc;
     input [2:0]pipeline_control__mode;
     input pipeline_control__error;
     input [1:0]pipeline_control__tag;
+    input pipeline_control__halt;
+    input pipeline_control__ebreak_to_dbg;
     input pipeline_control__interrupt_req;
     input [3:0]pipeline_control__interrupt_number;
     input [2:0]pipeline_control__interrupt_to_mode;
+    input [31:0]pipeline_control__instruction_data;
+    input pipeline_control__instruction_debug__valid;
+    input [1:0]pipeline_control__instruction_debug__debug_op;
+    input [15:0]pipeline_control__instruction_debug__data;
 
     //b Outputs
     output trace__instr_valid;
     output [31:0]trace__instr_pc;
-    output [2:0]trace__instruction__mode;
     output [31:0]trace__instruction__data;
+    output trace__instruction__debug__valid;
+    output [1:0]trace__instruction__debug__debug_op;
+    output [15:0]trace__instruction__debug__data;
     output trace__rfw_retire;
     output trace__rfw_data_valid;
     output [4:0]trace__rfw_rd;
@@ -241,11 +272,12 @@ module riscv_i32_pipeline_control_csr_trace
     output [63:0]csr_controls__timer_value;
     output csr_controls__trap__valid;
     output [2:0]csr_controls__trap__to_mode;
-    output [4:0]csr_controls__trap__cause;
+    output [3:0]csr_controls__trap__cause;
     output [31:0]csr_controls__trap__pc;
     output [31:0]csr_controls__trap__value;
-    output csr_controls__trap__mret;
+    output csr_controls__trap__ret;
     output csr_controls__trap__vector;
+    output csr_controls__trap__ebreak_to_dbg;
     output coproc_controls__dec_idecode_valid;
     output [4:0]coproc_controls__dec_idecode__rs1;
     output coproc_controls__dec_idecode__rs1_valid;
@@ -281,8 +313,10 @@ module riscv_i32_pipeline_control_csr_trace
     //b Output combinatorials
     reg trace__instr_valid;
     reg [31:0]trace__instr_pc;
-    reg [2:0]trace__instruction__mode;
     reg [31:0]trace__instruction__data;
+    reg trace__instruction__debug__valid;
+    reg [1:0]trace__instruction__debug__debug_op;
+    reg [15:0]trace__instruction__debug__data;
     reg trace__rfw_retire;
     reg trace__rfw_data_valid;
     reg [4:0]trace__rfw_rd;
@@ -295,11 +329,12 @@ module riscv_i32_pipeline_control_csr_trace
     reg [63:0]csr_controls__timer_value;
     reg csr_controls__trap__valid;
     reg [2:0]csr_controls__trap__to_mode;
-    reg [4:0]csr_controls__trap__cause;
+    reg [3:0]csr_controls__trap__cause;
     reg [31:0]csr_controls__trap__pc;
     reg [31:0]csr_controls__trap__value;
-    reg csr_controls__trap__mret;
+    reg csr_controls__trap__ret;
     reg csr_controls__trap__vector;
+    reg csr_controls__trap__ebreak_to_dbg;
     reg coproc_controls__dec_idecode_valid;
     reg [4:0]coproc_controls__dec_idecode__rs1;
     reg coproc_controls__dec_idecode__rs1_valid;
@@ -351,38 +386,41 @@ module riscv_i32_pipeline_control_csr_trace
     reg csr_controls__retire__var;
     reg csr_controls__trap__valid__var;
     reg [2:0]csr_controls__trap__to_mode__var;
-    reg [4:0]csr_controls__trap__cause__var;
+    reg [3:0]csr_controls__trap__cause__var;
     reg [31:0]csr_controls__trap__pc__var;
     reg [31:0]csr_controls__trap__value__var;
-    reg csr_controls__trap__mret__var;
+    reg csr_controls__trap__ret__var;
     reg csr_controls__trap__vector__var;
+    reg csr_controls__trap__ebreak_to_dbg__var;
         csr_controls__exec_mode = 3'h0;
         csr_controls__retire__var = 1'h0;
         csr_controls__timer_value = 64'h0;
         csr_controls__trap__valid__var = 1'h0;
         csr_controls__trap__to_mode__var = 3'h0;
-        csr_controls__trap__cause__var = 5'h0;
+        csr_controls__trap__cause__var = 4'h0;
         csr_controls__trap__pc__var = 32'h0;
         csr_controls__trap__value__var = 32'h0;
-        csr_controls__trap__mret__var = 1'h0;
+        csr_controls__trap__ret__var = 1'h0;
         csr_controls__trap__vector__var = 1'h0;
+        csr_controls__trap__ebreak_to_dbg__var = 1'h0;
         csr_controls__retire__var = (((pipeline_response__exec__valid!=1'h0)&&!(pipeline_response__exec__cannot_complete!=1'h0))&&!(coproc_response_cfg__cannot_complete!=1'h0));
         csr_controls__trap__valid__var = pipeline_response__exec__trap__valid;
         csr_controls__trap__to_mode__var = pipeline_response__exec__trap__to_mode;
         csr_controls__trap__cause__var = pipeline_response__exec__trap__cause;
         csr_controls__trap__pc__var = pipeline_response__exec__trap__pc;
         csr_controls__trap__value__var = pipeline_response__exec__trap__value;
-        csr_controls__trap__mret__var = pipeline_response__exec__trap__mret;
+        csr_controls__trap__ret__var = pipeline_response__exec__trap__ret;
         csr_controls__trap__vector__var = pipeline_response__exec__trap__vector;
-        csr_controls__trap__to_mode__var = 3'h3;
+        csr_controls__trap__ebreak_to_dbg__var = pipeline_response__exec__trap__ebreak_to_dbg;
         csr_controls__retire = csr_controls__retire__var;
         csr_controls__trap__valid = csr_controls__trap__valid__var;
         csr_controls__trap__to_mode = csr_controls__trap__to_mode__var;
         csr_controls__trap__cause = csr_controls__trap__cause__var;
         csr_controls__trap__pc = csr_controls__trap__pc__var;
         csr_controls__trap__value = csr_controls__trap__value__var;
-        csr_controls__trap__mret = csr_controls__trap__mret__var;
+        csr_controls__trap__ret = csr_controls__trap__ret__var;
         csr_controls__trap__vector = csr_controls__trap__vector__var;
+        csr_controls__trap__ebreak_to_dbg = csr_controls__trap__ebreak_to_dbg__var;
     end //always
 
     //b coprocessor_interface combinatorial process
@@ -540,8 +578,10 @@ module riscv_i32_pipeline_control_csr_trace
     begin: logging__comb_code
     reg trace__instr_valid__var;
     reg [31:0]trace__instr_pc__var;
-    reg [2:0]trace__instruction__mode__var;
     reg [31:0]trace__instruction__data__var;
+    reg trace__instruction__debug__valid__var;
+    reg [1:0]trace__instruction__debug__debug_op__var;
+    reg [15:0]trace__instruction__debug__data__var;
     reg trace__rfw_retire__var;
     reg trace__rfw_data_valid__var;
     reg [4:0]trace__rfw_rd__var;
@@ -551,8 +591,10 @@ module riscv_i32_pipeline_control_csr_trace
     reg trace__trap__var;
         trace__instr_valid__var = 1'h0;
         trace__instr_pc__var = 32'h0;
-        trace__instruction__mode__var = 3'h0;
         trace__instruction__data__var = 32'h0;
+        trace__instruction__debug__valid__var = 1'h0;
+        trace__instruction__debug__debug_op__var = 2'h0;
+        trace__instruction__debug__data__var = 16'h0;
         trace__rfw_retire__var = 1'h0;
         trace__rfw_data_valid__var = 1'h0;
         trace__rfw_rd__var = 5'h0;
@@ -562,8 +604,10 @@ module riscv_i32_pipeline_control_csr_trace
         trace__trap__var = 1'h0;
         trace__instr_valid__var = (((pipeline_response__exec__valid!=1'h0)&&!(pipeline_response__exec__cannot_complete!=1'h0))&&!(coproc_response_cfg__cannot_complete!=1'h0));
         trace__instr_pc__var = pipeline_response__exec__pc;
-        trace__instruction__mode__var = pipeline_response__exec__instruction__mode;
         trace__instruction__data__var = pipeline_response__exec__instruction__data;
+        trace__instruction__debug__valid__var = pipeline_response__exec__instruction__debug__valid;
+        trace__instruction__debug__debug_op__var = pipeline_response__exec__instruction__debug__debug_op;
+        trace__instruction__debug__data__var = pipeline_response__exec__instruction__debug__data;
         trace__rfw_retire__var = pipeline_response__rfw__valid;
         trace__rfw_data_valid__var = pipeline_response__rfw__rd_written;
         trace__rfw_rd__var = pipeline_response__rfw__rd;
@@ -573,8 +617,10 @@ module riscv_i32_pipeline_control_csr_trace
         trace__branch_target__var = pipeline_fetch_data__pc;
         trace__instr_valid = trace__instr_valid__var;
         trace__instr_pc = trace__instr_pc__var;
-        trace__instruction__mode = trace__instruction__mode__var;
         trace__instruction__data = trace__instruction__data__var;
+        trace__instruction__debug__valid = trace__instruction__debug__valid__var;
+        trace__instruction__debug__debug_op = trace__instruction__debug__debug_op__var;
+        trace__instruction__debug__data = trace__instruction__debug__data__var;
         trace__rfw_retire = trace__rfw_retire__var;
         trace__rfw_data_valid = trace__rfw_data_valid__var;
         trace__rfw_rd = trace__rfw_rd__var;

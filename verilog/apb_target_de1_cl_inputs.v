@@ -13,7 +13,48 @@
 
 //a Module apb_target_de1_cl_inputs
     //   
+    //   This module provides an APB target to get the status of inputs for the
+    //   Cambridge University DE1-SOC daughterboard.
     //   
+    //   The CL DE1-SOC daughterboard contains a joystick, a diamond of four
+    //   buttons, two rotary dials, and apparently a temperature alarm and
+    //   touchpanel intrerrupt (the latter two I have not used as yet).
+    //   
+    //   Two registers are provided. The first is the state register,
+    //   
+    //   Bits     | Meaning
+    //   ---------|---------
+    //   31       | Inputs changed since last read of state
+    //   5;26     | zero
+    //   25       | temperature alarm
+    //   24       | touchpanel interrupt
+    //   6;18     | zero
+    //   17       | right rotary dial is pressed in
+    //   16       | left rotary dial is pressed in
+    //   3;13     | zero
+    //   12       | joystick is being pressed
+    //   11       | joystick is being pushed right
+    //   10       | joystick is being pushed left
+    //   9        | joystick is being pushed down
+    //   8        | joystick is being pushed up
+    //   4;4      | zero
+    //   3        | diamond y (top black button) is being pressed
+    //   2        | diamond x (left blue button) is being pressed
+    //   1        | diamond b (right red button) is being pressed
+    //   0        | diamond a (bottom green button) is being pressed
+    //   
+    //   The second register relates just to the rotary dials; the hardware
+    //   keeps track of directional impulses to provide an 8-bit 'rotary value'
+    //   for each dial.
+    //   
+    //   Bits     | Meaning
+    //   ---------|---------
+    //   31       | Inputs changed since last read of state
+    //   13;18     | zero
+    //   17       | right rotary dial is pressed in
+    //   16       | left rotary dial is pressed in
+    //   8;8      | right rotary dial position (decremented on anticlockwise, incremented on clockwise)
+    //   8;0      | left rotary dial position (decremented on anticlockwise, incremented on clockwise)
     //   
 module apb_target_de1_cl_inputs
 (
@@ -222,6 +263,16 @@ module apb_target_de1_cl_inputs
 
     //b input_logic clock process
         //   
+        //       The input state logic is relatively simple.
+        //   
+        //       The current @a user_inputs are recorded on @a
+        //       input_state.user_inputs. When a change is detected, @a
+        //       inputs_changed is asserted; this is only cleared on a read of the
+        //       state register.
+        //   
+        //       The rotary dial's positions are updated when the @a
+        //       direction_pulse asserts, using the appropriate @a dial_direction
+        //       to indicate whether to increment or decrement.
         //       
     always @( posedge clk or negedge reset_n)
     begin : input_logic__code

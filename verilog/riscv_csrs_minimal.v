@@ -97,8 +97,9 @@ module riscv_csrs_minimal
     csr_controls__trap__cause,
     csr_controls__trap__pc,
     csr_controls__trap__value,
-    csr_controls__trap__mret,
+    csr_controls__trap__ret,
     csr_controls__trap__vector,
+    csr_controls__trap__ebreak_to_dbg,
     csr_access__access_cancelled,
     csr_access__access,
     csr_access__address,
@@ -110,6 +111,7 @@ module riscv_csrs_minimal
     irqs__mtip,
     irqs__msip,
     irqs__time,
+    riscv_clk_enable,
     reset_n,
 
     csrs__cycles,
@@ -158,6 +160,21 @@ module riscv_csrs_minimal
     csrs__mie__msip,
     csrs__mie__ssip,
     csrs__mie__usip,
+    csrs__dcsr__xdebug_ver,
+    csrs__dcsr__ebreakm,
+    csrs__dcsr__ebreaks,
+    csrs__dcsr__ebreaku,
+    csrs__dcsr__stepie,
+    csrs__dcsr__stopcount,
+    csrs__dcsr__stoptime,
+    csrs__dcsr__cause,
+    csrs__dcsr__mprven,
+    csrs__dcsr__nmip,
+    csrs__dcsr__step,
+    csrs__dcsr__prv,
+    csrs__depc,
+    csrs__dscratch0,
+    csrs__dscratch1,
     csr_data__read_data,
     csr_data__take_interrupt,
     csr_data__interrupt_mode,
@@ -166,9 +183,11 @@ module riscv_csrs_minimal
 );
 
     //b Clocks
-        //   RISC-V clock
+        //   Free-running clock
     input clk;
     input clk__enable;
+    wire riscv_clk; // Gated version of clock 'clk' enabled by 'riscv_clk_enable'
+    wire riscv_clk__enable;
 
     //b Inputs
         //   Control signals to update the CSRs
@@ -177,11 +196,12 @@ module riscv_csrs_minimal
     input [63:0]csr_controls__timer_value;
     input csr_controls__trap__valid;
     input [2:0]csr_controls__trap__to_mode;
-    input [4:0]csr_controls__trap__cause;
+    input [3:0]csr_controls__trap__cause;
     input [31:0]csr_controls__trap__pc;
     input [31:0]csr_controls__trap__value;
-    input csr_controls__trap__mret;
+    input csr_controls__trap__ret;
     input csr_controls__trap__vector;
+    input csr_controls__trap__ebreak_to_dbg;
         //   RISC-V CSR access, combinatorially decoded
     input csr_access__access_cancelled;
     input [2:0]csr_access__access;
@@ -195,6 +215,8 @@ module riscv_csrs_minimal
     input irqs__mtip;
     input irqs__msip;
     input [63:0]irqs__time;
+        //   RISC-V clock enable
+    input riscv_clk_enable;
         //   Active low reset
     input reset_n;
 
@@ -246,6 +268,21 @@ module riscv_csrs_minimal
     output csrs__mie__msip;
     output csrs__mie__ssip;
     output csrs__mie__usip;
+    output [3:0]csrs__dcsr__xdebug_ver;
+    output csrs__dcsr__ebreakm;
+    output csrs__dcsr__ebreaks;
+    output csrs__dcsr__ebreaku;
+    output csrs__dcsr__stepie;
+    output csrs__dcsr__stopcount;
+    output csrs__dcsr__stoptime;
+    output [2:0]csrs__dcsr__cause;
+    output csrs__dcsr__mprven;
+    output csrs__dcsr__nmip;
+    output csrs__dcsr__step;
+    output [1:0]csrs__dcsr__prv;
+    output [31:0]csrs__depc;
+    output [31:0]csrs__dscratch0;
+    output [31:0]csrs__dscratch1;
         //   CSR respone (including read data), from the current @a csr_access
     output [31:0]csr_data__read_data;
     output csr_data__take_interrupt;
@@ -312,16 +349,45 @@ module riscv_csrs_minimal
     reg csrs__mie__msip;
     reg csrs__mie__ssip;
     reg csrs__mie__usip;
+    reg [3:0]csrs__dcsr__xdebug_ver;
+    reg csrs__dcsr__ebreakm;
+    reg csrs__dcsr__ebreaks;
+    reg csrs__dcsr__ebreaku;
+    reg csrs__dcsr__stepie;
+    reg csrs__dcsr__stopcount;
+    reg csrs__dcsr__stoptime;
+    reg [2:0]csrs__dcsr__cause;
+    reg csrs__dcsr__mprven;
+    reg csrs__dcsr__nmip;
+    reg csrs__dcsr__step;
+    reg [1:0]csrs__dcsr__prv;
+    reg [31:0]csrs__depc;
+    reg [31:0]csrs__dscratch0;
+    reg [31:0]csrs__dscratch1;
 
     //b Internal combinatorials
+    reg [31:0]dcsr;
+    reg [31:0]mie;
+    reg [31:0]mip;
     reg [31:0]mtvec;
     reg [31:0]mstatus;
+        //   Breakout for valid trap to mode
+    reg trap_combs__d;
+    reg trap_combs__m;
+    reg trap_combs__s;
+    reg trap_combs__u;
+        //   Breakout for xRET
+    reg ret_combs__d;
+    reg ret_combs__m;
+    reg ret_combs__s;
+    reg ret_combs__u;
     reg csr_write__enable;
     reg [31:0]csr_write__data;
 
     //b Internal nets
 
     //b Clock gating module instances
+    assign riscv_clk__enable = (clk__enable && riscv_clk_enable);
     //b Module instances
     //b csr_read_write combinatorial process
         //   
@@ -345,6 +411,9 @@ module riscv_csrs_minimal
         csr_data__illegal_access__var = 1'h0;
         csr_data__illegal_access__var = 1'h1;
         mstatus = {{{{{{{{{{{{{{{{{{{{csrs__mstatus__sd,8'h0},csrs__mstatus__tsr},csrs__mstatus__tw},csrs__mstatus__tvm},csrs__mstatus__mxr},csrs__mstatus__sum},csrs__mstatus__mprv},csrs__mstatus__xs},csrs__mstatus__fs},csrs__mstatus__mpp},2'h0},csrs__mstatus__spp},csrs__mstatus__mpie},1'h0},csrs__mstatus__spie},csrs__mstatus__upie},csrs__mstatus__mie},1'h0},csrs__mstatus__sie},csrs__mstatus__uie};
+        mie = {{{{{{{{{{{{20'h0,csrs__mie__meip},1'h0},csrs__mie__seip},csrs__mie__ueip},csrs__mie__mtip},1'h0},csrs__mie__stip},csrs__mie__utip},csrs__mie__msip},1'h0},csrs__mie__ssip},csrs__mie__usip};
+        mip = {{{{{{{{{{{{20'h0,csrs__mip__meip},1'h0},csrs__mip__seip},csrs__mip__ueip},csrs__mip__mtip},1'h0},csrs__mip__stip},csrs__mip__utip},csrs__mip__msip},1'h0},csrs__mip__ssip},csrs__mip__usip};
+        dcsr = {{{{{{{{{{{{{{csrs__dcsr__xdebug_ver,12'h0},csrs__dcsr__ebreakm},1'h0},csrs__dcsr__ebreaks},csrs__dcsr__ebreaku},csrs__dcsr__stepie},csrs__dcsr__stopcount},csrs__dcsr__stoptime},csrs__dcsr__cause},1'h0},csrs__dcsr__mprven},csrs__dcsr__nmip},csrs__dcsr__step},csrs__dcsr__prv};
         mtvec = {{csrs__mtvec__base,1'h0},csrs__mtvec__vectored};
         case (csr_access__address) //synopsys parallel_case
         12'hc00: // req 1
@@ -460,7 +529,22 @@ module riscv_csrs_minimal
         12'h304: // req 1
             begin
             csr_data__illegal_access__var = 1'h0;
-            csr_data__read_data__var = 32'h0;
+            csr_data__read_data__var = mie;
+            end
+        12'h344: // req 1
+            begin
+            csr_data__illegal_access__var = 1'h0;
+            csr_data__read_data__var = mip;
+            end
+        12'h7b1: // req 1
+            begin
+            csr_data__illegal_access__var = 1'h0;
+            csr_data__read_data__var = csrs__depc;
+            end
+        12'h7b0: // req 1
+            begin
+            csr_data__illegal_access__var = 1'h0;
+            csr_data__read_data__var = dcsr;
             end
         //synopsys  translate_off
         //pragma coverage off
@@ -514,6 +598,103 @@ module riscv_csrs_minimal
         csr_write__data = csr_write__data__var;
     end //always
 
+    //b ret_trap_breakout combinatorial process
+    always @ ( * )//ret_trap_breakout
+    begin: ret_trap_breakout__comb_code
+    reg trap_combs__d__var;
+    reg trap_combs__m__var;
+    reg trap_combs__s__var;
+    reg trap_combs__u__var;
+    reg ret_combs__d__var;
+    reg ret_combs__m__var;
+    reg ret_combs__s__var;
+    reg ret_combs__u__var;
+        trap_combs__d__var = 1'h0;
+        trap_combs__m__var = 1'h0;
+        trap_combs__s__var = 1'h0;
+        trap_combs__u__var = 1'h0;
+        if ((csr_controls__trap__valid!=1'h0))
+        begin
+            case (csr_controls__trap__to_mode) //synopsys parallel_case
+            3'h7: // req 1
+                begin
+                trap_combs__d__var = 1'h1;
+                end
+            3'h3: // req 1
+                begin
+                trap_combs__m__var = 1'h1;
+                end
+            3'h1: // req 1
+                begin
+                trap_combs__s__var = 1'h1;
+                end
+            3'h0: // req 1
+                begin
+                trap_combs__u__var = 1'h1;
+                end
+    //synopsys  translate_off
+    //pragma coverage off
+            default:
+                begin
+                    if (1)
+                    begin
+                        $display("%t *********CDL ASSERTION FAILURE:riscv_csrs_minimal:ret_trap_breakout: Full switch statement did not cover all values", $time);
+                    end
+                end
+    //pragma coverage on
+    //synopsys  translate_on
+            endcase
+            if ((1'h0!=64'h0))
+            begin
+                trap_combs__m__var = 1'h1;
+            end //if
+        end //if
+        ret_combs__d__var = 1'h0;
+        ret_combs__m__var = 1'h0;
+        ret_combs__s__var = 1'h0;
+        ret_combs__u__var = 1'h0;
+        if ((csr_controls__trap__ret!=1'h0))
+        begin
+            case (csr_controls__trap__cause) //synopsys parallel_case
+            4'h3: // req 1
+                begin
+                ret_combs__d__var = 1'h1;
+                end
+            4'h0: // req 1
+                begin
+                ret_combs__m__var = 1'h1;
+                end
+            4'h1: // req 1
+                begin
+                ret_combs__s__var = 1'h1;
+                end
+            4'h2: // req 1
+                begin
+                ret_combs__u__var = 1'h1;
+                end
+    //synopsys  translate_off
+    //pragma coverage off
+            default:
+                begin
+                    if (1)
+                    begin
+                        $display("%t *********CDL ASSERTION FAILURE:riscv_csrs_minimal:ret_trap_breakout: Full switch statement did not cover all values", $time);
+                    end
+                end
+    //pragma coverage on
+    //synopsys  translate_on
+            endcase
+        end //if
+        trap_combs__d = trap_combs__d__var;
+        trap_combs__m = trap_combs__m__var;
+        trap_combs__s = trap_combs__s__var;
+        trap_combs__u = trap_combs__u__var;
+        ret_combs__d = ret_combs__d__var;
+        ret_combs__m = ret_combs__m__var;
+        ret_combs__s = ret_combs__s__var;
+        ret_combs__u = ret_combs__u__var;
+    end //always
+
     //b csr_state_update clock process
         //   
         //       
@@ -539,6 +720,21 @@ module riscv_csrs_minimal
             csrs__mtval <= 32'h0;
             csrs__mcause <= 32'h0;
             csrs__mscratch <= 32'h0;
+            csrs__dscratch0 <= 32'h0;
+            csrs__dscratch1 <= 32'h0;
+            csrs__depc <= 32'h0;
+            csrs__dcsr__ebreakm <= 1'h0;
+            csrs__dcsr__ebreaks <= 1'h0;
+            csrs__dcsr__ebreaku <= 1'h0;
+            csrs__dcsr__stepie <= 1'h0;
+            csrs__dcsr__stopcount <= 1'h0;
+            csrs__dcsr__stoptime <= 1'h0;
+            csrs__dcsr__mprven <= 1'h0;
+            csrs__dcsr__step <= 1'h0;
+            csrs__dcsr__prv <= 2'h0;
+            csrs__dcsr__cause <= 3'h0;
+            csrs__dcsr__xdebug_ver <= 4'h0;
+            csrs__dcsr__nmip <= 1'h0;
             csrs__mstatus__sd <= 1'h0;
             csrs__mstatus__tsr <= 1'h0;
             csrs__mstatus__tw <= 1'h0;
@@ -568,7 +764,7 @@ module riscv_csrs_minimal
             csrs__mie__ssip <= 1'h0;
             csrs__mie__usip <= 1'h0;
         end
-        else if (clk__enable)
+        else if (riscv_clk__enable)
         begin
             csrs__time <= irqs__time;
             csrs__cycles[31:0] <= (csrs__cycles[31:0]+32'h1);
@@ -609,7 +805,7 @@ module riscv_csrs_minimal
                 csrs__mie__mtip <= csr_write__data[7];
                 csrs__mie__msip <= csr_write__data[3];
             end //if
-            if ((csr_controls__trap__valid!=1'h0))
+            if ((trap_combs__m!=1'h0))
             begin
                 csrs__mstatus__mpp <= 2'h3;
                 csrs__mstatus__mpie <= csrs__mstatus__mie;
@@ -618,7 +814,7 @@ module riscv_csrs_minimal
             else
             
             begin
-                if ((csr_controls__trap__mret!=1'h0))
+                if ((ret_combs__m!=1'h0))
                 begin
                     csrs__mstatus__mpp <= 2'h3;
                     csrs__mstatus__mpie <= 1'h1;
@@ -635,7 +831,7 @@ module riscv_csrs_minimal
             begin
                 csrs__mepc <= csr_write__data;
             end //if
-            if ((csr_controls__trap__valid!=1'h0))
+            if ((trap_combs__m!=1'h0))
             begin
                 csrs__mepc <= csr_controls__trap__pc;
             end //if
@@ -644,7 +840,7 @@ module riscv_csrs_minimal
                 csrs__mtvec__base <= csr_write__data[31:2];
                 csrs__mtvec__vectored <= csr_write__data[0];
             end //if
-            if ((csr_controls__trap__valid!=1'h0))
+            if ((trap_combs__m!=1'h0))
             begin
                 csrs__mtval <= csr_controls__trap__value;
             end //if
@@ -652,54 +848,50 @@ module riscv_csrs_minimal
             begin
                 csrs__mcause <= csr_write__data;
             end //if
-            if ((csr_controls__trap__valid!=1'h0))
+            if ((trap_combs__m!=1'h0))
             begin
                 case (csr_controls__trap__cause) //synopsys parallel_case
-                5'h0: // req 1
+                4'h0: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h0};
                     end
-                5'h1: // req 1
+                4'h1: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h1};
                     end
-                5'h2: // req 1
+                4'h2: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h2};
                     end
-                5'h3: // req 1
+                4'h3: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h3};
                     end
-                5'h4: // req 1
+                4'h4: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h4};
                     end
-                5'h5: // req 1
+                4'h5: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h5};
                     end
-                5'h6: // req 1
+                4'h6: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h6};
                     end
-                5'h7: // req 1
+                4'h7: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h7};
                     end
-                5'h8: // req 1
+                4'h8: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h8};
                     end
-                5'h9: // req 1
+                4'h9: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'h9};
                     end
-                5'ha: // req 1
-                    begin
-                    csrs__mcause <= {24'h0,8'ha};
-                    end
-                5'hb: // req 1
+                4'hb: // req 1
                     begin
                     csrs__mcause <= {24'h0,8'hb};
                     end
@@ -712,6 +904,58 @@ module riscv_csrs_minimal
             if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h340)))
             begin
                 csrs__mscratch <= csr_write__data;
+            end //if
+            if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h7b2)))
+            begin
+                csrs__dscratch0 <= csr_write__data;
+            end //if
+            if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h7b3)))
+            begin
+                csrs__dscratch1 <= csr_write__data;
+            end //if
+            if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h7b1)))
+            begin
+                csrs__depc <= csr_write__data;
+            end //if
+            if ((trap_combs__d!=1'h0))
+            begin
+                csrs__depc <= csr_controls__trap__pc;
+            end //if
+            if (((csr_write__enable!=1'h0)&&(csr_access__address==12'h7b0)))
+            begin
+                csrs__dcsr__ebreakm <= csr_write__data[15];
+                csrs__dcsr__ebreaks <= csr_write__data[13];
+                csrs__dcsr__ebreaku <= csr_write__data[12];
+                csrs__dcsr__stepie <= csr_write__data[11];
+                csrs__dcsr__stopcount <= csr_write__data[10];
+                csrs__dcsr__stoptime <= csr_write__data[9];
+                csrs__dcsr__mprven <= csr_write__data[4];
+                csrs__dcsr__step <= csr_write__data[2];
+                csrs__dcsr__prv <= csr_write__data[1:0];
+            end //if
+            if ((trap_combs__d!=1'h0))
+            begin
+                csrs__dcsr__cause <= 3'h0;
+                csrs__dcsr__prv <= csr_controls__exec_mode[1:0];
+            end //if
+            csrs__dcsr__xdebug_ver <= 4'h4;
+            if ((1'h0!=64'h0))
+            begin
+                csrs__depc <= 32'h0;
+                csrs__dscratch0 <= 32'h0;
+                csrs__dscratch1 <= 32'h0;
+                csrs__dcsr__xdebug_ver <= 4'h0;
+                csrs__dcsr__ebreakm <= 1'h0;
+                csrs__dcsr__ebreaks <= 1'h0;
+                csrs__dcsr__ebreaku <= 1'h0;
+                csrs__dcsr__stepie <= 1'h0;
+                csrs__dcsr__stopcount <= 1'h0;
+                csrs__dcsr__stoptime <= 1'h0;
+                csrs__dcsr__cause <= 3'h0;
+                csrs__dcsr__mprven <= 1'h0;
+                csrs__dcsr__nmip <= 1'h0;
+                csrs__dcsr__step <= 1'h0;
+                csrs__dcsr__prv <= 2'h0;
             end //if
             csrs__mstatus__mpp <= 2'h3;
             csrs__mstatus__sd <= 1'h0;

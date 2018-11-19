@@ -55,16 +55,22 @@ module riscv_i32_control_flow
     control_data__alu_result__csr_access__address,
     control_data__alu_result__csr_access__write_data,
     pipeline_control__valid,
-    pipeline_control__debug,
     pipeline_control__fetch_action,
     pipeline_control__decode_pc,
     pipeline_control__mode,
     pipeline_control__error,
     pipeline_control__tag,
+    pipeline_control__halt,
+    pipeline_control__ebreak_to_dbg,
     pipeline_control__interrupt_req,
     pipeline_control__interrupt_number,
     pipeline_control__interrupt_to_mode,
+    pipeline_control__instruction_data,
+    pipeline_control__instruction_debug__valid,
+    pipeline_control__instruction_debug__debug_op,
+    pipeline_control__instruction_debug__data,
 
+    control_flow__async_cancel,
     control_flow__branch_taken,
     control_flow__jalr,
     control_flow__next_pc,
@@ -73,8 +79,9 @@ module riscv_i32_control_flow
     control_flow__trap__cause,
     control_flow__trap__pc,
     control_flow__trap__value,
-    control_flow__trap__mret,
-    control_flow__trap__vector
+    control_flow__trap__ret,
+    control_flow__trap__vector,
+    control_flow__trap__ebreak_to_dbg
 );
 
     //b Clocks
@@ -117,41 +124,50 @@ module riscv_i32_control_flow
     input [11:0]control_data__alu_result__csr_access__address;
     input [31:0]control_data__alu_result__csr_access__write_data;
     input pipeline_control__valid;
-    input pipeline_control__debug;
-    input [1:0]pipeline_control__fetch_action;
+    input [2:0]pipeline_control__fetch_action;
     input [31:0]pipeline_control__decode_pc;
     input [2:0]pipeline_control__mode;
     input pipeline_control__error;
     input [1:0]pipeline_control__tag;
+    input pipeline_control__halt;
+    input pipeline_control__ebreak_to_dbg;
     input pipeline_control__interrupt_req;
     input [3:0]pipeline_control__interrupt_number;
     input [2:0]pipeline_control__interrupt_to_mode;
+    input [31:0]pipeline_control__instruction_data;
+    input pipeline_control__instruction_debug__valid;
+    input [1:0]pipeline_control__instruction_debug__debug_op;
+    input [15:0]pipeline_control__instruction_debug__data;
 
     //b Outputs
+    output control_flow__async_cancel;
     output control_flow__branch_taken;
     output control_flow__jalr;
     output [31:0]control_flow__next_pc;
     output control_flow__trap__valid;
     output [2:0]control_flow__trap__to_mode;
-    output [4:0]control_flow__trap__cause;
+    output [3:0]control_flow__trap__cause;
     output [31:0]control_flow__trap__pc;
     output [31:0]control_flow__trap__value;
-    output control_flow__trap__mret;
+    output control_flow__trap__ret;
     output control_flow__trap__vector;
+    output control_flow__trap__ebreak_to_dbg;
 
 // output components here
 
     //b Output combinatorials
+    reg control_flow__async_cancel;
     reg control_flow__branch_taken;
     reg control_flow__jalr;
     reg [31:0]control_flow__next_pc;
     reg control_flow__trap__valid;
     reg [2:0]control_flow__trap__to_mode;
-    reg [4:0]control_flow__trap__cause;
+    reg [3:0]control_flow__trap__cause;
     reg [31:0]control_flow__trap__pc;
     reg [31:0]control_flow__trap__value;
-    reg control_flow__trap__mret;
+    reg control_flow__trap__ret;
     reg control_flow__trap__vector;
+    reg control_flow__trap__ebreak_to_dbg;
 
     //b Output nets
 
@@ -167,23 +183,29 @@ module riscv_i32_control_flow
     always @ ( * )//code
     begin: code__comb_code
     reg control_flow__trap__valid__var;
-    reg [4:0]control_flow__trap__cause__var;
+    reg [2:0]control_flow__trap__to_mode__var;
+    reg [3:0]control_flow__trap__cause__var;
     reg [31:0]control_flow__trap__pc__var;
     reg [31:0]control_flow__trap__value__var;
-    reg control_flow__trap__mret__var;
+    reg control_flow__trap__ret__var;
+    reg control_flow__trap__ebreak_to_dbg__var;
     reg control_flow__branch_taken__var;
     reg control_flow__jalr__var;
+    reg control_flow__async_cancel__var;
         control_flow__trap__valid__var = 1'h0;
-        control_flow__trap__to_mode = 3'h0;
-        control_flow__trap__cause__var = 5'h0;
+        control_flow__trap__to_mode__var = 3'h0;
+        control_flow__trap__cause__var = 4'h0;
         control_flow__trap__pc__var = 32'h0;
         control_flow__trap__value__var = 32'h0;
-        control_flow__trap__mret__var = 1'h0;
+        control_flow__trap__ret__var = 1'h0;
         control_flow__trap__vector = 1'h0;
+        control_flow__trap__ebreak_to_dbg__var = 1'h0;
         control_flow__branch_taken__var = 1'h0;
         control_flow__jalr__var = 1'h0;
         control_flow__next_pc = 32'h0;
         control_flow__trap__pc__var = control_data__pc;
+        control_flow__async_cancel__var = 1'h0;
+        control_flow__trap__to_mode__var = pipeline_control__interrupt_to_mode;
         case (control_data__idecode__op) //synopsys parallel_case
         4'h0: // req 1
             begin
@@ -202,17 +224,19 @@ module riscv_i32_control_flow
             begin
             if ((control_data__idecode__subop==4'h2))
             begin
-                control_flow__trap__mret__var = 1'h1;
+                control_flow__trap__ret__var = 1'h1;
+                control_flow__trap__cause__var = 4'h0;
             end //if
             if ((control_data__idecode__subop==4'h0))
             begin
                 control_flow__trap__valid__var = 1'h1;
-                control_flow__trap__cause__var = 5'hb;
+                control_flow__trap__cause__var = 4'hb;
             end //if
             if ((control_data__idecode__subop==4'h1))
             begin
                 control_flow__trap__valid__var = 1'h1;
-                control_flow__trap__cause__var = 5'h3;
+                control_flow__trap__ebreak_to_dbg__var = pipeline_control__ebreak_to_dbg;
+                control_flow__trap__cause__var = 4'h3;
                 control_flow__trap__value__var = control_data__pc;
             end //if
             end
@@ -230,35 +254,43 @@ module riscv_i32_control_flow
         if (!(control_data__exec_committed!=1'h0))
         begin
             control_flow__trap__valid__var = 1'h0;
-            control_flow__trap__mret__var = 1'h0;
+            control_flow__trap__ret__var = 1'h0;
+            control_flow__trap__ebreak_to_dbg__var = 1'h0;
             control_flow__branch_taken__var = 1'h0;
         end //if
         if (((control_data__valid!=1'h0)&&(control_data__idecode__illegal!=1'h0)))
         begin
             control_flow__trap__valid__var = 1'h1;
-            control_flow__trap__cause__var = 5'h2;
+            control_flow__trap__ret__var = 1'h0;
+            control_flow__trap__cause__var = 4'h2;
             control_flow__trap__value__var = control_data__instruction_data;
         end //if
         if (((control_data__valid!=1'h0)&&(control_data__idecode__illegal_pc!=1'h0)))
         begin
             control_flow__trap__valid__var = 1'h1;
-            control_flow__trap__cause__var = 5'h0;
+            control_flow__trap__ret__var = 1'h0;
+            control_flow__trap__cause__var = 4'h0;
             control_flow__trap__value__var = control_data__pc;
         end //if
         if (((pipeline_control__interrupt_req!=1'h0)&&(control_data__interrupt_ack!=1'h0)))
         begin
+            control_flow__async_cancel__var = 1'h1;
             control_flow__trap__valid__var = 1'h1;
-            control_flow__trap__cause__var = 5'h10;
+            control_flow__trap__ret__var = 1'h0;
+            control_flow__trap__cause__var = 4'hf;
             control_flow__trap__cause__var[3:0] = pipeline_control__interrupt_number;
             control_flow__trap__value__var = control_data__pc;
         end //if
         control_flow__trap__valid = control_flow__trap__valid__var;
+        control_flow__trap__to_mode = control_flow__trap__to_mode__var;
         control_flow__trap__cause = control_flow__trap__cause__var;
         control_flow__trap__pc = control_flow__trap__pc__var;
         control_flow__trap__value = control_flow__trap__value__var;
-        control_flow__trap__mret = control_flow__trap__mret__var;
+        control_flow__trap__ret = control_flow__trap__ret__var;
+        control_flow__trap__ebreak_to_dbg = control_flow__trap__ebreak_to_dbg__var;
         control_flow__branch_taken = control_flow__branch_taken__var;
         control_flow__jalr = control_flow__jalr__var;
+        control_flow__async_cancel = control_flow__async_cancel__var;
     end //always
 
 endmodule // riscv_i32_control_flow
