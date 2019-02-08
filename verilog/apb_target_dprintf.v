@@ -15,7 +15,40 @@
     //   
     //   Simple Dprintf requester with an APB interface.
     //   
-    //   The dprintf has valid, address, and two sets of 64 bit data
+    //   A dprintf request is an address and, in this case (a @a
+    //   t_dprintf_req_4) four 64-bit data words. This is mapped to eight
+    //   32-bit data words, with data register 0 mapping to the most
+    //   significant word of the @a dprintf_req data 0 (so that data register 0
+    //   corresponds to the first text displayed as part of the dprintf).
+    //   
+    //   The module provides an address register, which is the address
+    //   presented in the dprintf request. Usually for a dprintf to a teletext
+    //   framebuffer, for example, this is the address of the first character
+    //   of the output within the framebuffer.
+    //   
+    //   The normal operation is to write a number of data registers, starting
+    //   with register 0, and then to write to the address register *with
+    //   commit* to invoke the dprintf.
+    //   
+    //   Another method could be to have the address and bulk of the data set
+    //   up, and then a single write to a *data with commit* to, for example,
+    //   fill out a 32-bit hex value for display, invoking the dprintf (for
+    //   example if a dprintf were set up to display 'latest pc %08x', the pc
+    //   value can be written to the correct data register with commit).
+    //   
+    //   The address register can be read back, in which case it has some status also:
+    //   
+    //   Bits     | Meaning
+    //   ---------|---------
+    //   31       | dprintf_req valid (i.e. has not been completed by dprintf slave)
+    //   15;16    | zero
+    //   16;0     | address for dprintf request.
+    //   
+    //   The top bit of this register is set by a commit and cleared when the
+    //   dprintf slave acknowledges the dprintf request.
+    //   
+    //   For more details on dprintf requests themselves, see the documentation in utils/src/dprintf
+    //   
     //   
 module apb_target_dprintf
 (
@@ -193,6 +226,8 @@ module apb_target_dprintf
         //   
         //       The @a dprintf_req is invalidated on an ack; it is written to by an access,
         //       with a commit forcing valid to 1.
+        //   
+        //       This logic is really just a set of writable registers.
         //       
     always @( posedge clk or negedge reset_n)
     begin : dprintf_req_logic__code

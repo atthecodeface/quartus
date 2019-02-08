@@ -20,24 +20,13 @@
     //   
     //   The video side is asynchronous to the SRAM write side.
     //   
-    //   The video output side has a programmable horizontal period that
-    //   starts with hsync high for one clock, and then has a programmable
-    //   back porch, followed by a programmable number of pixels (with data
-    //   out enabled only if on the correct vertical portion of the display),
-    //   followed by a programmable front porch, repeating.
-    //   
-    //   The video output side has a programmable vertical period that is in
-    //   units of horizontal period; it starts with vsync high for one
-    //   horizontal period, and then has a programmable front porch,
-    //   followed by a programmable number of displayed lined, followed by a
-    //   programmable front porch, repeating.
+    //   Video timing is handled by a @a framebuffer_timing module, which
+    //   generates the synchronization signals and display enable. This module
+    //   must be configure correctly for the display size and porches.
     //   
     //   The video output start at a programmable base address in SRAM;
     //   moving down a line adds a programmable amount to the address in
     //   SRAM.
-    //   
-    //   The framebuffer uses a @a framebuffer_timing module to generate video
-    //   sync signals and other controls.
     //   
     //   The module generates output pixel data from a shift register and a
     //   data buffer that fill from an internal dual-port SRAM, using the video
@@ -45,6 +34,12 @@
     //   
     //   The SRAM is filled with SRAM write requests, using a different clock
     //   to the video generation.
+    //   
+    //   The current implementation is 1bpp RGB, with 16 pixels per SRAM word
+    //   Bottom 16 SRAM data bits [16; 0] are red, bit[15] leftmost
+    //   Next 16 SRAM data bits [16; 16] are green, bit[31] leftmost
+    //   Top 16 SRAM data bits [16; 132] are blue, bit[47] leftmost
+    //   
     //   
 module framebuffer
 (
@@ -264,7 +259,7 @@ module framebuffer
         .csr_response__acknowledge(            csr_response_local__acknowledge)         );
     //b pixel_data_logic__comb combinatorial process
         //   
-        //       The framebuffer timing is handled by a subomdule; this generates
+        //       The framebuffer timing is handled by a submodule; this generates
         //       sync and other timing signals.
         //   
         //       The pixel data buffer is cleared after the display portion of a
@@ -329,7 +324,7 @@ module framebuffer
 
     //b pixel_data_logic__posedge_video_clk_active_low_reset_n clock process
         //   
-        //       The framebuffer timing is handled by a subomdule; this generates
+        //       The framebuffer timing is handled by a submodule; this generates
         //       sync and other timing signals.
         //   
         //       The pixel data buffer is cleared after the display portion of a

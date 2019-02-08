@@ -220,6 +220,7 @@ module riscv_i32_muldiv
     riscv_config__e32,
     riscv_config__i32m,
     riscv_config__i32m_fuse,
+    riscv_config__debug_enable,
     riscv_config__coproc_disable,
     riscv_config__unaligned_mem,
     coproc_controls__dec_idecode_valid,
@@ -268,6 +269,7 @@ module riscv_i32_muldiv
     input riscv_config__e32;
     input riscv_config__i32m;
     input riscv_config__i32m_fuse;
+    input riscv_config__debug_enable;
     input riscv_config__coproc_disable;
     input riscv_config__unaligned_mem;
     input coproc_controls__dec_idecode_valid;

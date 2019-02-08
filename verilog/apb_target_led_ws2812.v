@@ -13,6 +13,40 @@
 
 //a Module apb_target_led_ws2812
     //   
+    //   A simple module to drive a chain of Neopixel LEDs as an APB target.
+    //   
+    //   The Neopixel LEDs are 24-bit RGB LEDs that are driven through a chain,
+    //   with a single control pin providing the information for the LEDs.
+    //   
+    //   This module supports up to 16 LEDs in a chain, each with a 24-bit RGB
+    //   value. The chain must be configured with a clock divider (which is the
+    //   number of clock ticks required to generate a 400ns, approximately,
+    //   clock) and the number of LEDs in the chain.
+    //   
+    //   The clock divider resets to 0, but whenever it is zero it resets to
+    //   the input value @a divider_400ns_in; hence it may be effectively
+    //   'hardwired'.
+    //   
+    //   Once configured the LED colors can be individually written to
+    //   address-mapped registers. The LED chain automatically updates.
+    //   
+    //   The configuration register is:
+    //   
+    //   Bits     | Meaning
+    //   ---------|---------
+    //   12;2     | zero
+    //   4;16     | last LED in the chain (0 for one LED, 15 for sixteen LEDs)
+    //   8;8      | zero
+    //   8;0      | clock divider to create a 400ns clock enable from system clock
+    //   
+    //   Example divider values
+    //   
+    //   System clock   |  Period | Divider
+    //   ----------------------------------
+    //   50MHz          | 20ns    |   19
+    //   100MHz         | 10ns    |   39
+    //   20MHz          | 50ns    |   7
+    //   
     //   
     //   
 module apb_target_led_ws2812
@@ -180,11 +214,24 @@ module apb_target_led_ws2812
         end //if
     end //always
 
-    //b timer_logic__comb combinatorial process
+    //b led_chain_logic__comb combinatorial process
+        //   
+        //       The LED chain logic manages the configuration (last led and divider), the LED data values, and
+        //       the LED chain.
+        //   
+        //       The divider is set to the input value if it is zeroed (as it would
+        //       be at reset, or if configured with 0); the @a last_led must be
+        //       configured.
+        //   
+        //       The LED data values are simply written.
+        //   
+        //       The LED chain uses the @a led_ws2812_chain module, which presents
+        //       an LED number - in response the LED's color must be returned. This
+        //       is done simply with a multiplexing of the LED values.
         //   
         //       
-    always @ ( * )//timer_logic__comb
-    begin: timer_logic__comb_code
+    always @ ( * )//led_chain_logic__comb
+    begin: led_chain_logic__comb_code
     reg led_data__valid__var;
     reg led_data__last__var;
     reg [7:0]led_data__red__var;
@@ -213,11 +260,24 @@ module apb_target_led_ws2812
         led_data__blue = led_data__blue__var;
     end //always
 
-    //b timer_logic__posedge_clk_active_low_reset_n clock process
+    //b led_chain_logic__posedge_clk_active_low_reset_n clock process
+        //   
+        //       The LED chain logic manages the configuration (last led and divider), the LED data values, and
+        //       the LED chain.
+        //   
+        //       The divider is set to the input value if it is zeroed (as it would
+        //       be at reset, or if configured with 0); the @a last_led must be
+        //       configured.
+        //   
+        //       The LED data values are simply written.
+        //   
+        //       The LED chain uses the @a led_ws2812_chain module, which presents
+        //       an LED number - in response the LED's color must be returned. This
+        //       is done simply with a multiplexing of the LED values.
         //   
         //       
     always @( posedge clk or negedge reset_n)
-    begin : timer_logic__posedge_clk_active_low_reset_n__code
+    begin : led_chain_logic__posedge_clk_active_low_reset_n__code
         if (reset_n==1'b0)
         begin
             chain_state__divider_400ns <= 8'h0;

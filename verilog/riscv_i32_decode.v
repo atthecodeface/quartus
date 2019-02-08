@@ -32,10 +32,13 @@ module riscv_i32_decode
     riscv_config__e32,
     riscv_config__i32m,
     riscv_config__i32m_fuse,
+    riscv_config__debug_enable,
     riscv_config__coproc_disable,
     riscv_config__unaligned_mem,
-    instruction__mode,
     instruction__data,
+    instruction__debug__valid,
+    instruction__debug__debug_op,
+    instruction__debug__data,
 
     idecode__rs1,
     idecode__rs1_valid,
@@ -68,10 +71,13 @@ module riscv_i32_decode
     input riscv_config__e32;
     input riscv_config__i32m;
     input riscv_config__i32m_fuse;
+    input riscv_config__debug_enable;
     input riscv_config__coproc_disable;
     input riscv_config__unaligned_mem;
-    input [2:0]instruction__mode;
     input [31:0]instruction__data;
+    input instruction__debug__valid;
+    input [1:0]instruction__debug__debug_op;
+    input [15:0]instruction__debug__data;
 
     //b Outputs
     output [4:0]idecode__rs1;
@@ -241,6 +247,7 @@ module riscv_i32_decode
         5'h1c: // req 1
             begin
             idecode__immediate_valid__var = instruction__data[14];
+            idecode__immediate__var = {27'h0,idecode__rs1};
             end
         //synopsys  translate_off
         //pragma coverage off

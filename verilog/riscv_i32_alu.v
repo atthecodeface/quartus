@@ -112,6 +112,7 @@ module riscv_i32_alu
     //b Internal combinatorials
         //   Combinatorials used in the module, not exported as the decode
     reg [31:0]alu_combs__imm_or_rs2;
+    reg [31:0]alu_combs__imm_or_rs1;
     reg [63:0]alu_combs__rshift_operand;
     reg [63:0]alu_combs__rshift_result;
     reg [4:0]alu_combs__shift_amount;
@@ -139,6 +140,7 @@ module riscv_i32_alu
     always @ ( * )//alu_operation
     begin: alu_operation__comb_code
     reg [31:0]alu_combs__imm_or_rs2__var;
+    reg [31:0]alu_combs__imm_or_rs1__var;
     reg [63:0]alu_combs__rshift_operand__var;
     reg [4:0]alu_combs__shift_amount__var;
     reg [31:0]alu_combs__arith_in_1__var;
@@ -147,12 +149,16 @@ module riscv_i32_alu
     reg alu_result__branch_condition_met__var;
     reg [31:0]alu_result__result__var;
     reg [31:0]alu_result__branch_target__var;
-    reg [2:0]alu_result__csr_access__access__var;
-    reg [11:0]alu_result__csr_access__address__var;
+    reg [31:0]alu_result__csr_access__write_data__var;
         alu_combs__imm_or_rs2__var = rs2;
         if ((idecode__immediate_valid!=1'h0))
         begin
             alu_combs__imm_or_rs2__var = idecode__immediate;
+        end //if
+        alu_combs__imm_or_rs1__var = rs1;
+        if ((idecode__immediate_valid!=1'h0))
+        begin
+            alu_combs__imm_or_rs1__var = idecode__immediate;
         end //if
         alu_combs__rshift_operand__var = {32'h0,rs1};
         if ((((idecode__subop==4'hd) & rs1[31])!=1'h0))
@@ -330,43 +336,13 @@ module riscv_i32_alu
         //pragma coverage on
         //synopsys  translate_on
         endcase
-        alu_result__csr_access__access_cancelled = 1'h0;
-        alu_result__csr_access__access__var = 3'h0;
-        alu_result__csr_access__address__var = 12'h0;
-        alu_result__csr_access__write_data = 32'h0;
-        if ((1'h0!=64'h0))
-        begin
-            alu_result__csr_access__address__var = idecode__csr_access__address;
-            if ((idecode__subop==4'h1))
-            begin
-                alu_result__csr_access__access__var = 3'h3;
-            end //if
-            else
-            
-            begin
-                if ((idecode__subop==4'h2))
-                begin
-                    alu_result__csr_access__access__var = 3'h6;
-                end //if
-                else
-                
-                begin
-                    if ((idecode__subop==4'h3))
-                    begin
-                        alu_result__csr_access__access__var = 3'h7;
-                    end //if
-                end //else
-            end //else
-            if ((idecode__rs1==5'h0))
-            begin
-                alu_result__csr_access__access__var = 3'h2;
-            end //if
-            if ((idecode__op!=4'h4))
-            begin
-                alu_result__csr_access__access__var = 3'h0;
-            end //if
-        end //if
+        alu_result__csr_access__access_cancelled = idecode__csr_access__access_cancelled;
+        alu_result__csr_access__access = idecode__csr_access__access;
+        alu_result__csr_access__address = idecode__csr_access__address;
+        alu_result__csr_access__write_data__var = idecode__csr_access__write_data;
+        alu_result__csr_access__write_data__var = alu_combs__imm_or_rs1__var;
         alu_combs__imm_or_rs2 = alu_combs__imm_or_rs2__var;
+        alu_combs__imm_or_rs1 = alu_combs__imm_or_rs1__var;
         alu_combs__rshift_operand = alu_combs__rshift_operand__var;
         alu_combs__shift_amount = alu_combs__shift_amount__var;
         alu_combs__arith_in_1 = alu_combs__arith_in_1__var;
@@ -375,8 +351,7 @@ module riscv_i32_alu
         alu_result__branch_condition_met = alu_result__branch_condition_met__var;
         alu_result__result = alu_result__result__var;
         alu_result__branch_target = alu_result__branch_target__var;
-        alu_result__csr_access__access = alu_result__csr_access__access__var;
-        alu_result__csr_access__address = alu_result__csr_access__address__var;
+        alu_result__csr_access__write_data = alu_result__csr_access__write_data__var;
     end //always
 
 endmodule // riscv_i32_alu

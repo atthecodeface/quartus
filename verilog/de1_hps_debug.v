@@ -273,6 +273,7 @@ module de1_hps_debug
     reg riscv_config__e32;
     reg riscv_config__i32m;
     reg riscv_config__i32m_fuse;
+    reg riscv_config__debug_enable;
     reg riscv_config__coproc_disable;
     reg riscv_config__unaligned_mem;
     reg selected_video_bus__vsync;
@@ -369,8 +370,10 @@ module de1_hps_debug
     wire [31:0]data_access_req__write_data;
     wire riscv_trace__instr_valid;
     wire [31:0]riscv_trace__instr_pc;
-    wire [2:0]riscv_trace__instruction__mode;
     wire [31:0]riscv_trace__instruction__data;
+    wire riscv_trace__instruction__debug__valid;
+    wire [1:0]riscv_trace__instruction__debug__debug_op;
+    wire [15:0]riscv_trace__instruction__debug__data;
     wire riscv_trace__rfw_retire;
     wire riscv_trace__rfw_data_valid;
     wire [4:0]riscv_trace__rfw_rd;
@@ -505,6 +508,7 @@ module de1_hps_debug
         .clk__enable(1'b1),
         .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
         .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__debug_enable(riscv_config__debug_enable),
         .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),
@@ -533,8 +537,10 @@ module de1_hps_debug
         .trace__rfw_rd(            riscv_trace__rfw_rd),
         .trace__rfw_data_valid(            riscv_trace__rfw_data_valid),
         .trace__rfw_retire(            riscv_trace__rfw_retire),
+        .trace__instruction__debug__data(            riscv_trace__instruction__debug__data),
+        .trace__instruction__debug__debug_op(            riscv_trace__instruction__debug__debug_op),
+        .trace__instruction__debug__valid(            riscv_trace__instruction__debug__valid),
         .trace__instruction__data(            riscv_trace__instruction__data),
-        .trace__instruction__mode(            riscv_trace__instruction__mode),
         .trace__instr_pc(            riscv_trace__instr_pc),
         .trace__instr_valid(            riscv_trace__instr_valid),
         .sram_access_resp__data(            rv_sram_access_resp__data),
@@ -556,8 +562,10 @@ module de1_hps_debug
         .trace__rfw_rd(riscv_trace__rfw_rd),
         .trace__rfw_data_valid(riscv_trace__rfw_data_valid),
         .trace__rfw_retire(riscv_trace__rfw_retire),
+        .trace__instruction__debug__data(riscv_trace__instruction__debug__data),
+        .trace__instruction__debug__debug_op(riscv_trace__instruction__debug__debug_op),
+        .trace__instruction__debug__valid(riscv_trace__instruction__debug__valid),
         .trace__instruction__data(riscv_trace__instruction__data),
-        .trace__instruction__mode(riscv_trace__instruction__mode),
         .trace__instr_pc(riscv_trace__instr_pc),
         .trace__instr_valid(riscv_trace__instr_valid),
         .reset_n(reset_n)         );
@@ -1352,6 +1360,7 @@ module de1_hps_debug
         riscv_config__e32__var = 1'h0;
         riscv_config__i32m = 1'h0;
         riscv_config__i32m_fuse = 1'h0;
+        riscv_config__debug_enable = 1'h0;
         riscv_config__coproc_disable = 1'h0;
         riscv_config__unaligned_mem = 1'h0;
         riscv_config__e32__var = 1'h0;

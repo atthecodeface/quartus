@@ -32,7 +32,7 @@ source $QUARTUS_DIR/boards/de1_cl.tcl
 puts "Sourced TCL files"
 
 set_global_assignment -name SDC_FILE     hps_fpga_debug.sdc
-set_global_assignment -name VERILOG_MACRO de1_cl_hps_dut_module=hps_fpga_debug
+set_global_assignment -name VERILOG_MACRO de1_cl_hps_dut_module=de1_cl_hps_debug
 set_global_assignment -name VERILOG_FILE $RTL_DIR/de1_cl_hps_project.v
 set_global_assignment -name VERILOG_FILE $RTL_DIR/srams.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/apb_master_axi.v
@@ -60,8 +60,12 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/framebuffer_teletext.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/led_seven_segment.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/led_ws2812_chain.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/teletext.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/jtag_tap.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_jtag_apb_dm.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_debug.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_trace.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_decode.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_debug_decode.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32c_decode.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_alu.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_control_flow.v
@@ -75,7 +79,7 @@ set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_csrs_minimal.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32c_pipeline.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_minimal.v
 set_global_assignment -name VERILOG_FILE $VERILOG_DIR/riscv_i32_minimal_apb.v
-set_global_assignment -name VERILOG_FILE $VERILOG_DIR/hps_fpga_debug.v
+set_global_assignment -name VERILOG_FILE $VERILOG_DIR/de1_cl_hps_debug.v
 
 #a Set parameters (e.g. SRAMs)
 

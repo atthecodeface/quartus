@@ -74,6 +74,7 @@ module tb_riscv_i32_muldiv
     wire riscv_config__e32;
     wire riscv_config__i32m;
     wire riscv_config__i32m_fuse;
+    wire riscv_config__debug_enable;
     wire riscv_config__coproc_disable;
     wire riscv_config__unaligned_mem;
     wire coproc_response__cannot_start;
@@ -121,6 +122,7 @@ module tb_riscv_i32_muldiv
         .coproc_response__cannot_start(coproc_response__cannot_start),
         .riscv_config__unaligned_mem(            riscv_config__unaligned_mem),
         .riscv_config__coproc_disable(            riscv_config__coproc_disable),
+        .riscv_config__debug_enable(            riscv_config__debug_enable),
         .riscv_config__i32m_fuse(            riscv_config__i32m_fuse),
         .riscv_config__i32m(            riscv_config__i32m),
         .riscv_config__e32(            riscv_config__e32),
@@ -159,6 +161,7 @@ module tb_riscv_i32_muldiv
         .clk__enable(1'b1),
         .riscv_config__unaligned_mem(riscv_config__unaligned_mem),
         .riscv_config__coproc_disable(riscv_config__coproc_disable),
+        .riscv_config__debug_enable(riscv_config__debug_enable),
         .riscv_config__i32m_fuse(riscv_config__i32m_fuse),
         .riscv_config__i32m(riscv_config__i32m),
         .riscv_config__e32(riscv_config__e32),

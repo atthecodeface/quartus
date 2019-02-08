@@ -22,8 +22,10 @@ module riscv_i32_trace
 
     trace__instr_valid,
     trace__instr_pc,
-    trace__instruction__mode,
     trace__instruction__data,
+    trace__instruction__debug__valid,
+    trace__instruction__debug__debug_op,
+    trace__instruction__debug__data,
     trace__rfw_retire,
     trace__rfw_data_valid,
     trace__rfw_rd,
@@ -31,12 +33,13 @@ module riscv_i32_trace
     trace__branch_taken,
     trace__branch_target,
     trace__trap,
+    riscv_clk_enable,
     reset_n
 
 );
 
     //b Clocks
-        //   Clock for the CPU
+        //   Free-running clock
     input clk;
     input clk__enable;
 
@@ -44,8 +47,10 @@ module riscv_i32_trace
         //   Trace signals
     input trace__instr_valid;
     input [31:0]trace__instr_pc;
-    input [2:0]trace__instruction__mode;
     input [31:0]trace__instruction__data;
+    input trace__instruction__debug__valid;
+    input [1:0]trace__instruction__debug__debug_op;
+    input [15:0]trace__instruction__debug__data;
     input trace__rfw_retire;
     input trace__rfw_data_valid;
     input [4:0]trace__rfw_rd;
@@ -53,6 +58,8 @@ module riscv_i32_trace
     input trace__branch_taken;
     input [31:0]trace__branch_target;
     input trace__trap;
+        //   asserted if the RISC-V ticks on this edge
+    input riscv_clk_enable;
         //   Active low reset
     input reset_n;
 

@@ -12,6 +12,17 @@
 // Verilog option clocks_must_have_enables 1
 
 //a Module apb_master_axi
+    //   
+    //   AXI target mapping to an APB master
+    //   
+    //   This is a very simple AXI target that handles a single AXI transaction
+    //   at any one time; it converts this into an APB read or write
+    //   transaction, whose completion allows the completion of the AXI
+    //   transaction.
+    //   
+    //   This module is currently very primitive, and does not checking of
+    //   transaction input really.
+    //   
 module apb_master_axi
 (
     aclk,
@@ -188,6 +199,21 @@ module apb_master_axi
     //b Clock gating module instances
     //b Module instances
     //b axi_logic__comb combinatorial process
+        //   
+        //       The AXI-side logic has two state machines: one handles AXI write
+        //       requests, the other AXI read requests.
+        //   
+        //       A write request must be paired with write data, and this permits
+        //       the state machine to then generate a request to the APB side to
+        //       perform an APB write transaction; when that completes, the AXI
+        //       write response can be returned.
+        //   
+        //       A read request permits the state machine to generate a request to
+        //       the APB side to perform an APB read transaction; when that
+        //       completes, the AXI read response can be returned.
+        //   
+        //   
+        //       
     always @ ( * )//axi_logic__comb
     begin: axi_logic__comb_code
     reg apb_access_start_read__var;
@@ -260,6 +286,21 @@ module apb_master_axi
     end //always
 
     //b axi_logic__posedge_aclk_active_low_areset_n clock process
+        //   
+        //       The AXI-side logic has two state machines: one handles AXI write
+        //       requests, the other AXI read requests.
+        //   
+        //       A write request must be paired with write data, and this permits
+        //       the state machine to then generate a request to the APB side to
+        //       perform an APB write transaction; when that completes, the AXI
+        //       write response can be returned.
+        //   
+        //       A read request permits the state machine to generate a request to
+        //       the APB side to perform an APB read transaction; when that
+        //       completes, the AXI read response can be returned.
+        //   
+        //   
+        //       
     always @( posedge aclk or negedge areset_n)
     begin : axi_logic__posedge_aclk_active_low_areset_n__code
         if (areset_n==1'b0)

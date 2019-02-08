@@ -13,6 +13,21 @@
 
 //a Module framebuffer_teletext
     //   
+    //   This module provides a teletext framebuffer of configurable size.
+    //   
+    //   Each character is 12x10 pixels - horizontally smoothed, but not vertically.
+    //   
+    //   This module incorporates a @a framebuffer_timing module which should
+    //   be configured with the correct display size and porches; the
+    //   csr_select used for this is 1 more than that used for this module
+    //   itself.
+    //   
+    //   The module includes a CSR target with two registers: framebuffer start
+    //   address (register 0), and SRAM words per line (register 1). The
+    //   words-per-line register should be initialized to the number of
+    //   characters in a line (i.e. displayed pixels/12). The framebuffer start
+    //   register can be used to have multiple framebuffers, or to provide for
+    //   scrolling, or it can be held at 0.
     //   
 module framebuffer_teletext
 (
@@ -266,6 +281,7 @@ module framebuffer_teletext
         .video_timing__v_sync(            video_timing__v_sync)         );
     //b video_bus_out__comb combinatorial process
         //   
+        //       Drive the video_bus out, and record the pixel value for that.
         //       
     always @ ( * )//video_bus_out__comb
     begin: video_bus_out__comb_code
@@ -279,6 +295,7 @@ module framebuffer_teletext
 
     //b video_bus_out__posedge_video_clk_active_low_reset_n clock process
         //   
+        //       Drive the video_bus out, and record the pixel value for that.
         //       
     always @( posedge video_clk or negedge reset_n)
     begin : video_bus_out__posedge_video_clk_active_low_reset_n__code
@@ -305,7 +322,12 @@ module framebuffer_teletext
         //       'video_timing.will_display_pixels' When it becomes empty, it
         //       attempts to load from the pixel buffer.
         //   
-        //       The pixel data buffer
+        //       The pixel data buffer is filled from the teletext output whenever
+        //       it is valid; this happens after a valid @a tt_char is presented to
+        //       the teletext module, which in turn happens after reading the frame
+        //       buffer, which again happens because the pixel data buffer is
+        //       empty.
+        //   
         //       
     always @ ( * )//pixel_data_logic__comb
     begin: pixel_data_logic__comb_code
@@ -358,7 +380,12 @@ module framebuffer_teletext
         //       'video_timing.will_display_pixels' When it becomes empty, it
         //       attempts to load from the pixel buffer.
         //   
-        //       The pixel data buffer
+        //       The pixel data buffer is filled from the teletext output whenever
+        //       it is valid; this happens after a valid @a tt_char is presented to
+        //       the teletext module, which in turn happens after reading the frame
+        //       buffer, which again happens because the pixel data buffer is
+        //       empty.
+        //   
         //       
     always @( posedge video_clk or negedge reset_n)
     begin : pixel_data_logic__posedge_video_clk_active_low_reset_n__code
@@ -473,6 +500,9 @@ module framebuffer_teletext
 
     //b teletext_logic clock process
         //   
+        //       This is an instantiation of the teletext module, which takes a
+        //       character and scanline timings and presents pixel data out, after
+        //       a few cycles, using a character ROM (instantiated here).
         //       
     always @( posedge video_clk or negedge reset_n)
     begin : teletext_logic__code
@@ -496,7 +526,7 @@ module framebuffer_teletext
 
     //b csr_interface_logic__comb combinatorial process
         //   
-        //       Basic CSRS - it should all be writable...
+        //       Basic CSRS and frame buffer timing module
         //       
     always @ ( * )//csr_interface_logic__comb
     begin: csr_interface_logic__comb_code
@@ -521,7 +551,7 @@ module framebuffer_teletext
 
     //b csr_interface_logic__posedge_csr_clk_active_low_reset_n clock process
         //   
-        //       Basic CSRS - it should all be writable...
+        //       Basic CSRS and frame buffer timing module
         //       
     always @( posedge csr_clk or negedge reset_n)
     begin : csr_interface_logic__posedge_csr_clk_active_low_reset_n__code
