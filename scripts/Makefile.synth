@@ -175,10 +175,11 @@ quartus_gui:
 netlist:
 	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog $(PROJECT_LEAF) -c $(PROJECT_LEAF))
 
+SOF ?= quartus_output/$(PROJECT_LEAF).sof
 jtag_program:
 	( cable_name=`ALTERA_BIN=/altera/quartus/bin $(SCRIPTS_DIR)/find_altera_cable.sh` ; \
 	  echo "Using cable '$$cable_name'" ; \
-	 $(QUARTUS_PGM) -m jtag --cable="$$cable_name" -o "P;quartus_output/$(PROJECT_LEAF).sof@2" )
+	 $(QUARTUS_PGM) -m jtag --cable="$$cable_name" -o "P;$(SOF)@2" )
 
 jtag_usb_init:
 	ALTERA_BIN=/altera/quartus/bin bash -c "source $(SCRIPTS_DIR)/find_altera_cable.sh"
