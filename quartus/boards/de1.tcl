@@ -48,14 +48,68 @@ pin_lvttl_signal {D2 B1 E2 B2 D1 E1 C2 B3} de1_td__data
 pin_lvttl_signal A5 de1_td__hs
 pin_lvttl_signal F6 de1_td__reset_n
 pin_lvttl_signal A3 de1_td__vs
-pin_lvttl_signal F10 de1_vga__blank_n
-pin_lvttl_signal B11 de1_vga__hs
-pin_lvttl_signal A11 de1_vga__clk
-pin_lvttl_signal { B13  G13  H13  F14  H14  F15  G15  J14} de1_vga__b
-pin_lvttl_signal {  J9  J10  H12  G10  G11  G12  F11  E11} de1_vga__g
-pin_lvttl_signal { A13  C13  E13  B12  C12  D12  E12  F13} de1_vga__r
-pin_lvttl_signal C10 de1_vga__sync_n
-pin_lvttl_signal D11 de1_vga__vs
+
+set gpio0_pins {
+    AC18 AH18 AH17 AG16 AE16 AF16 AG17 AA18 AA19 AE17
+    AC20  Y17 AH19 AJ20 AH20 AK21 AD19 AD20 AE18 AE19
+    AF20 AF21 AD17 AF19 AG21 AF18 AG20 AG18 AJ21  Y18
+    AK16 AK18 AK19 AJ19 AJ17 AJ16
+}
+
+set gpio1_pins {
+    AB17 AA21 AB21 AC23 AD24 AE23 AE24 AF25 AF26 AG25
+    AG26 AH24 AH27 AJ27 AK29 AK28 AK27 AJ26 AK26 AH25
+    AJ25 AJ24 AK24 AG23 AK23 AH23 AK22 AJ22 AH22 AG22
+    AF24 AF23 AE22 AD21 AA20 AC22
+}
+
+# PIN0_DOES_NOT_EXIST
+# Hdr pins 1 thru 10
+# Hdr pins 11 and 12 are VCC5V  GND
+# Hdr pins 13 thru 28
+# Hdr pins 29 and 30 are VCC3V3 GND
+# Hdr pins 31 thru 40
+set gpio_hdr_pins {
+ 0
+    0 1 2 3 4 5 6 7 8 9
+0 0
+    10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+0 0
+    26 27 28 29 30 31 32 33 34 35
+}
+
+global env
+set USE_MTL_AS_VGA $env(USE_MTL_AS_VGA)
+proc pin_sel {bus pins} {
+    set sel_pins {}
+    for {set n 0} {$n<[llength $pins]} {incr n} {
+        set i [lindex $pins $n]
+        set sel_pins "$sel_pins [lindex $bus $i]"
+    }
+    return $sel_pins
+}
+set gpio0_hdr_pins [pin_sel $gpio0_pins $gpio_hdr_pins]
+set gpio1_hdr_pins [pin_sel $gpio1_pins $gpio_hdr_pins]
+if {"$USE_MTL_AS_VGA"=="GPIO1"} {
+    pin_lvttl_signal F10 de1_vga__blank_n
+    pin_lvttl_signal C10 de1_vga__sync_n
+    pin_lvttl_signal [pin_sel $gpio1_hdr_pins {36}] de1_vga__vs
+    pin_lvttl_signal [pin_sel $gpio1_hdr_pins {35}] de1_vga__hs
+    pin_lvttl_signal [pin_sel $gpio1_hdr_pins {2 }] de1_vga__clk
+    pin_lvttl_signal [pin_sel $gpio1_hdr_pins {23 25 26 27 28 31 32 33}] de1_vga__b
+    pin_lvttl_signal [pin_sel $gpio1_hdr_pins {14 15 16 17 18 21 22 24}] de1_vga__g
+    pin_lvttl_signal [pin_sel $gpio1_hdr_pins { 4  5  6  7  8  9 10 13}] de1_vga__r
+} else {
+    pin_lvttl_signal D11 de1_vga__vs
+    pin_lvttl_signal F10 de1_vga__blank_n
+    pin_lvttl_signal B11 de1_vga__hs
+    pin_lvttl_signal A11 de1_vga__clk
+    pin_lvttl_signal { B13  G13  H13  F14  H14  F15  G15  J14} de1_vga__b
+    pin_lvttl_signal {  J9  J10  H12  G10  G11  G12  F11  E11} de1_vga__g
+    pin_lvttl_signal { A13  C13  E13  B12  C12  D12  E12  F13} de1_vga__r
+    pin_lvttl_signal C10 de1_vga__sync_n
+}
+
 pin_lvttl_signal AE7 de1_ps2_dat
 pin_lvttl_signal AD7 de1_ps2_clk
 pin_lvttl_signal AE9 de1_ps2_b_dat
@@ -103,39 +157,3 @@ pin_lvttl_signal AB30 de1_irda__txd
 #set_location_assignment PIN_AJ19 -to GPIO_0[7]
 #set_location_assignment PIN_AJ17 -to GPIO_0[8]
 #set_location_assignment PIN_AJ16 -to GPIO_0[9]
-#set_location_assignment PIN_AB17 -to GPIO_1[0]
-#set_location_assignment PIN_AG26 -to GPIO_1[10]
-#set_location_assignment PIN_AH24 -to GPIO_1[11]
-#set_location_assignment PIN_AH27 -to GPIO_1[12]
-#set_location_assignment PIN_AJ27 -to GPIO_1[13]
-#set_location_assignment PIN_AK29 -to GPIO_1[14]
-#set_location_assignment PIN_AK28 -to GPIO_1[15]
-#set_location_assignment PIN_AK27 -to GPIO_1[16]
-#set_location_assignment PIN_AJ26 -to GPIO_1[17]
-#set_location_assignment PIN_AK26 -to GPIO_1[18]
-#set_location_assignment PIN_AH25 -to GPIO_1[19]
-#set_location_assignment PIN_AA21 -to GPIO_1[1]
-#set_location_assignment PIN_AJ25 -to GPIO_1[20]
-#set_location_assignment PIN_AJ24 -to GPIO_1[21]
-#set_location_assignment PIN_AK24 -to GPIO_1[22]
-#set_location_assignment PIN_AG23 -to GPIO_1[23]
-#set_location_assignment PIN_AK23 -to GPIO_1[24]
-#set_location_assignment PIN_AH23 -to GPIO_1[25]
-#set_location_assignment PIN_AK22 -to GPIO_1[26]
-#set_location_assignment PIN_AJ22 -to GPIO_1[27]
-#set_location_assignment PIN_AH22 -to GPIO_1[28]
-#set_location_assignment PIN_AG22 -to GPIO_1[29]
-#set_location_assignment PIN_AB21 -to GPIO_1[2]
-#set_location_assignment PIN_AF24 -to GPIO_1[30]
-#set_location_assignment PIN_AF23 -to GPIO_1[31]
-#set_location_assignment PIN_AE22 -to GPIO_1[32]
-#set_location_assignment PIN_AD21 -to GPIO_1[33]
-#set_location_assignment PIN_AA20 -to GPIO_1[34]
-#set_location_assignment PIN_AC22 -to GPIO_1[35]
-#set_location_assignment PIN_AC23 -to GPIO_1[3]
-#set_location_assignment PIN_AD24 -to GPIO_1[4]
-#set_location_assignment PIN_AE23 -to GPIO_1[5]
-#set_location_assignment PIN_AE24 -to GPIO_1[6]
-#set_location_assignment PIN_AF25 -to GPIO_1[7]
-#set_location_assignment PIN_AF26 -to GPIO_1[8]
-#set_location_assignment PIN_AG25 -to GPIO_1[9]
