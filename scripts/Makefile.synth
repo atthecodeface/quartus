@@ -162,6 +162,12 @@ rebuild_verilog:
 	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
 	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
+rebuild_verilog_no_pull:
+	(cd $(CDL_HARDWARE); make clean && make -j6 verilog)
+	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
+	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
+	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+
 copy_verilog:
 	(cd $(CDL_HARDWARE); make -j6 verilog)
 	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
