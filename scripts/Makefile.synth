@@ -196,5 +196,14 @@ jtag_program:
 	  echo "Using cable '$$cable_name'" ; \
 	 $(QUARTUS_PGM) -m jtag --cable="$$cable_name" -o "P;$(SOF)@2" )
 
+find_cables:
+	( cable_name=`ALTERA_BIN=/altera/quartus/bin $(SCRIPTS_DIR)/find_altera_cable.sh` ; \
+	  echo "cables are '$$cable_name'" ; \
+	)
+
+jtag_program2:
+	( echo "Using cable '$(CABLE_NAME)'" ; \
+	  $(QUARTUS_PGM) -m jtag --cable="$(CABLE_NAME)" -o "P;$(SOF)@2" )
+
 jtag_usb_init:
 	ALTERA_BIN=/altera/quartus/bin bash -c "source $(SCRIPTS_DIR)/find_altera_cable.sh"
