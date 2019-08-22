@@ -188,6 +188,17 @@ netlist:
 	(cd $(QUARTUS_DIR); $(QUARTUS_EDA) --read_settings_files=off --write_settings_files=off --simulation=on --tool=modelsim --format=verilog $(PROJECT_LEAF) -c $(PROJECT_LEAF))
 
 SOF ?= quartus_output/$(PROJECT_LEAF).sof
+RBF ?= $(SOF:%.sof=%.rbf)
+rbf_of_sof:
+	${QUARTUS_BIN}/quartus_cpf -c $(SOF) $(RBF)
+
+find_cables:
+	ALTERA_BIN=/altera/quartus/bin bash -c "source $(SCRIPTS_DIR)/find_altera_cable.sh"
+
+jtag_program_cable:
+	@echo "Programming using cable name supplied in ALTERA_CABLE_FPGA ('$(ALTERA_CABLE_FPGA)')"
+	@$(QUARTUS_PGM) -m jtag --cable="$(ALTERA_CABLE_FPGA)" -o "P;$(SOF)@2"
+
 jtag_program:
 	( cable_name=`ALTERA_BIN=/altera/quartus/bin $(SCRIPTS_DIR)/find_altera_cable.sh` ; \
 	  echo "Using cable '$$cable_name'" ; \

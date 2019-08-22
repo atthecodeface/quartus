@@ -14,5 +14,5 @@ $verbose "Reading cable"
 cable_results=`$ALTERA_BIN/jtagconfig`
 $verbose $cable_results
 ALTERA_CABLE_FPGA=`echo "$cable_results" | awk 'BEGIN {RS=""; FS="\n"}{ has_fpga = 0; for (i = 2; i <= NF; i++) if ( $i ~ /02D120DD/ ) has_fpga=1; len = length($1); $1 = substr($1, 4, len-3); if ( has_fpga == 1) print $1 }'`
-if [ $sourced = 0 ] ; then echo $ALTERA_CABLE_FPGA; else export ALTERA_CABLE_FPGA ;$verbose "Set ALTERA_CABLE_FPGA to $ALTERA_CABLE_FPGA"; fi;
+if [ $sourced = 0 ] ; then echo $ALTERA_CABLE_FPGA; else export ALTERA_CABLE_FPGA ;$verbose "Set ALTERA_CABLE_FPGA to '$ALTERA_CABLE_FPGA'"; fi;
 
