@@ -193,7 +193,7 @@ netlist:
 SOF ?= quartus_output/$(PROJECT_LEAF).sof
 RBF ?= $(SOF:%.sof=%.rbf)
 rbf_of_sof:
-	${QUARTUS_BIN}/quartus_cpf -c $(SOF) $(RBF)
+	${QUARTUS_BIN}/quartus_cpf -c -o compression=on $(SOF) $(RBF)
 
 find_cables:
 	ALTERA_BIN=/altera/quartus/bin bash -c "source $(SCRIPTS_DIR)/find_altera_cable.sh"
