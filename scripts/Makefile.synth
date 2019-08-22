@@ -84,9 +84,12 @@ help_synth:
 	$H ""
 
 clean: clean_synth
-.PHONY: clean_synth
-clean_synth:
+.PHONY: clean_make
+clean_make:
 	rm -f ${MAKE_PREFIX}.*
+
+.PHONY: clean_synth
+clean_synth: clean_make
 	rm -rf $(QUARTUS_OUTPUT)/*$(PROJECT_LEAF)* $(QUARTUS_PROJECT_DB) $(QUARTUS_PROJECT_IDB)
 	mkdir -p $(QUARTUS_OUTPUT) $(MAKE_TARGETS)
 
