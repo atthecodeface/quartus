@@ -1,0 +1,37 @@
+CDL_HARDWARE   ?= $(ROOT)/../cdl_hardware
+
+help_verilog:
+	$H "****************************************************************"
+	$H "Makefile.verilog"
+	$H "****************************************************************"
+	$H ""
+	$H "To pull and build verilog / roms in from the cdl_hardware directory"
+	$H "  make rebuild_verilog"
+	$H ""
+
+clean: clean_verilog
+
+clean_verilog:
+	mkdir -p verilog
+
+rebuild_verilog:
+	mkdir -p verilog
+	(cd $(CDL_HARDWARE); git pull && make clean && make -j6 verilog)
+	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
+	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
+	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+
+rebuild_verilog_no_pull:
+	mkdir -p verilog
+	(cd $(CDL_HARDWARE); make clean && make -j6 verilog)
+	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
+	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
+	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+
+copy_verilog:
+	mkdir -p verilog
+	(cd $(CDL_HARDWARE); make -j6 verilog)
+	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
+	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
+	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+

@@ -1,0 +1,51 @@
+VIVADO_DIR          ?= $(ROOT)/vivado
+VIVADO_OUTPUT       ?= $(ROOT)/vivado_output
+VIVADO_SCRIPTS_DIR  ?= $(VIVADO_DIR)/scripts
+
+VIVADO         := /xilinx/Vivado/2019.1
+VIVADO_BIN     := ${VIVADO}/bin
+VIVADO_OPTS    :=  -journal ${VIVADO_OUTPUT}/vivado.journal -log ${VIVADO_OUTPUT}/vivado.log 
+VIVADO_ENV ?= 
+VIVADO_ENV += SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_XILINX_DIR) VERILOG_DIR=$(VERILOG_DIR) VIVADO_OUTPUT=$(VIVADO_OUTPUT) VIVADO_DIR=$(VIVADO_DIR)  VIVADO_SCRIPTS_DIR=$(VIVADO_SCRIPTS_DIR) 
+
+VIVADO_EXE = $(VIVADO_ENV) $(VIVADO_BIN)/vivado $(VIVADO_OPTS)
+VIVADO_HWSERVER =sudo $(VIVADO_ENV) $(VIVADO_BIN)/hw_server
+
+help_vivado:
+	$H "****************************************************************"
+	$H "Makefile.vivado"
+	$H "****************************************************************"
+	$H ""
+	$H "Available projects are:"
+	$H " de1_cl/bbc_project de1_cl_hps/hps_fpga_debug de2/picorisc"
+	$H ""
+
+clean: clean_vivado
+
+.PHONY: clean_vivdo
+clean_vivado: clean_make
+	rm -f $(VIVADO_OUTPUT)/*$(PROJECT_LEAF)*
+	rm -f $(VIVADO_OUTPUT)/vivado*log $(VIVADO_OUTPUT)/vivado*journal
+	mkdir -p $(VIVADO_OUTPUT)
+
+.PHONY:vivado_place
+.PHONY:vivado_route
+.PHONY:vivado_report
+.PHONY:vivado_bitstream
+vivado_place:  ${MAKE_PREFIX}.vivado_place
+vivado_route:  ${MAKE_PREFIX}.vivado_route
+vivado_report: ${MAKE_PREFIX}.vivado_report
+vivado_bitstream: ${MAKE_PREFIX}.vivado_bitstream
+
+${MAKE_PREFIX}.vivado_place:
+	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/place.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).place.log  && date > ${MAKE_PREFIX}.vivado_place
+
+${MAKE_PREFIX}.vivado_route: ${MAKE_PREFIX}.vivado_place
+	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/route.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).route.log  && date > ${MAKE_PREFIX}.vivado_route
+
+${MAKE_PREFIX}.vivado_report: ${MAKE_PREFIX}.vivado_route
+	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/report.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).report.log  && date > ${MAKE_PREFIX}.vivado_report
+
+${MAKE_PREFIX}.vivado_bitstream: ${MAKE_PREFIX}.vivado_route
+	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/bitstream.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bitstream.log  && date > ${MAKE_PREFIX}.vivado_bitstream
+

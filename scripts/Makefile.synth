@@ -1,10 +1,5 @@
-CDL_HARDWARE   ?= $(ROOT)/../cdl_hardware
-
 QUARTUS_DIR    ?= $(ROOT)/quartus
 QUARTUS_OUTPUT ?= $(ROOT)/quartus_output
-PROJECTS_DIR   ?= ${QUARTUS_DIR}/projects
-
-SCRIPT ?= script -ef
 
 QUARTUS=$(ALTERA)/quartus
 QUARTUS_BIN=$(QUARTUS)/bin
@@ -39,14 +34,15 @@ ifneq ($(QUARTUS_PROJECT_INCLUDE),)
 endif
 
 help_synth:
+	$H "****************************************************************"
+	$H "To regenerate the modules from qsys (on repo init or change of qsys)"
+	$H "****************************************************************"
+	$H "   make regnerate_modules"
+	$H
 	$H ""
 	$H "****************************************************************"
 	$H "Makefile.synth"
 	$H "****************************************************************"
-	$H ""
-	$H "To pull and build verilog / roms in from the cdl_hardware directory"
-	$H "  make rebuild_verilog"
-	$H ""
 	$H "To make quartus/modules contents when a qsys file changes or when"
 	$H "the repo is first checked out:"
 	$H "  make regenerate_modules"
@@ -84,14 +80,10 @@ help_synth:
 	$H ""
 
 clean: clean_synth
-.PHONY: clean_make
-clean_make:
-	rm -f ${MAKE_PREFIX}.*
-
 .PHONY: clean_synth
 clean_synth: clean_make
 	rm -rf $(QUARTUS_OUTPUT)/*$(PROJECT_LEAF)* $(QUARTUS_PROJECT_DB) $(QUARTUS_PROJECT_IDB)
-	mkdir -p $(QUARTUS_OUTPUT) $(MAKE_TARGETS)
+	mkdir -p $(QUARTUS_OUTPUT)
 
 .PHONY:synth
 .PHONY:asm
@@ -158,24 +150,6 @@ ${MAKE_PREFIX}.asm: ${MAKE_PREFIX}.fit
 
 ${MAKE_PREFIX}.timing: ${MAKE_PREFIX}.fit
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).timing.log && date > ${MAKE_PREFIX}.timing
-
-rebuild_verilog:
-	(cd $(CDL_HARDWARE); git pull && make clean && make -j6 verilog)
-	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
-	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
-	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
-
-rebuild_verilog_no_pull:
-	(cd $(CDL_HARDWARE); make clean && make -j6 verilog)
-	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
-	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
-	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
-
-copy_verilog:
-	(cd $(CDL_HARDWARE); make -j6 verilog)
-	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
-	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
-	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
 fpga_update_srams:
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) ' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).fpga_update_srams.log       && date > ${MAKE_PREFIX}.fpga_update_srams
