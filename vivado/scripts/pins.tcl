@@ -47,6 +47,7 @@ proc pin_desc_entry_set_properties {pin_desc_entry} {
     set base  [arg_or_default $pin_desc_entry 2 {}]
     set description [arg_or_default $pin_desc_entry 3 {}]
     foreach d $description {
+        puts "Signal $name of size $size from $base description $d"
         sig_iter $name $size pin_io_signal_set $d $base
     }
 }
