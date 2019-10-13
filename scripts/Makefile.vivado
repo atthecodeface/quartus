@@ -37,7 +37,7 @@ vivado_route:  ${MAKE_PREFIX}.vivado_route
 vivado_report: ${MAKE_PREFIX}.vivado_report
 vivado_bitstream: ${MAKE_PREFIX}.vivado_bitstream
 
-${MAKE_PREFIX}.vivado_place:
+${MAKE_PREFIX}.vivado_place: vivado_parametrize
 	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/place.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).place.log  && date > ${MAKE_PREFIX}.vivado_place
 
 ${MAKE_PREFIX}.vivado_route: ${MAKE_PREFIX}.vivado_place
@@ -49,6 +49,10 @@ ${MAKE_PREFIX}.vivado_report: ${MAKE_PREFIX}.vivado_route
 ${MAKE_PREFIX}.vivado_bitstream: ${MAKE_PREFIX}.vivado_route
 	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/bitstream.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bitstream.log  && date > ${MAKE_PREFIX}.vivado_bitstream
 
-
+.PHONY: vivado_srams
 vivado_srams:
-	$(VIVADO_SCRIPTS)/make_srams.py > rtl_xilinx/srw_srams.v
+	$(VIVADO_SCRIPTS_DIR)/make_srams.py > rtl_xilinx/srw_srams.v
+
+.PHONY: vivado_parametrize
+vivado_parametrize:
+	$(VIVADO_SCRIPTS_DIR)/parametrize_verilog.py
