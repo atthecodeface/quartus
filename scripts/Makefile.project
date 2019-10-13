@@ -1,33 +1,29 @@
 PROJECTS_DIR   ?= ${ROOT}/projects
 SCRIPT ?= script -ef
 
+MAKE_PREFIX  := $(MAKE_TARGETS)/${PROJECT_LEAF}.completed
+
 PROJECT ?= de1_cl_hps/hps_fpga_debug 
 PROJECT_ROOT := $(dir $(PROJECT))
 PROJECT_LEAF := $(notdir $(PROJECT))
-MAKE_PREFIX  := $(MAKE_TARGETS)/${PROJECT_LEAF}.completed
 PROJECT_DIR  := $(PROJECTS_DIR)/$(PROJECT_ROOT)
 
 # PROJECTS_DIR   ?= ${QUARTUS_DIR}/projects
 # QUARTUS_PROJECT_DIR  := $(PROJECTS_DIR)/$(PROJECT_ROOT)
-QUARTUS_PROJECT_MAKEFILE := $(QUARTUS_PROJECT_DIR)$(PROJECT_LEAF).mk
-QUARTUS_PROJECT_INCLUDE  := $(shell if [ -f ${QUARTUS_PROJECT_MAKEFILE} ] ; then echo ${QUARTUS_PROJECT_MAKEFILE} ; else echo; fi;)
-QUARTUS_PROJECT_DB       := $(QUARTUS_PROJECT_DIR)/db
-QUARTUS_PROJECT_IDB      := $(QUARTUS_PROJECT_DIR)/incremental_db
+PROJECT_MAKEFILE := $(PROJECT_DIR)/$(PROJECT_LEAF).mk
+PROJECT_INCLUDE  := $(shell if [ -f ${PROJECT_MAKEFILE} ] ; then echo ${PROJECT_MAKEFILE} ; else echo; fi;)
 
-ifneq ($(QUARTUS_PROJECT_INCLUDE),)
--include ${QUARTUS_PROJECT_INCLUDE}
-endif
-
+PROJECTS_AVAILABLE = $(shell cd $(PROJECTS_DIR) ; (ls */*/*.proj.md) | sed s/.proj.md//)
 help_project:
 	$H "****************************************************************"
 	$H "Makefile.project"
 	$H "****************************************************************"
 	$H ""
 	$H "Available projects are:"
-	$H " de1_cl/bbc_project de1_cl_hps/hps_fpga_debug de2/picorisc"
+	$H " $(PROJECTS_AVAILABLE)"
 	$H ""
 
 .PHONY: clean_make
 clean_make:
 	rm -f ${MAKE_PREFIX}.*
-	mkdir -p $(VIVADO_OUTPUT) $(MAKE_TARGETS)
+	mkdir -p $(MAKE_TARGETS)

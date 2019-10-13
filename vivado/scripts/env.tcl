@@ -10,6 +10,5 @@ global argv
 set project [lindex $argv 0]
 source ${project}.tcl
 
-set output_file_base "${VIVADO_OUTPUT}/${file}"
-set part "xcvu095-ffva2104-2-e"
+set output_file_base "${VIVADO_OUTPUT}/${project_file}"
 

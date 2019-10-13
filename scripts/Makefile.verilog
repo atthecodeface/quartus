@@ -14,24 +14,28 @@ clean: clean_verilog
 clean_verilog:
 	mkdir -p verilog
 
-rebuild_verilog:
+verilog_pull:
 	mkdir -p verilog
-	(cd $(CDL_HARDWARE); git pull && make clean && make -j6 verilog)
-	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
-	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
-	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+	(cd $(CDL_HARDWARE); git pull)
 
-rebuild_verilog_no_pull:
-	mkdir -p verilog
-	(cd $(CDL_HARDWARE); make clean && make -j6 verilog)
-	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
+verilog_clean_cdl:
+	(cd $(CDL_HARDWARE); make clean)
+
+verilog_make_cdl:
+	(cd $(CDL_HARDWARE); make -j6 verilog)
 	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
+
+verilog_copy_cdl:
+	mkdir -p verilog
+	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
 	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
 
 copy_verilog:
-	mkdir -p verilog
-	(cd $(CDL_HARDWARE); make -j6 verilog)
-	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
-	(cd $(CDL_HARDWARE); make roms non_bbc_roms)
-	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+	$(MAKE) verilog_make_cdl verilog_copy_cdl
+
+rebuild_verilog_no_pull:
+	$(MAKE) verilog_clean_cdl verilog_make_cdl verilog_copy_cdl
+
+rebuild_verilog: 
+	$(MAKE) verilog_pull verilog_clean_cdl verilog_make_cdl verilog_copy_cdl
 

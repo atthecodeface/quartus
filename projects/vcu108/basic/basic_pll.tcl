@@ -1,6 +1,6 @@
 set project_part "xcvu095-ffva2104-2-e"
 set project_file "basic"
-set project_top "basic_project"
+set project_top  "basic_project_pll"
 
 set project_synth_options ""
 append project_synth_options " -top ${project_top}"
@@ -10,7 +10,7 @@ append project_synth_options " -verilog_define basic_module=basic_0"
 # Read RTL files
 set project_rtl_files {}
 lappend project_rtl_files ${RTL_DIR}/basic_0.v
-lappend project_rtl_files ${RTL_DIR}/basic_project.v
+lappend project_rtl_files ${RTL_DIR}/basic_project_pll.v
 
 set project_constraints_tcl {}
 lappend project_constraints_tcl basic.pins.tcl

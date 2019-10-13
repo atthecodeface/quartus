@@ -59,3 +59,6 @@ include $(SCRIPTS_DIR)/Makefile.verilog
 include $(SCRIPTS_DIR)/Makefile.synth
 include $(SCRIPTS_DIR)/Makefile.vivado
 
+ifneq ($(PROJECT_INCLUDE),)
+-include ${PROJECT_INCLUDE}
+endif

@@ -27,7 +27,7 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                           .outclk_0(video_clk), .locked_0(video_clk_locked) );
    
    assign reset_n = vcu108_inputs__switches[0];
-   vcu108_debug dut( .clk(sysclk1),
+   `debug_module dut( .clk(sysclk1),
             .clk__enable(1),
             .video_clk(video_clk),
             .video_clk__enable(1),

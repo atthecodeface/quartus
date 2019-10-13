@@ -11,6 +11,11 @@ module se_sram_srw(sram_clock, sram_clock__enable, write_data, address, read_not
    output [data_width-1:0] data_out;
    (* ram_init_file = initfile *)   reg [data_width-1:0] ram[(1<<address_width)-1:0];
    reg [data_width-1:0] data_out;
+   initial begin
+      if (initfile != "") begin
+         $readmemh(initfile, ram);
+      end
+   end
    initial
      begin
         data_out <= 0;
@@ -42,6 +47,11 @@ module se_sram_srw_we8_unused(sram_clock, sram_clock__enable, write_data, addres
    output [data_width-1:0] data_out;
    (* ram_init_file = initfile *)   reg [data_width-1:0] ram[(1<<address_width)-1:0];
    reg [data_width-1:0] data_out;
+   initial begin
+      if (initfile != "") begin
+         $readmemh(initfile, ram);
+      end
+   end
    initial
      begin
         data_out <= 0;
@@ -173,6 +183,11 @@ module se_sram_mrw_2( sram_clock_0, sram_clock_0__enable, write_data_0, address_
    (* ram_init_file = initfile *)   reg [data_width-1:0] ram[(1<<address_width)-1:0];
    reg [data_width-1:0] data_out_0;
    reg [data_width-1:0] data_out_1;
+   initial begin
+      if (initfile != "") begin
+         $readmemh(initfile, ram);
+      end
+   end
    initial
      begin
         data_out_0 <= 0;
