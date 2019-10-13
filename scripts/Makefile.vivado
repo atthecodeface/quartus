@@ -49,3 +49,6 @@ ${MAKE_PREFIX}.vivado_report: ${MAKE_PREFIX}.vivado_route
 ${MAKE_PREFIX}.vivado_bitstream: ${MAKE_PREFIX}.vivado_route
 	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/bitstream.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bitstream.log  && date > ${MAKE_PREFIX}.vivado_bitstream
 
+
+vivado_srams:
+	$(VIVADO_SCRIPTS)/make_srams.py > rtl_xilinx/srw_srams.v

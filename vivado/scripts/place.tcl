@@ -14,7 +14,6 @@ read_verilog ${project_rtl_files}
 # synth_design - to specified target (map to LUTs?)
 # synth_design
 set synth_command "synth_design ${project_synth_options}"
-puts "Synth command: '$synth_command'"
 eval $synth_command
 
 write_checkpoint -force ${output_file_base}.postsynth.dcp

@@ -12,6 +12,7 @@ set project_rtl_files {}
 lappend project_rtl_files ${RTL_DIR}/vcu108_project.v
 lappend project_rtl_files ${RTL_DIR}/vcu108_plls.v
 lappend project_rtl_files ${RTL_DIR}/srams.v
+lappend project_rtl_files ${RTL_DIR}/srw_srams.v
 lappend project_rtl_files ${VERILOG_DIR}/vcu108_debug.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_processor.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_dprintf.v
