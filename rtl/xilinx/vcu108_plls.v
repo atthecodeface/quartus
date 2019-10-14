@@ -1,8 +1,11 @@
-module pll_150 (
+module pll_base (
 		input  wire  refclk,
 		input  wire  rst,     
-		output wire  outclk_0,
-		output wire  locked_0
+		output wire  outclk_225,
+		output wire  outclk_150,
+		output wire  outclk_100,
+		output wire  outclk_50,
+		output wire  locked
 	);
 
    wire              clk_fb;
@@ -21,12 +24,12 @@ module pll_150 (
                    .DIVCLK_DIVIDE(1),        // Master division value (1-106)
                    .CLKFBOUT_MULT_F(3),      // Multiply value for VCO (2.000-64.000) - 300MHz up to 900MHz
                    .CLKFBOUT_PHASE(0.0),     // Phase offset in degrees of CLKFB default of 0.
-                   .CLKOUT0_DIVIDE_F(6),     // Divide amount for CLKOUT0 (1.000-128.000) for 150MHz
+                   .CLKOUT0_DIVIDE_F(4),     // Divide amount for CLKOUT0 (1.000-128.000) for 225Hz
                    .CLKOUT0_DUTY_CYCLE(0.5), // Default of 0.5
                    // ADV .CLKOUT0_USE_FINE_PS("FALSE"),
-                   .CLKOUT1_DIVIDE(90), // 10MHz
-                   .CLKOUT2_DIVIDE(90),
-                   .CLKOUT3_DIVIDE(90),
+                   .CLKOUT1_DIVIDE(6),     // Divide amount for CLKOUT1 (1.000-128.000) for 150MHz
+                   .CLKOUT2_DIVIDE(9),     // Divide amount for CLKOUT2 (1.000-128.000) for 100MHz
+                   .CLKOUT3_DIVIDE(18),    // Divide amount for CLKOUT3 (1.000-128.000) for 50MHz
                    // ADV .CLKOUT4_CASCADE("TRUE"),
                    .CLKOUT4_DIVIDE(90),
                    .CLKOUT5_DIVIDE(90),
@@ -49,8 +52,11 @@ module pll_150 (
 	) pll_i (
 		     .RST	(rst),
              .PWRDWN (1'b0),
-		     .CLKOUT0	(outclk_0),
-		     .LOCKED	(locked_0),
+		     .CLKOUT0	(outclk_225),
+		     .CLKOUT1	(outclk_150),
+		     .CLKOUT2	(outclk_100),
+		     .CLKOUT3	(outclk_50),
+		     .LOCKED	(locked),
 		     .CLKIN1	(refclk),
              .CLKFBOUT (clk_fb),
              .CLKFBIN  (clk_fb)

@@ -66,8 +66,8 @@ module se_sram_srw_16384x8( sram_clock, sram_clock__enable, write_data, address,
     output [data_width-1:0]   data_out;
     se_sram_srw #(address_width,data_width,initfile) ram(sram_clock,sram_clock__enable,write_data,address,read_not_write,select,data_out);
 endmodule
-//m se_sram_srw_16384x32
-module se_sram_srw_16384x32( sram_clock, sram_clock__enable, write_data, address, write_enable, read_not_write, select, data_out );
+//m se_sram_srw_16384x32_we8
+module se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_data, address, write_enable, read_not_write, select, data_out );
     parameter initfile="",address_width=14,data_width=32;
     input sram_clock, sram_clock__enable, select, read_not_write;
     input [3:0]write_enable;

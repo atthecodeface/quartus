@@ -9,8 +9,8 @@ append project_synth_options " -verilog_define basic_module=basic_0"
 
 # Read RTL files
 set project_rtl_files {}
-lappend project_rtl_files ${RTL_DIR}/basic_0.v
-lappend project_rtl_files ${RTL_DIR}/basic_project.v
+lappend project_rtl_files ${RTL_DIR}/xilinx/basic_0.v
+lappend project_rtl_files ${RTL_DIR}/xilinx/basic_project.v
 
 set project_constraints_tcl {}
 lappend project_constraints_tcl basic.pins.tcl

@@ -16,7 +16,7 @@ clean_verilog:
 
 verilog_pull:
 	mkdir -p verilog
-	(cd $(CDL_HARDWARE); git pull)
+	(cd $(CDL_HARDWARE); git pull elephant master)
 
 verilog_clean_cdl:
 	(cd $(CDL_HARDWARE); make clean)

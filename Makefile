@@ -2,7 +2,6 @@
 ROOT              ?= $(CURDIR)
 ROOT_REL          ?= .
 RTL_DIR           ?= $(ROOT)/rtl
-RTL_XILINX_DIR    ?= $(ROOT)/rtl_xilinx
 VERILOG_DIR       ?= $(ROOT)/verilog
 SCRIPTS_DIR       ?= $(ROOT)/scripts
 PYTHON_DIR        ?= $(ROOT)/python

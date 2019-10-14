@@ -6,12 +6,13 @@ set project_synth_options ""
 append project_synth_options " -top ${project_top}"
 append project_synth_options " -part ${project_part}"
 append project_synth_options " -verilog_define debug_module=vcu108_debug"
+append project_synth_options " -verilog_define dut_clk=sysclk1"
 
 # Read RTL files
 set project_rtl_files {}
-lappend project_rtl_files ${RTL_DIR}/vcu108_project.v
-lappend project_rtl_files ${RTL_DIR}/vcu108_plls.v
-lappend project_rtl_files ${RTL_DIR}/srams.v
+lappend project_rtl_files ${RTL_DIR}/xilinx/vcu108_project.v
+lappend project_rtl_files ${RTL_DIR}/xilinx/vcu108_plls.v
+lappend project_rtl_files ${RTL_DIR}/xilinx/srams.v
 lappend project_rtl_files ${RTL_DIR}/srw_srams.v
 lappend project_rtl_files ${VERILOG_DIR}/vcu108_debug.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_processor.v
@@ -37,5 +38,6 @@ lappend project_rtl_files ${VERILOG_DIR}/teletext.v
 
 set project_constraints_tcl {}
 lappend project_constraints_tcl ${VIVADO_DIR}/boards/vcu108.tcl
-lappend project_constraints_tcl vcu108_debug.timing.tcl
+lappend project_constraints_tcl ../vcu108_project.timing.tcl
 
+set project_clks "clk_50 clk_150"

@@ -6,7 +6,7 @@ VIVADO         := /xilinx/Vivado/2019.1
 VIVADO_BIN     := ${VIVADO}/bin
 VIVADO_OPTS    :=  -journal ${VIVADO_OUTPUT}/vivado.journal -log ${VIVADO_OUTPUT}/vivado.log 
 VIVADO_ENV ?= 
-VIVADO_ENV += SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_XILINX_DIR) VERILOG_DIR=$(VERILOG_DIR) VIVADO_OUTPUT=$(VIVADO_OUTPUT) VIVADO_DIR=$(VIVADO_DIR)  VIVADO_SCRIPTS_DIR=$(VIVADO_SCRIPTS_DIR) 
+VIVADO_ENV += SRAMS_DIR=$(SRAM_CONTENTS) RTL_DIR=$(RTL_DIR) VERILOG_DIR=$(VERILOG_DIR) VIVADO_OUTPUT=$(VIVADO_OUTPUT) VIVADO_DIR=$(VIVADO_DIR)  VIVADO_SCRIPTS_DIR=$(VIVADO_SCRIPTS_DIR) 
 
 VIVADO_EXE = $(VIVADO_ENV) $(VIVADO_BIN)/vivado $(VIVADO_OPTS)
 VIVADO_HWSERVER =sudo $(VIVADO_ENV) $(VIVADO_BIN)/hw_server
@@ -51,7 +51,7 @@ ${MAKE_PREFIX}.vivado_bitstream: ${MAKE_PREFIX}.vivado_route
 
 .PHONY: vivado_srams
 vivado_srams:
-	$(VIVADO_SCRIPTS_DIR)/make_srams.py > rtl_xilinx/srw_srams.v
+	$(VIVADO_SCRIPTS_DIR)/make_srams.py > rtl/srw_srams.v
 
 .PHONY: vivado_parametrize
 vivado_parametrize:

@@ -74,6 +74,7 @@ class se_sram_srw_16384x32_we8(srw):
     address_width = 14
     data_width    = 32
     write_enable  = 8
+    name = "se_sram_srw_16384x32_we8"
 
 class se_sram_srw_256x40(srw): # No WE
     address_width = 8
