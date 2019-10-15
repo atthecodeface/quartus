@@ -2,11 +2,11 @@
 import re
 import os
 verilog_paramters = {
-    "framebuffer_teletext.v": [("character_rom", {"initfile":'"banana"'} ),],
-    "vcu108_debug.v":         [("apb_rom",  {"initfile":'"apb_rom"'} ),],
+    "framebuffer_teletext.v": [("character_rom", {"initfile":'"teletext"'} ),],
+    "vcu108_debug.v":         [("apb_rom",       {"initfile":'"apb_rom"'} ),],
+    "vcu108_riscv.v":         [("apb_rom",       {"initfile":'"apb_rom"'} ),],
+    "riscv_i32_minimal.v":    [("mem",           {"initfile":'"rv_boot_rom"'} ),],
  }
-#    se_sram_srw_128x45 #(.initfile("banana")) character_rom(
-#     se_sram_srw_256x40 #(.initfile("apb_rom")) apb_rom(
 class parametrize_file:
     filename = "file.v"
     parameters = ["module", {"par_name":"par_value"},
@@ -26,7 +26,6 @@ class parametrize_file:
         f.close()
         param_re = re.compile(r"(.*)#(.*)")
         for (mod, args) in self.parameters:
-            pre = re.compile(r"(.*)%s\((.*)"%mod)
             pstr = ""
             for pn in args:
                 pv = args[pn]
@@ -38,6 +37,7 @@ class parametrize_file:
                     pass
                 pass
             pstr = " %s) "%pstr
+            pre = re.compile(r"(.*) %s\((.*)"%mod)
             new_lines = []
             for l in lines:
                 match = pre.search(l)
@@ -46,7 +46,7 @@ class parametrize_file:
                     unparam_match = param_re.match(unparam)
                     if unparam_match is not None: unparam=unparam_match.group(1)
                     unparam = unparam.rstrip(' ')
-                    l = "%s %s%s(%s"%(unparam, pstr, mod, match.group(2))
+                    l = "%s%s%s(%s"%(unparam, pstr, mod, match.group(2))
                     pass
                 new_lines.append(l)
                 pass

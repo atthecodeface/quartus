@@ -29,6 +29,7 @@ verilog_copy_cdl:
 	mkdir -p verilog
 	(cp -r $(CDL_HARDWARE)/build/linux/*v verilog)
 	(cp -r $(CDL_HARDWARE)/roms/*mif mif)
+	(cp -r $(CDL_HARDWARE)/roms/*mem mif)
 
 copy_verilog:
 	$(MAKE) verilog_make_cdl verilog_copy_cdl
