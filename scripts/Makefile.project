@@ -12,7 +12,7 @@ PROJECT_DIR  := $(PROJECTS_DIR)/$(PROJECT_ROOT)
 # QUARTUS_PROJECT_DIR  := $(PROJECTS_DIR)/$(PROJECT_ROOT)
 PROJECT_MAKEFILE := $(PROJECT_DIR)/$(PROJECT_LEAF).mk
 PROJECT_INCLUDE  := $(shell if [ -f ${PROJECT_MAKEFILE} ] ; then echo ${PROJECT_MAKEFILE} ; else echo; fi;)
-
+PROJECT_PYTHON_PATH := $(PROJECT_DIR)/$(PROJECT_LEAF):${PYTHONPATH}
 PROJECTS_AVAILABLE = $(shell cd $(PROJECTS_DIR) ; (ls */*/*.proj.md) | sed s/.proj.md//)
 help_project:
 	$H "****************************************************************"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import re
 import os
-verilog_paramters = {
+verilog_parameters = {
     "framebuffer_teletext.v": [("character_rom", {"initfile":'"teletext"'} ),],
     "vcu108_debug.v":         [("apb_rom",       {"initfile":'"apb_rom"'} ),],
     "vcu108_riscv.v":         [("apb_rom",       {"initfile":'"apb_rom"'} ),],
@@ -67,8 +67,8 @@ class parametrize_file:
     pass
 
 
-for filename in verilog_paramters:
-    pf = parametrize_file(filename=filename, parameters=verilog_paramters[filename])
+for filename in verilog_parameters:
+    pf = parametrize_file(filename=filename, parameters=verilog_parameters[filename])
     pf.rewrite_verilog("verilog")
     pass
 

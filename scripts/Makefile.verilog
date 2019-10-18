@@ -1,5 +1,3 @@
-CDL_HARDWARE   ?= $(ROOT)/../cdl_hardware
-
 help_verilog:
 	$H "****************************************************************"
 	$H "Makefile.verilog"

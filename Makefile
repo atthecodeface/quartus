@@ -9,7 +9,10 @@ MIF_DIR           ?= $(ROOT)/mif
 MAKE_TARGETS      ?= $(ROOT)/make
 SRAM_CONTENTS     ?= $(ROOT)/sram_contents
 
-ALTERA=/altera
+CDL_HARDWARE      ?= $(ROOT)/../cdl_hardware
+
+CDL_PYTHON_DIR    := ${CDL_HARDWARE}/python
+CDL_PYTHON_ENV    := PYTHONPATH=${CDL_HARDWARE}/python:${PYTHONPATH}
 
 H=@echo
 

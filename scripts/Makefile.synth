@@ -1,3 +1,5 @@
+ALTERA=/altera
+
 QUARTUS_DIR    ?= $(ROOT)/quartus
 QUARTUS_OUTPUT ?= $(ROOT)/quartus_output
 
@@ -29,9 +31,9 @@ QUARTUS_PROJECT_INCLUDE  := $(shell if [ -f ${QUARTUS_PROJECT_MAKEFILE} ] ; then
 QUARTUS_PROJECT_DB       := $(QUARTUS_PROJECT_DIR)/db
 QUARTUS_PROJECT_IDB      := $(QUARTUS_PROJECT_DIR)/incremental_db
 
-ifneq ($(QUARTUS_PROJECT_INCLUDE),)
--include ${QUARTUS_PROJECT_INCLUDE}
-endif
+# ifneq ($(QUARTUS_PROJECT_INCLUDE),)
+# -include ${QUARTUS_PROJECT_INCLUDE}
+# endif
 
 help_synth:
 	$H "****************************************************************"
