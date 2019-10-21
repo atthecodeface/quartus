@@ -13,6 +13,7 @@ set project_rtl_files {}
 lappend project_rtl_files ${RTL_DIR}/xilinx/vcu108_project.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/vcu108_plls.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/srams.v
+lappend project_rtl_files ${RTL_DIR}/xilinx/sram_brams.v
 lappend project_rtl_files ${RTL_DIR}/srw_srams.v
 lappend project_rtl_files ${RTL_DIR}/chk_riscv_ifetch.v
 lappend project_rtl_files ${RTL_DIR}/chk_riscv_trace.v
@@ -24,10 +25,13 @@ lappend project_rtl_files ${VERILOG_DIR}/apb_target_rv_timer.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_gpio.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_uart_minimal.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_dprintf_uart.v
-lappend project_rtl_files ${VERILOG_DIR}/uart_minimal.v
-lappend project_rtl_files ${VERILOG_DIR}/clock_divider.v
+lappend project_rtl_files ${VERILOG_DIR}/apb_target_i2c_master.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_sram_interface.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_timer.v
+lappend project_rtl_files ${VERILOG_DIR}/i2c_interface.v
+lappend project_rtl_files ${VERILOG_DIR}/i2c_master.v
+lappend project_rtl_files ${VERILOG_DIR}/uart_minimal.v
+lappend project_rtl_files ${VERILOG_DIR}/clock_divider.v
 lappend project_rtl_files ${VERILOG_DIR}/csr_master_apb.v
 lappend project_rtl_files ${VERILOG_DIR}/csr_target_apb.v
 lappend project_rtl_files ${VERILOG_DIR}/csr_target_csr.v

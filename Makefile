@@ -1,4 +1,4 @@
-
+# make PROJECT=vcu108/riscv/vcu108_riscv ELF_FILE=/git/atcf_riscv_rust/target/riscv32imc-unknown-none-elf/release/microos clean vivado_report vivado_bitstream
 ROOT              ?= $(CURDIR)
 ROOT_REL          ?= .
 RTL_DIR           ?= $(ROOT)/rtl

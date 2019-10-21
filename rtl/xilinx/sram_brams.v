@@ -6,7 +6,7 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
     input [13:0]  address;
     input [31:0]  write_data;
     output [31:0] data_out;
-   wire [31:0][0:3] read_data_mem;
+   wire [31:0]read_data_mem[3:0];
    assign data_out[ 7: 0] = read_data_mem[0][7:0];
    assign data_out[15: 8] = read_data_mem[1][7:0];
    assign data_out[23:16] = read_data_mem[2][7:0];
@@ -20,10 +20,9 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .SLEEP (0),
         .RSTRAMARSTRAM (0),
         .RSTRAMB (0),
-        .CLKARDCLK (sram_clk),
-        .ADDRARDADDR ({2'b0,address}),
+        .CLKARDCLK (sram_clock),
         .DINADIN ({24'b0,write_data[7:0]}),
-        .ENARDEN (sram_clk__en && select),
+        .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[0] && !read_not_write}),
         .DOUTADOUT (read_data_mem[0]),
         .ADDRARDADDR ({2'b0,address})
@@ -36,10 +35,9 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .SLEEP (0),
         .RSTRAMARSTRAM (0),
         .RSTRAMB (0),
-        .CLKARDCLK (sram_clk),
-        .ADDRARDADDR ({2'b0,address}),
+        .CLKARDCLK (sram_clock),
         .DINADIN ({24'b0,write_data[15:8]}),
-        .ENARDEN (sram_clk__en && select),
+        .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[1] && !read_not_write}),
         .DOUTADOUT (read_data_mem[1]),
         .ADDRARDADDR ({2'b0,address})
@@ -52,10 +50,9 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .SLEEP (0),
         .RSTRAMARSTRAM (0),
         .RSTRAMB (0),
-        .CLKARDCLK (sram_clk),
-        .ADDRARDADDR ({2'b0,address}),
+        .CLKARDCLK (sram_clock),
         .DINADIN ({24'b0,write_data[23:16]}),
-        .ENARDEN (sram_clk__en && select),
+        .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[2] && !read_not_write}),
         .DOUTADOUT (read_data_mem[2]),
         .ADDRARDADDR ({2'b0,address})
@@ -68,12 +65,11 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .SLEEP (0),
         .RSTRAMARSTRAM (0),
         .RSTRAMB (0),
-        .CLKARDCLK (sram_clk),
-        .ADDRARDADDR ({2'b0,address}),
+        .CLKARDCLK (sram_clock),
         .DINADIN ({24'b0,write_data[31:24]}),
-        .ENARDEN (sram_clk__en && select),
+        .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[3] && !read_not_write}),
         .DOUTADOUT (read_data_mem[3]),
         .ADDRARDADDR ({2'b0,address})
     );
-endmodule
+endmodule // bram__se_sram_srw_16384x32_we8

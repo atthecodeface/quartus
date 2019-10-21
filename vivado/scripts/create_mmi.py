@@ -8,10 +8,10 @@ import importlib
 import argparse
 import os
 
-#a Class bramc
+#a Class bram
 class bram:
     mem_types = {'RAMB36E2':'RAMB32',
-                 'RAMB18E2':'RAMB32', # Will this work?!
+                 # Does not work! 'RAMB18E2':'RAMB32', # Will this work?!
                 }
     def __init__(self, name, bram_dict):
         self.name = name
@@ -46,7 +46,7 @@ class sram:
         pass
     def add_bram(self, bram):
         if bram.parent != self.path:
-            print >>sys.stderr, "Skipping %s as it has the wrong parent"%bram.name
+            print >>sys.stderr, "Skipping %s as it has the wrong parent (needs %s got %s)"%(bram.name, bram.parent, self.path)
             return
         self.brams[bram.name] = bram
         if (self.address_min is None) or (bram.addr_begin < self.address_min):
@@ -97,7 +97,8 @@ def generate_brams(bram_cells):
 
 #f generate_mmi
 def generate_mmi(brams, out_file, instance_name, mem_subname, part):
-    ram_name = instance_name+"/"+mem_subname
+    ram_name = instance_name
+    if mem_subname!="": ram_name = instance_name+"/"+mem_subname
     rv_mem = sram(ram_name)
     for (name,bram) in brams.iteritems():
         rv_mem.add_bram(bram)

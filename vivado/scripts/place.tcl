@@ -16,12 +16,7 @@ read_verilog ${project_rtl_files}
 set synth_command "synth_design ${project_synth_options}"
 eval $synth_command
 
-write_checkpoint -force ${output_file_base}.postsynth.dcp
-# did not work here
-# source pins.tcl
-
-# opt_design - high level design optimization
-write_checkpoint -force ${output_file_base}.postopt.dcp
+# set_part xcvu095-ffva2104-2-e
 
 # power_opt_design - clock gating optimization
 

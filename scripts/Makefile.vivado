@@ -32,7 +32,7 @@ clean_vivado: clean_make
 .PHONY:vivado_route
 .PHONY:vivado_report
 .PHONY:vivado_bitstream
-.PHONY: vivado_parametrize
+.PHONY:vivado_parametrize
 vivado_parametrize:  ${MAKE_PREFIX}.vivado_parametrize
 vivado_place:  ${MAKE_PREFIX}.vivado_place
 vivado_route:  ${MAKE_PREFIX}.vivado_route
@@ -40,9 +40,9 @@ vivado_report: ${MAKE_PREFIX}.vivado_report
 vivado_bitstream: ${MAKE_PREFIX}.vivado_bitstream
 
 ${MAKE_PREFIX}.vivado_parametrize:
-	${SCRIPT} -c '${PROJECT_PYTHON_PATH} $(VIVADO_SCRIPTS_DIR)/parametrize_verilog.py' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).parametrize.log  && date > ${MAKE_PREFIX}.vivado_parametrize
+	${SCRIPT} -c '${PROJECT_PYTHON_ENV} $(VIVADO_SCRIPTS_DIR)/parametrize_verilog.py' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).parametrize.log  && date > ${MAKE_PREFIX}.vivado_parametrize
 
-${MAKE_PREFIX}.vivado_place: vivado_parametrize
+${MAKE_PREFIX}.vivado_place: ${MAKE_PREFIX}.vivado_parametrize
 	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/place.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).place.log  && date > ${MAKE_PREFIX}.vivado_place
 
 ${MAKE_PREFIX}.vivado_route: ${MAKE_PREFIX}.vivado_place
@@ -53,6 +53,12 @@ ${MAKE_PREFIX}.vivado_report: ${MAKE_PREFIX}.vivado_route
 
 ${MAKE_PREFIX}.vivado_bitstream: ${MAKE_PREFIX}.vivado_route
 	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/bitstream.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bitstream.log  && date > ${MAKE_PREFIX}.vivado_bitstream
+	cp $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bit golden_bit/$(PROJECT_LEAF).`date +%y%m%d-%H%M%S`.bit
+
+.PHONY:vivado_tcl
+vivado_tcl:
+	(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode tcl -tclargs $(PROJECT_LEAF) )
+
 
 .PHONY: vivado_srams
 vivado_srams:
