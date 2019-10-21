@@ -26,13 +26,36 @@ class bram:
         self.mem_type   = self.mem_types[bram_dict['REF_NAME']]
         pass
     def generate_mmi(self, output):
-        output('<BusBlock>')
         output('<BitLane MemType="%s" Placement="%s">'%(self.mem_type, self.loc))
         output('<DataWidth MSB="%d" LSB="%d"/>'%(self.msb, self.lsb))
         output('<AddressRange Begin="%d" End="%d"/>'%(self.addr_begin, self.addr_end))
         output('<Parity ON="false" NumBits="0"/>')
         output('</BitLane>')
+class bus_block:
+    def __init__(self, brams):
+        """
+        Create a bus block - all brams must have the same address range
+        We need to have a list of them in the correct order (seems to be first byte
+        in ELF file goes to first bram - they ignore the lsb/msb etc)
+        """
+        self.addr_begin = brams[0].addr_begin
+        self.addr_end   = brams[0].addr_end
+        for b in brams:
+            if b.addr_begin != self.addr_begin:
+                raise Exception("Mismatch in start addresses for rams in a bus block")
+            if b.addr_end != self.addr_end:
+                raise Exception("Mismatch in end addresses for rams in a bus block")
+            pass
+        self.ordered_brams = brams[:] # Copy the list
+        self.ordered_brams.sort(cmp=lambda x,y:cmp(x.lsb,y.lsb))
+        pass
+    def generate_mmi(self, output):
+        output('<BusBlock>')
+        for b in self.ordered_brams:
+            b.generate_mmi(output)
+            pass
         output('</BusBlock>')
+        pass
 
 #a Class sram
 class sram:
@@ -43,6 +66,7 @@ class sram:
         self.address_max = None # inclusive
         self.msb = None
         self.lsb = None
+        self.bus_blocks = []
         pass
     def add_bram(self, bram):
         if bram.parent != self.path:
@@ -62,7 +86,24 @@ class sram:
             self.msb = bram.msb
             pass
         pass
+    def create_bus_blocks(self):
+        self.bus_blocks = []
+        brams_at_addresses = {}
+        for (_,b) in self.brams.iteritems():
+            addr = b.addr_begin
+            if addr not in brams_at_addresses:
+                brams_at_addresses[addr] = []
+                pass
+            brams_at_addresses[addr].append(b)
+            pass
+        addresses = brams_at_addresses.keys()
+        addresses.sort()
+        for addr in addresses:
+            self.bus_blocks.append(bus_block(brams_at_addresses[addr]))
+            pass
+        pass
     def generate_mmi(self, output, inst_path, address_space, part):
+        self.create_bus_blocks()
         # inst_path = dut/riscv
         # address_space = riscv
         # part = xcvu095-ffva2104-2-e
@@ -70,8 +111,8 @@ class sram:
         output('<MemInfo Version="1" Minor="0">')
         output('<Processor Endianness="Little" InstPath="%s">'%(inst_path))
         output('<AddressSpace Name="%s" Begin="%d" End="%d">'%(address_space, self.address_min, self.address_max+1))
-        for bram_name in self.brams:
-            self.brams[bram_name].generate_mmi(output)
+        for bb in self.bus_blocks:
+            bb.generate_mmi(output)
             pass
         output('</AddressSpace>')
         output('</Processor>')

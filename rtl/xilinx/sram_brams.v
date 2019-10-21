@@ -25,7 +25,8 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[0] && !read_not_write}),
         .DOUTADOUT (read_data_mem[0]),
-        .ADDRARDADDR ({2'b0,address})
+        .WEBWE (0),
+        .ADDRARDADDR ({address[11:0],3'b0})
     );
     RAMB36E2 #(
         .DOA_REG(0), // Output register for port A
@@ -40,7 +41,8 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[1] && !read_not_write}),
         .DOUTADOUT (read_data_mem[1]),
-        .ADDRARDADDR ({2'b0,address})
+        .WEBWE (0),
+        .ADDRARDADDR ({address[11:0],3'b0})
     );
     RAMB36E2 #(
         .DOA_REG(0), // Output register for port A
@@ -55,7 +57,8 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[2] && !read_not_write}),
         .DOUTADOUT (read_data_mem[2]),
-        .ADDRARDADDR ({2'b0,address})
+        .WEBWE (0),
+        .ADDRARDADDR ({address[11:0],3'b0})
     );
     RAMB36E2 #(
         .DOA_REG(0), // Output register for port A
@@ -70,6 +73,7 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .ENARDEN (sram_clock__enable && select),
         .WEA ({3'b0,write_enable[3] && !read_not_write}),
         .DOUTADOUT (read_data_mem[3]),
-        .ADDRARDADDR ({2'b0,address})
+        .WEBWE (0),
+        .ADDRARDADDR ({address[11:0],3'b0})
     );
 endmodule // bram__se_sram_srw_16384x32_we8
