@@ -3,8 +3,9 @@ BIT_FILE = "__PLEASE__SPECIFY__A_BIT__FILE"
 
 ${MAKE_PREFIX}.vivado_parametrize: ${MAKE_PREFIX}.${PROJECT_LEAF}.parametrize
 
-${VIVADO_OUTPUT}/riscv.mmi:
+${VIVADO_OUTPUT}/riscv.mmi: ${VIVADO_OUTPUT}/${PROJECT_LEAF}__bram_dict.py 
 	$(VIVADO_DIR)/scripts/create_mmi.py --py ${VIVADO_OUTPUT}/${PROJECT_LEAF}__bram_dict.py --ram dut/riscv/mem --subpath '' --out ${VIVADO_OUTPUT}/riscv.mmi
+	cp $(VIVADO_OUTPUT)/riscv.mmi golden_bit/riscv.`date +%y%m%d-%H%M%S`.mmi
 
 update_bootrom: ${VIVADO_OUTPUT}/riscv.mmi
 	rm -f link_to_elf.elf
