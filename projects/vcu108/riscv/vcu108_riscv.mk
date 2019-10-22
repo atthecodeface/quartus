@@ -1,4 +1,7 @@
 ELF_FILE = "__PLEASE__SPECIFY__AN__ELF__FILE"
+
+${MAKE_PREFIX}.vivado_parametrize: ${MAKE_PREFIX}.${PROJECT_LEAF}.parametrize
+
 update_bootrom:
 	$(VIVADO_DIR)/scripts/create_mmi.py --py ${VIVADO_OUTPUT}/${PROJECT_LEAF}__bram_dict.py --ram dut/riscv/mem --subpath '' --out ${VIVADO_OUTPUT}/riscv.mmi
 	rm -f link_to_elf.elf
@@ -7,10 +10,16 @@ update_bootrom:
 	rm -f link_to_elf.elf
 	cp $(VIVADO_OUTPUT)/$(PROJECT_LEAF).programmed.bit golden_bit/$(PROJECT_LEAF).`date +%y%m%d-%H%M%S`.bit
 
-${MAKE_PREFIX}.vivado_parametrize: ${PROJECT_DIR}/rv_boot_rom
-
 .PHONY: rv_boot_rom
 rv_boot_rom: ${PROJECT_DIR}/rv_boot_rom
 
 ${PROJECT_DIR}/rv_boot_rom: ${ELF_FILE}
 	${CDL_PYTHON_ENV} ${CDL_PYTHON_DIR}/dump.py --load_elf ${ELF_FILE} --mem ${PROJECT_DIR}/rv_boot_rom
+
+${MAKE_PREFIX}.${PROJECT_LEAF}.parametrize:
+	${PARAMETRIZE_VERILOG} --file verilog/framebuffer_teletext.v  --module character_rom --parameter initfile=teletext 
+	${PARAMETRIZE_VERILOG} --file verilog/vcu108_riscv.v          --module apb_rom --parameter initfile=apb_rom
+	${PARAMETRIZE_VERILOG} --file verilog/vcu108_debug.v          --module apb_rom --parameter initfile=apb_rom
+	${PARAMETRIZE_VERILOG} --file verilog/riscv_i32_minimal.v     --module mem     --type bram__se_sram_srw_16384x32_we8
+	touch ${MAKE_PREFIX}.${PROJECT_LEAF}.parametrize
+

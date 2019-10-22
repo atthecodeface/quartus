@@ -7,6 +7,8 @@ help_verilog:
 	$H "  make rebuild_verilog"
 	$H ""
 
+PARAMETRIZE_VERILOG := ${PYTHON_DIR}/parametrize_verilog.py
+
 clean: clean_verilog
 
 clean_verilog:
