@@ -30,7 +30,6 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .WEA ({3'b0,write_enable[0] && !read_not_write}),
         .DOUTADOUT (read_data_mem[0]),
         .CLKBWRCLK (0),
-        .ADDRARDADDR ({address[11:0],3'b0}),
         .WEBWE (0)
     );
     (*  ram_addr_end = "4095",  ram_slice_end = "15",  ram_slice_begin = "8",  ram_addr_begin = "0"   *)
@@ -51,7 +50,6 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .WEA ({3'b0,write_enable[1] && !read_not_write}),
         .DOUTADOUT (read_data_mem[1]),
         .CLKBWRCLK (0),
-        .ADDRARDADDR ({address[11:0],3'b0}),
         .WEBWE (0)
     );
     (*  ram_addr_end = "4095",  ram_slice_end = "23",  ram_slice_begin = "16",  ram_addr_begin = "0"   *)
@@ -72,7 +70,6 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .WEA ({3'b0,write_enable[2] && !read_not_write}),
         .DOUTADOUT (read_data_mem[2]),
         .CLKBWRCLK (0),
-        .ADDRARDADDR ({address[11:0],3'b0}),
         .WEBWE (0)
     );
     (*  ram_addr_end = "4095",  ram_slice_end = "31",  ram_slice_begin = "24",  ram_addr_begin = "0"   *)
@@ -93,7 +90,6 @@ module bram__se_sram_srw_16384x32_we8( sram_clock, sram_clock__enable, write_dat
         .WEA ({3'b0,write_enable[3] && !read_not_write}),
         .DOUTADOUT (read_data_mem[3]),
         .CLKBWRCLK (0),
-        .ADDRARDADDR ({address[11:0],3'b0}),
         .WEBWE (0)
     );
 endmodule // bram__se_sram_srw_16384x32_we8
