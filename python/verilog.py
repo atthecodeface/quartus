@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys
+import sys, copy
 
 #a Parameter and module classes
 #c parameter
@@ -39,13 +39,22 @@ class parameter:
                 if value not in self.options: return False
                 pass
             return True
+        if type(value)==str:
+            if type(self.pdefault)!=str: return False
+            if self.options is not None:
+                if value not in self.options: return False
+                pass
+            return True
         return False
     def instance(self, parameter_dict):
         if self.name not in parameter_dict: return None
         value = parameter_dict[self.name]
         if not self.is_value_permissible(value):
-            raise Exception("Value '%s' not permissible for parameter '%s'"%(str(value), self.name))
+            raise Exception("Value '%s' not permissible for parameter '%s' (options '%s')"%(str(value), self.name, self.options))
         return parameter_instance(self, value)
+    def verilog_string(self, value):
+        if type(value)==str: return '"%s"'%value
+        return str(value)
 
 #c parameter_instance
 class parameter_instance:
@@ -53,41 +62,93 @@ class parameter_instance:
         self.parameter = parameter
         self.value = value
         pass
-    def verilog_string(self):
-        return ".%s(%s), // %s"%(self.parameter.name, str(self.value), self.parameter.description)
+    def verilog_string(self, comma=","):
+        return ".%s(%s)%s // %s"%(self.parameter.name, self.parameter.verilog_string(self.value), comma, self.parameter.description)
 
 #c module
+def comma_if_not_last(i,n):
+    if i>=n-1: return ""
+    return ","
 class module:
-    def __init__(self, instance_name, parameters={}, signals={}):
+    default_parameters = {}
+    default_attributes = {}
+    default_signals    = {}
+    #f __init__
+    def __init__(self, instance_name, parameters={}, signals={}, attributes={}):
         self.signal_names = [x for (x,_) in self.signals]
         self.instance_name = instance_name
         self.parameter_values = []
         for p in self.parameters:
             pv = p.instance(parameters)
+            if pv is None:
+                pv = p.instance(self.default_parameters)
+                pass
             if pv is not None:
                 self.parameter_values.append(pv)
                 pass
             pass
-        self.signal_assignments = signals
-        for sn in signals:
+        self.signal_assignments = {}
+        for (sn, sv) in self.default_signals.iteritems():
+            self.signal_assignments[sn] = sv
+            pass
+        for (sn, sv) in signals.iteritems():
+            self.signal_assignments[sn] = sv
+            pass
+        for sn in self.signal_assignments:
             if sn not in self.signal_names:
                 raise Exception("Unexpected signal %s"%sn)
             pass
-        pass
-    def output_verilog(self, f, indent="    "):
-        print >>f, "%s%s #("%(indent, self.name)
-        for pv in self.parameter_values:
-            print >>f, "%s%s%s"%(indent, indent, pv.verilog_string())
+        self.attributes = {}
+        for (an, av) in self.default_attributes.iteritems():
+            self.attributes[an] = av
             pass
-        print >>f, "%s) %s ("%(indent, self.instance_name)
+        for (an, av) in attributes.iteritems():
+            self.attributes[an] = av
+            pass
+        pass
+    #f output_verilog
+    def output_verilog(self, f, indent="    "):
+        n = len(self.attributes)
+        if n>0:
+            print >>f, "%s(* "%(indent),
+            i=0
+            for (an, av) in self.attributes.iteritems():
+                print >>f, '%s = "%s"%s '%(an,av,comma_if_not_last(i,n)),
+                i += 1
+                pass
+            print >>f, " *)"
+            pass
+        print >>f, "%s%s"%(indent, self.name),
+        
+        n = len(self.parameter_values)
+        if n>0:
+            print >>f, " #("
+            i=0
+            for pv in self.parameter_values:
+                print >>f, "%s%s%s"%(indent, indent, pv.verilog_string(comma_if_not_last(i,n)))
+                i += 1
+                pass
+            print >>f, "%s) %s ("%(indent, self.instance_name)
+            pass
+        else:
+            print >>f, " %s ("%(self.instance_name)
+            pass
+        n = 0
+        for (sn, sv) in self.signals:
+            if sn in self.signal_assignments: sv=self.signal_assignments[sn]
+            if sv is not None: n += 1
+            pass
+        i = 0
         for (sn, sv) in self.signals:
             if sn in self.signal_assignments: sv=self.signal_assignments[sn]
             if sv is not None:
-                print >>f, "%s%s.%s (%s),"%(indent, indent, sn, sv)
+                print >>f, "%s%s.%s (%s)%s"%(indent, indent, sn, sv, comma_if_not_last(i,n) )
+                i += 1
                 pass
             pass
         print >>f, "%s);"%(indent)
         pass
+    #f All done
 
 #a Xilinx primitives
 #c mmcme3_base
@@ -127,6 +188,178 @@ class mmcme3_base(module):
                ("CLKIN1", None),
                ("CLKFBOUT", None),
                ("CLKFBIN", None),
+               ]
+
+#c Xdelaye3
+class Xdelaye3(module):
+    """
+    A delay module for an input or output signal (or cascaded from an other idelay/odelay)
+    Must be subclassed to idelaye3 or odelaye3
+    """
+    name = None
+    parameters = [
+        parameter("DELAY_TYPE",        ["FIXED", "VAR_LOAD", "VARIABLE"], "Delay to use - if variable then CE, LOAD and INC are used"),
+        parameter("DELAY_VALUE",       (0,1250), "Delay if fixed (in psec if DELAY_FORMAT is TIME else taps). Up to 512 if taps."),
+        parameter("DELAY_FORMAT",      ["TIME", "COUNT"], "If TIME then REFCLK_FREQUENCY is used to determine initial taps; if COUNT then DELAY_VALUE is in taps"),
+        parameter("REFCLK_FREQUENCY",  (200., 800.), "Reference clock frequency if DELAY_FORMAT is TIME - else unused"),
+        parameter("UPDATE_MODE",       ["ASYNC", "SYNC", "MANUAL"], "ASYNC is preferred - MANUAL requires two toggles of load (one to capture the value, one to make it happen)"),
+        parameter("CASCADE",           ["NONE", "MASTER", "SLAVE_MIDDLE", "SLAVE_END"], "Cascading - and where in the chain it is"),
+        ]
+    signals = [("RST", None), # Deassert synchronously to CLK
+               ("CLK", None),
+               ("DATAOUT", None), # Output of delay - connect to previous ODELAYE3/IDELAYE3 if CASCADE is SLAVE_MIDDLE or SLAVE_END
+               ("CE",   0),  # If asserted high then INC/DEC will be performed
+               ("INC",  0),  # If CE high then INC not DEC - if CE is low then LOAD may be performed
+               ("LOAD", 0),  # Exclusive with CE - enables a LOAD of the taps (if UPDATE_MODE is ASYNC then immediately; if MANUAL then every other LOAD)
+               ("CNTVALUEIN", 0), # 9-bit delay value in
+               ("CNTVALUEOUT", None), # 9-bit delay value out - invalid if EN_VTC is high
+               ("EN_VTC", 0),         # Enable for automatic voltage-temperature compensation. Use with magic.
+               ("CASC_IN",     None), # Connect to previous ODELAYE3/IDELAYE3 CASC_OUT if CASCADE is SLAVE_MIDDLE or SLAVE_END
+               ("CASC_OUT",    None), # Connect to next     ODELAYE3/IDELAYE3 CASC_IN  if CASCADE is MASTER or SLAVE_MIDDLE
+               ("CASC_RETURN", None), # Connect to next     ODELAYE3/IDELAYE3 DATAOUT  if CASCADE is MASTER or SLAVE_MIDDLE
+               ]
+
+#c idelaye3
+class idelaye3(Xdelaye3):
+    """
+    A delay module for an input signal (or cascaded from an odelay)
+    """
+    name ="IDELAYE3"
+    parameters = copy.copy(Xdelaye3.parameters)
+    signals    = copy.copy(Xdelaye3.signals)
+    parameters += [
+        parameter("DELAY_SRC",         ["IDATAIN", "DATAIN"], "Source of data - IOB or internal signal"),
+        ]
+    signals += [ ("DATAIN", 0),
+                 ("IDATAIN", 0),    # Tie to IOB input pin or 0
+                 ]
+
+#c odelaye3
+class odelaye3(Xdelaye3):
+    """
+    A delay module for an output signal (or cascaded from an idelay)
+    """
+    name ="ODELAYE3"
+    signals    = copy.copy(Xdelaye3.signals)
+    signals += [ ("ODATAIN", 0),
+                 ]
+
+#c oserdese3
+class oserdese3(module):
+    """
+    A serializer module with two pseudo-synchronous clocks
+    CLKDIV is CLK divided by (DATA_WIDTH/2)
+    Basically it runs in DDR mode (output changes on every edge of CLK)
+    To use in SDR mode, replicate data in
+    """
+    name ="OSERDESE3"
+    parameters = [
+        parameter("DATA_WIDTH",         [4, 8], "Width of parallel data"),
+        parameter("INIT",               [0, 1], "Reset value of serial output"),
+        parameter("IS_CLKDIV_INVERTED", [0, 1], "Optional inversion for CLKDIV"),
+        parameter("IS_CLK_INVERTED",    [0, 1], "Optional inversion for CLK"),
+        parameter("IS_RST_INVERTED",    [0, 1], "Optional inversion for RST"),
+        ]
+    signals = [("RST", None), # Deassert synchronously to ?
+               ("CLK", None),
+               ("CLKDIV", None),
+               ("D",   0), # Always 8-bits, in width 4 top 4 bits ignored
+               ("T",   0), # Tristate input
+               ("T_OUT", None), # Tristate output to IOB (assert high to tristate)
+               ("OQ",  0),
+               ]
+
+#c iserdese3
+class iserdese3(module):
+    """
+    A deserializer module with two pseudo-synchronous clocks
+    CLKDIV is CLK divided by (DATA_WIDTH/2)
+    Basically it runs in DDR mode (input captured on every edge of CLK)
+    To use in SDR mode, use alternate data output bits.
+    In FIFO mode 
+    """
+    name ="ISERDESE3"
+    parameters = [
+        parameter("DATA_WIDTH",         [4, 8], "Width of parallel data"),
+        parameter("FIFO_ENABLE",        ["FALSE", "TRUE"], "FIFO enable option - if true tie FIFO_RD_EN to !FIFO_EMPTY and FIFO_RD_CLK to CLKDIV"),
+        # parameter("FIFO_SYNC_MODE",   ["FALSE", "TRUE"], "True is reserved"),
+        parameter("IS_CLKDIV_INVERTED", [0, 1], "Optional inversion for CLKDIV"),
+        parameter("IS_CLK_INVERTED",    [0, 1], "Optional inversion for CLK"),
+        parameter("IS_CLK_B_INVERTED",  [0, 1], "Optional inversion for CLK_B"),
+        parameter("IS_RST_INVERTED",    [0, 1], "Optional inversion for RST"),
+        ]
+    signals = [("RST", None), # Deassert synchronously to ? CLK
+               ("CLK", None),
+               ("CLK_B", None),
+               ("CLKDIV", None),
+               ("D", 0),
+               ("Q", 0), # Always 8-bits, in width 4 top 4 bits ignored
+               ("FIFO_RD_CLK",  0),
+               ("FIFO_RD_EN",  0),
+               ("FIFO_EMPTY",  None),
+               ]
+
+#c obufds
+class obufds(module):
+    """
+    Differential output buffer
+    """
+    name ="OBUFDS"
+    parameters = [
+        ]
+    signals = [("I",  None),
+               ("O",  None),
+               ("OB", None),
+               ]
+
+#c ibufds
+class ibufds(module):
+    """
+    Differential input buffer with single-ended output
+    """
+    name ="IBUFDS"
+    parameters = [
+        ]
+    signals = [("I",  None),
+               ("IB",  None),
+               ("O",  None),
+               ]
+
+#c ibufds_diff_out
+class ibufds_diff_out(module):
+    """
+    Differential input buffer, with +ve and -ve outputs (which should be balanced in timing)
+    """
+    name ="IBUFDS_DIFF_OUT"
+    parameters = [
+        ]
+    signals = [("I",  None),
+               ("IB",  None),
+               ("O",  None),
+               ("OB", None),
+               ]
+
+#c fdpe
+class fdpe(module):
+    """
+    Flop with asynchronous preset
+
+    Normally used with attributes of:
+      shreg_extract = "no"
+      ASYNC_REG = "TRUE"
+    """
+    name ="FDPE"
+    parameters = [
+        parameter("INIT",               [1, 0], "Reset value of serial output"),
+        parameter("IS_C_INVERTED",      [0, 1], "Optional inversion for C"),
+        # parameter("IS_D_INVERTED",    [0, 1], "Optional inversion for D - only valid in IOB registers"),
+        parameter("IS_PRE_INVERTED",    [0, 1], "Optional inversion for PRE"),
+        ]
+    signals = [("PRE", None),
+               ("C",   None),
+               ("CE",  None),
+               ("D",   0),
+               ("Q",   None),
                ]
 
 #c ramb36e2
@@ -197,7 +430,6 @@ class ramb36e2(module):
                ("CLKBWRCLK", None),     # Clock for writing or for port B
                ("ADDRBWRADDR", None),   # Write address port B (15 bits if 32kx1)
                ("ADDRENB", None),       # Address enable for port B if configured
-               ("ADDRARDADDR", None),   # Read address or address for port A (15 bits if 32kx1)
                ("REGCEB", None),        # only if DOB REG is 1
                ("DINBDIN", None),       # 32 bit data in for writing or for port B
                ("DINPBDINP", None),     # 4 bit parity data in for writing or for port B
@@ -235,6 +467,43 @@ class ramb36e2(module):
                ("CASDOUTPB", None),        # Cascade port B parity 4
     ]
 
+#a Xilinx derived modules
+#c sync_reset_reg
+class sync_reset_reg(fdpe):
+    default_parameters={"INIT":1}
+    default_attributes={"shreg_extract":"no", "ASYNC_REG":"TRUE"}
+    pass
+
+#c idelaye3_count_load - default of not cascaded
+class idelaye3_count_load(idelaye3):
+    default_parameters={ "DELAY_TYPE":"VAR_LOAD",
+                         "DELAY_VALUE":0,
+                         "DELAY_FORMAT":"COUNT",
+                         "UPDATE_MODE":"ASYNC",
+                         "CASCADE":"NONE",
+    }
+    default_signals    = {"EN_VTC":0,
+                          "CE": 0,
+                          "INC": 0,
+                          "CASC_IN":0,
+                          "CASC_RETURN":0,
+    }
+    
+#c odelaye3_count_load - default of not cascaded
+class odelaye3_count_load(odelaye3):
+    default_parameters={ "DELAY_TYPE":"VAR_LOAD",
+                         "DELAY_VALUE":0,
+                         "DELAY_FORMAT":"COUNT",
+                         "UPDATE_MODE":"ASYNC",
+                         "CASCADE":"NONE",
+    }
+    default_signals    = {"EN_VTC":0,
+                          "CE": 0,
+                          "INC": 0,
+                          "CASC_IN":0,
+                          "CASC_RETURN":0,
+    }
+    
 #a Toplevel
 #f PLL
 p = mmcme3_base("pll_i",
@@ -264,16 +533,174 @@ p.output_verilog(sys.stdout)
 for i in range(4):
     p = ramb36e2("ram%d"%i,
                 parameters={"DOA_REG":0,
+                            "DOB_REG":0,
                             "READ_WIDTH_A":9,
                             "WRITE_WIDTH_A":9,
+                            "ENADDRENA":0,
                 },
-                signals = {"CLKARDCLK":"sram_clk",
-                           "ENARDEN":"sram_clk__en && select",
-                           "ADDRARDADDR":"{2'b0,address}",
+                signals = {"CLKARDCLK":"sram_clock",
+                           "ENARDEN":"sram_clock__enable && select",
+                           "ADDRARDADDR":"{address[11:0],3'b0}",
                            "WEA":"{3'b0,write_enable[%d] && !read_not_write}"%i,
                            "DINADIN":"{24'b0,write_data[%d:%d]}"%((i*8+7),(i*8)),
                            "DOUTADOUT":"read_data_mem[%d]"%i,
-                           }
-                )
+                           "CLKBWRCLK":"0",                           
+                           "WEBWE":"0",
+                           },
+                 attributes = {"ram_addr_begin":0,
+                               "ram_addr_end":4095,
+                               "ram_slice_begin":i*8,
+                               "ram_slice_end":7+i*8,
+                 },
+    )
     p.output_verilog(sys.stdout)
 
+
+#f Output differential DDR serializer of 4 bits (CLK runs at 2x CLK_DIV2)
+diff_ddr_serializer4  = [
+    sync_reset_reg("reset_sync_0", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset",    "Q":"reset__0"} ),
+    sync_reset_reg("reset_sync_1", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset__0", "Q":"reset__1"} ),
+    sync_reset_reg("reset_sync_2", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset__1", "Q":"reset__2"} ),
+    sync_reset_reg("reset_sync_3", signals={"PRE":"0",     "C":"clk_div2", "CE":"1", "D":"reset__2", "Q":"reset__sync_clk_div2"} ),
+    oserdese3("serializer",
+              parameters={"DATA_WIDTH":4,
+              },
+              signals = {"RST":"reset__sync_clk_div2",
+                         "CLK":"clk",
+                         "CLKDIV":"clk_div2",
+                         "D":"{4'b0, data}",
+                         "OQ":"serial_data",
+              },
+    ),
+    obufds("diff_io",
+               signals = {"I":"serial_data",
+                          "O":"pin__p",
+                          "OB":"pin__n",
+               },
+    ),
+]
+for m in diff_ddr_serializer4:
+    m.output_verilog(sys.stdout)
+    pass
+
+#f Input differential DDR deserializer, with configurable delay, of 4 bits (CLK runs at 2x CLK_DIV2)
+# To enable phase tracking of data in with respect to CLK this has two delay modules
+# The first should be used for the data - its delay value is handled with data_delay__load/value
+# The second should use data_delay + half a clock edge - this is tracker
+# If 'data_delay' is *slightly* too small then tracker will have *ALL* the same edges as data
+# If 'data_delay' is *slightly* too large then tracker will have *ALL* the same edges as data delayed by a bit
+# If 'data_delay' is just right then it will be capturing the changing phase of the data bits, and so equal number of edges will be delayed as not
+# in theory
+diff_ddr_deserializer4  = [
+    sync_reset_reg("reset_sync_0", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset",    "Q":"reset__0"} ),
+    sync_reset_reg("reset_sync_1", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset__0", "Q":"reset__1"} ),
+    sync_reset_reg("reset_sync_2", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset__1", "Q":"reset__2"} ),
+    sync_reset_reg("reset_sync_3", signals={"PRE":"0",     "C":"clk_div2", "CE":"1", "D":"reset__2", "Q":"reset__sync_clk_div2"} ),
+    ibufds_diff_out("diff_io",
+               signals = {"I":"pin__p",
+                          "IB":"pin__n",
+                          "O":"data__p",
+                          "OB":"data__n",
+               },
+    ),
+    idelaye3_count_load("data_delay",
+              parameters={"DELAY_SRC":"IDATAIN",
+              },
+              signals = {"RST":"reset__sync_clk_div2",
+                         "CLK":"clk_div2", # Update clock
+                         "IDATAIN":"data__p",
+                         "LOAD":      "data_delay__load",
+                         "CNTVALUEIN":"data_delay__value",
+                         "DATAOUT":   "data_delayed",
+              },
+    ),
+    iserdese3("data_deserializer",
+              parameters={"DATA_WIDTH":4,
+                          "FIFO_ENABLE":"FALSE",
+              },
+              signals = {"RST":"reset__sync_clk_div2",
+                         "CLK":"clk",
+                         "CLK_B":"~clk",
+                         "CLKDIV":"clk_div2",
+                         "D":"data_delayed",
+                         "Q":"data_out", # 8 bits, only use bottom 4 bits
+              },
+    ),
+    idelaye3_count_load("tracker_delay",
+              parameters={"DELAY_SRC":"IDATAIN",
+              },
+              signals = {"RST":"reset__sync_clk_div2",
+                         "CLK":"clk_div2", # Update clock
+                         "IDATAIN":"data__n",
+                         "LOAD":      "tracker_delay__load",
+                         "CNTVALUEIN":"tracker_delay__value",
+                         "DATAOUT":   "tracker_delayed",
+              },
+    ),
+    iserdese3("tracker_deserializer",
+              parameters={"DATA_WIDTH":4,
+                          "FIFO_ENABLE":"FALSE",
+              },
+              signals = {"RST":"reset__sync_clk_div2",
+                         "CLK":"clk",
+                         "CLK_B":"~clk",
+                         "CLKDIV":"clk_div2",
+                         "D":"tracker_delayed",
+                         "Q":"tracker_out", # 8 bits, only use bottom 4 bits
+              },
+    ),
+]
+for m in diff_ddr_deserializer4:
+    m.output_verilog(sys.stdout)
+    pass
+
+#f Cascaded delay pair
+# Pair of delays for an internal signal
+# This provides on an Ultrascale device for a delay of up to 1024 taps or 2.5ns
+# If you have a 600MHz clock that is 800ps low, 800ps high
+# Register the output of this delay pair on a lower speed clock
+# To measure the clock low time one can find the lowest delay value that captures steady 0
+# then increase the delay value until it captures a steady 1
+# More simply use two FSMs - the higher level one being:
+#  state idle : -> find_initial_stable_value on request, starting with delay 0
+#  state find_initial_stable_value : if shift register is all 1s or all zeros then -> record value and find_inverted_stable_value
+#  state find_initial_stable_value : if shift register is not all 1s or all zeros then -> increment delay and find_initial_stable_value
+#  state find_initial_stable_value : if shift register is not all (inverted recorded value) -> increment delay and find_inverted_stable_value
+#  state find_initial_stable_value : if shift register is all (inverted recorded value) -> record value and present_result
+#  state find_initial_stable_value : if delay maxes out -> abort
+#  state present_result : -> idle
+#  state abort : -> idle
+# 
+# The lower FSM has to idle, handle load of delay, wait some cycles for stable, clear shift register, shift in all bits, then wait
+cascaded_delay_pair  = [
+    idelaye3_count_load("idelay",
+              parameters={"DELAY_SRC":"DATAIN",
+                          "CASCADE"  :"MASTER",
+              },
+              signals = {"RST":"reset__sync_clk",
+                         "CLK":"clk", # Update clock
+                         "DATAIN":    "data_in",
+                         "LOAD":      "delay__load",
+                         "CNTVALUEIN":"delay__value",
+                         "DATAOUT":   "data_out",
+                         "CASC_OUT":    "casc_to_odelay",
+                         "CASC_RETURN": "casc_to_idelay",
+              },
+    ),
+    odelaye3_count_load("odelay",
+              parameters={"DELAY_SRC":"DATAIN",
+                          "CASCADE"  :"SLAVE_END",
+              },
+              signals = {"RST":"reset__sync_clk",
+                         "CLK":"clk", # Update clock
+                         "ODATAIN":   "0",
+                         "LOAD":      "delay__load",
+                         "CNTVALUEIN":"delay__value",
+                         "DATAOUT":   "casc_to_idelay",
+                         "CASC_IN":   "casc_to_odelay",
+              },
+    ),
+]
+for m in cascaded_delay_pair:
+    m.output_verilog(sys.stdout)
+    pass
