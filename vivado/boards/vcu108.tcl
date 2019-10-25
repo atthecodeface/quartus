@@ -7,8 +7,6 @@
 # SYSCTRL_CLK - ? - AL20 - LVCMOS18
 # FPGA_CCLK - (up to 90MHz) - AF13 - LVCMOS18
 
-# SGMII is RX (AR24, AT24) TXCLK (AT22 AU22) TX (AR23 AR22)
-
 set pin_desc {}
 lappend pin_desc {vcu108_inputs__switches 4 0 {{PACKAGE_PIN {C38 C37 L19 BC40}}    {IOSTANDARD LVCMOS12} } }
 lappend pin_desc {vcu108_inputs__buttons  5 0 {{PACKAGE_PIN {E34 D9 M22 A10 AW27}} {IOSTANDARD LVCMOS12} } }
@@ -47,6 +45,14 @@ lappend pin_desc {i2c_reset_mux_n  0 0 {{PACKAGE_PIN AM23} {IOSTANDARD LVCMOS18}
 # lappend pin_desc {eth__int_n    0 0 {{PACKAGE_PIN L1} {IOSTANDARD LVCMOS18}}}
 # lappend pin_desc {eth__mdc      0 0 {{PACKAGE_PIN L3} {IOSTANDARD LVCMOS18}}}
 # lappend pin_desc {eth__mdio     0 0 {{PACKAGE_PIN M1} {IOSTANDARD LVCMOS18}}}
+
+#a SGMII is RX (AR24, AT24) RXCLK (AT22 AU22) TX (AR23 AR22)
+lappend pin_desc     {sgmii__rxc__p 0 0 {{PACKAGE_PIN AT22} {IOSTANDARD LVDS_25}}}
+lappend pin_desc     {sgmii__rxc__n 0 0 {{PACKAGE_PIN AU22} {IOSTANDARD LVDS_25}}}
+lappend pin_desc     {sgmii__rxd__p 0 0 {{PACKAGE_PIN AR24} {IOSTANDARD DIFF_HSTL_I_18}}}
+lappend pin_desc     {sgmii__rxd__n 0 0 {{PACKAGE_PIN AT24} {IOSTANDARD DIFF_HSTL_I_18}}}
+lappend pin_desc     {sgmii__txd__p 0 0 {{PACKAGE_PIN AR23} {IOSTANDARD DIFF_HSTL_I_18}}}
+lappend pin_desc     {sgmii__txd__n 0 0 {{PACKAGE_PIN AR22} {IOSTANDARD DIFF_HSTL_I_18}}}
 
 #a HDMI
 lappend pin_desc    {hdmi__clk   0 0 {{PACKAGE_PIN AK33} {IOSTANDARD LVCMOS18}}}

@@ -505,7 +505,7 @@ class odelaye3_count_load(odelaye3):
     }
     
 #a Toplevel
-#f PLL
+#f PLL 300 in to 225/150/100/50
 p = mmcme3_base("pll_i",
                 parameters={"CLKIN1_PERIOD":3.33, # 300MHz in
                             "DIVCLK_DIVIDE":1,
@@ -521,6 +521,30 @@ p = mmcme3_base("pll_i",
                            "CLKOUT1":"outclk_150",
                            "CLKOUT2":"outclk_100",
                            "CLKOUT3":"outclk_50",
+                           "LOCKED":"locked",
+                           "CLKIN1":"refclk",
+                           "CLKFBOUT":"clk_fb",
+                           "CLKFBIN":"clk_fb",
+                           }
+                )
+p.output_verilog(sys.stdout)
+
+#f PLL 125 in to 625 / 312.5 / 125 / 25
+p = mmcme3_base("pll_i",
+                parameters={"CLKIN1_PERIOD":8.00, # 125MHz in
+                            "DIVCLK_DIVIDE":1,
+                            "CLKFBOUT_MULT_F":5,  # FB @ 625MHz
+                            "CLKOUT0_DIVIDE_F":1, # clk0 @ 625MHz
+                            "CLKOUT1_DIVIDE":2,   # clk1 @ 312.5MHz
+                            "CLKOUT2_DIVIDE":5,   # clk2 @ 125MHz
+                            "CLKOUT3_DIVIDE":25,  # clk3 @ 25MHz
+                },
+                signals = {"RST":"rst",
+                           "PWRDWN":"0",
+                           "CLKOUT0":"outclk_625",
+                           "CLKOUT1":"outclk_312_5",
+                           "CLKOUT2":"outclk_125",
+                           "CLKOUT3":"outclk_25",
                            "LOCKED":"locked",
                            "CLKIN1":"refclk",
                            "CLKFBOUT":"clk_fb",

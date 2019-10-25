@@ -8,6 +8,8 @@ MMI_FILE ?= "__PLEASE__SPECIFY__AN_MMI__FILE"
 
 ${MAKE_PREFIX}.vivado_parametrize: ${MAKE_PREFIX}.${PROJECT_LEAF}.parametrize
 
+mmi: ${VIVADO_OUTPUT}/riscv.mmi
+
 ${VIVADO_OUTPUT}/riscv.mmi: ${VIVADO_OUTPUT}/${PROJECT_LEAF}__bram_dict.py 
 	$(VIVADO_DIR)/scripts/create_mmi.py --py ${VIVADO_OUTPUT}/${PROJECT_LEAF}__bram_dict.py --ram dut/riscv/mem --subpath '' --out ${VIVADO_OUTPUT}/riscv.mmi
 	cp $(VIVADO_OUTPUT)/riscv.mmi golden_bit/riscv.`date +%y%m%d-%H%M%S`.mmi

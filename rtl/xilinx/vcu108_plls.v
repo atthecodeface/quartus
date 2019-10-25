@@ -1,3 +1,71 @@
+module pll_sgmii_tx (
+		input  wire  refclk,
+		input  wire  rst,     
+		output wire  outclk_625,
+		output wire  outclk_312_5,
+		output wire  outclk_125,
+		output wire  outclk_25,
+		output wire  locked
+	);
+
+   wire              clk_fb;
+    MMCME3_BASE  #(
+        .CLKIN1_PERIOD(8.0), // Input clock period in ns units, ps resolution (i.e. 33.333 is 30 MHz).
+        .DIVCLK_DIVIDE(1), // Master division value
+        .CLKFBOUT_MULT_F(5), // Multiply value for VCO
+        .CLKOUT0_DIVIDE_F(1), // Divide amount for CLKOUT0
+        .CLKOUT1_DIVIDE(2), // Divide amount for CLKOUT1
+        .CLKOUT2_DIVIDE(5), // Divide amount for CLKOUT21
+        .CLKOUT3_DIVIDE(25) // Divide amount for CLKOUT3
+    ) pll_i (
+        .RST (rst),
+        .PWRDWN (0),
+        .CLKOUT0 (outclk_625),
+        .CLKOUT1 (outclk_312_5),
+        .CLKOUT2 (outclk_125),
+        .CLKOUT3 (outclk_25),
+        .LOCKED (locked),
+        .CLKIN1 (refclk),
+        .CLKFBOUT (clk_fb),
+        .CLKFBIN (clk_fb)
+    );
+
+endmodule
+
+module pll_sgmii_rx (
+		input  wire  refclk,
+		input  wire  rst,     
+		output wire  outclk_625,
+		output wire  outclk_312_5,
+		output wire  outclk_125,
+		output wire  outclk_25,
+		output wire  locked
+	);
+
+   wire              clk_fb;
+    MMCME3_BASE  #(
+        .CLKIN1_PERIOD(1.6), // Input clock period in ns units, ps resolution (i.e. 33.333 is 30 MHz).
+        .DIVCLK_DIVIDE(2), // Master division value
+        .CLKFBOUT_MULT_F(2), // Multiply value for VCO
+        .CLKOUT0_DIVIDE_F(1), // Divide amount for CLKOUT0
+        .CLKOUT1_DIVIDE(2), // Divide amount for CLKOUT1
+        .CLKOUT2_DIVIDE(5), // Divide amount for CLKOUT21
+        .CLKOUT3_DIVIDE(25) // Divide amount for CLKOUT3
+    ) pll_i (
+        .RST (rst),
+        .PWRDWN (0),
+        .CLKOUT0 (outclk_625),
+        .CLKOUT1 (outclk_312_5),
+        .CLKOUT2 (outclk_125),
+        .CLKOUT3 (outclk_25),
+        .LOCKED (locked),
+        .CLKIN1 (refclk),
+        .CLKFBOUT (clk_fb),
+        .CLKFBIN (clk_fb)
+    );
+
+endmodule
+
 module pll_base (
 		input  wire  refclk,
 		input  wire  rst,     

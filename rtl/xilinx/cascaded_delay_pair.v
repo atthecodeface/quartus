@@ -1,6 +1,6 @@
 module cascaded_delay_pair( input       clk,
                             input       reset,
-                            input       delay_load,
+                            input       delay__load,
                             input [8:0] delay__value,
                             input       data_in,
                             output      data_out);
