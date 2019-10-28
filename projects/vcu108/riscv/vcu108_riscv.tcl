@@ -14,6 +14,7 @@ lappend project_rtl_files ${RTL_DIR}/xilinx/vcu108_project.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/vcu108_plls.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/cascaded_delay_pair.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/srams.v
+lappend project_rtl_files ${RTL_DIR}/xilinx/tech.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/sram_brams.v
 lappend project_rtl_files ${RTL_DIR}/srw_srams.v
 lappend project_rtl_files ${RTL_DIR}/chk_riscv_ifetch.v
@@ -29,6 +30,7 @@ lappend project_rtl_files ${VERILOG_DIR}/apb_target_dprintf_uart.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_i2c_master.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_sram_interface.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_timer.v
+lappend project_rtl_files ${VERILOG_DIR}/apb_logging.v
 lappend project_rtl_files ${VERILOG_DIR}/i2c_interface.v
 lappend project_rtl_files ${VERILOG_DIR}/i2c_master.v
 lappend project_rtl_files ${VERILOG_DIR}/uart_minimal.v
@@ -41,6 +43,7 @@ lappend project_rtl_files ${VERILOG_DIR}/csr_target_timeout.v
 lappend project_rtl_files ${VERILOG_DIR}/dprintf_2_mux.v
 lappend project_rtl_files ${VERILOG_DIR}/dprintf_4_mux.v
 lappend project_rtl_files ${VERILOG_DIR}/dprintf_4_fifo_4.v
+lappend project_rtl_files ${VERILOG_DIR}/dprintf_4_async.v
 lappend project_rtl_files ${VERILOG_DIR}/dprintf.v
 lappend project_rtl_files ${VERILOG_DIR}/framebuffer_timing.v
 lappend project_rtl_files ${VERILOG_DIR}/framebuffer_teletext.v
@@ -64,7 +67,7 @@ lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_control_fetch_data.v
 lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_control_fetch_req.v
 lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_trap_interposer.v
 
-set project_clks "clk_50 clk_150 clk_100"
+set project_clks "clk_50 clk_150 clk_100 rx_clk_125"
 set project_constraints_tcl {}
 lappend project_constraints_tcl ${VIVADO_DIR}/boards/vcu108.tcl
 lappend project_constraints_tcl ../vcu108_project.timing.tcl

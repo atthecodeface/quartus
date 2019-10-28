@@ -64,7 +64,7 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
 
    assign video_clk = clk_150;
    assign flash_clk = clk_50;
-   wire reset_in = vcu108_inputs__buttons[1]
+   wire   reset_in = vcu108_inputs__buttons[1];
    assign reset_n = clk_locked;
 
    pll_base video_clk_gen( .refclk(sysclk1), .rst(reset_in),
@@ -182,7 +182,7 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                                .measure_response__initial_value(measure_response__initial_value),
                                .measure_response__abort(measure_response__abort),
                                .measure_response__delay(measure_response__delay),
-                               .measure_response__initial_delay(measure_response__initial_delay),
+                               .measure_response__initial_delay(measure_response__initial_delay)
                                );
 
    dprintf_4_async d4a( .clk_in(cpm_clk),
@@ -192,18 +192,18 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                         .reset_n(reset_n),
                         .req_in__valid(measure_response__valid),
                         .req_in__address(80),
-                        .req_in__data_0({32h87,
-                                         7h0,
-                                         measure_response__initial_delay,
-                                         3h0,
-                                         measure_response__delay,
-                                         3h0,
-                                         measure_response__initial_value,
-                                         measure_response__abort,
-                                         measure_response__valid}),
-                        .req_in__data_1({8hff,56h0}),
-                        .req_in__data_2(0),
-                        .req_in__data_3(0),
+                        .req_in__data_0({32'h20202087,
+                                         7'h0,
+                                         measure_response__initial_delay, // 9
+                                         3'h0,
+                                         measure_response__delay, // 9
+                                         1'h0,
+                                         measure_response__initial_value, // 1
+                                         measure_response__abort, // 1
+                                         measure_response__valid}), // 1
+                        .req_in__data_1({32'hffffffff,32'hffffffff}),
+                        .req_in__data_2({32'hffffffff,32'hffffffff}),
+                        .req_in__data_3({32'hffffffff,32'hffffffff}),
                         // ack_in, Ack back to clk_in domain
                         .req_out__valid(vcu108_dprintf_req__valid),
                         .req_out__address(vcu108_dprintf_req__address),
@@ -211,7 +211,7 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                         .req_out__data_1(vcu108_dprintf_req__data_1),
                         .req_out__data_2(vcu108_dprintf_req__data_2),
                         .req_out__data_3(vcu108_dprintf_req__data_3),
-                        ack_out(vcu108_dprintf_ack)
+                        .ack_out(vcu108_dprintf_ack)
                         );
 
 endmodule
