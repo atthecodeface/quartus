@@ -71,6 +71,7 @@ module pll_base (
 		input  wire  rst,     
 		output wire  outclk_225,
 		output wire  outclk_150,
+		output wire  outclk_128_57,
 		output wire  outclk_100,
 		output wire  outclk_50,
 		output wire  locked
@@ -96,10 +97,10 @@ module pll_base (
                    .CLKOUT0_DUTY_CYCLE(0.5), // Default of 0.5
                    // ADV .CLKOUT0_USE_FINE_PS("FALSE"),
                    .CLKOUT1_DIVIDE(6),     // Divide amount for CLKOUT1 (1.000-128.000) for 150MHz
-                   .CLKOUT2_DIVIDE(9),     // Divide amount for CLKOUT2 (1.000-128.000) for 100MHz
-                   .CLKOUT3_DIVIDE(18),    // Divide amount for CLKOUT3 (1.000-128.000) for 50MHz
+                   .CLKOUT2_DIVIDE(7),     // Divide amount for CLKOUT2 (1.000-128.000) for 128.57MHz
+                   .CLKOUT3_DIVIDE(9),     // Divide amount for CLKOUT3 (1.000-128.000) for 100MHz
+                   .CLKOUT4_DIVIDE(18),    // Divide amount for CLKOUT4 (1.000-128.000) for 50MHz
                    // ADV .CLKOUT4_CASCADE("TRUE"),
-                   .CLKOUT4_DIVIDE(90),
                    .CLKOUT5_DIVIDE(90),
                    .CLKOUT6_DIVIDE(90),
                    // ADV .COMPENSATION("AUTO"), // AUTO, BUF_IN, EXTERNAL, INTERNAL, ZHOLD - base uses internal feedback
@@ -122,8 +123,9 @@ module pll_base (
              .PWRDWN (1'b0),
 		     .CLKOUT0	(outclk_225),
 		     .CLKOUT1	(outclk_150),
-		     .CLKOUT2	(outclk_100),
-		     .CLKOUT3	(outclk_50),
+		     .CLKOUT2	(outclk_128_57),
+		     .CLKOUT3	(outclk_100),
+		     .CLKOUT4	(outclk_50),
 		     .LOCKED	(locked),
 		     .CLKIN1	(refclk),
              .CLKFBOUT (clk_fb),

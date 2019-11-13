@@ -23,7 +23,11 @@ class bram:
         self.addr_end   = int(bram_dict['ram_addr_end'])
         self.lsb        = int(bram_dict['ram_slice_begin'])
         self.msb        = int(bram_dict['ram_slice_end'])
-        self.mem_type   = self.mem_types[bram_dict['REF_NAME']]
+        if bram_dict['REF_NAME'] not in self.mem_types:
+            self.mem_type = "MemTypeNotSupported__%s"%bram_dict['REF_NAME']
+            pass
+        else:
+            self.mem_type   = self.mem_types[bram_dict['REF_NAME']]
         pass
     def generate_mmi(self, output):
         output('<BitLane MemType="%s" Placement="%s">'%(self.mem_type, self.loc))
