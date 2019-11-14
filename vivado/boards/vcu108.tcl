@@ -51,8 +51,10 @@ lappend pin_desc     {sgmii__rxc__p 0 0 {{PACKAGE_PIN AT22} {IOSTANDARD LVDS_25}
 lappend pin_desc     {sgmii__rxc__n 0 0 {{PACKAGE_PIN AU22} {IOSTANDARD LVDS_25}}}
 lappend pin_desc     {sgmii__rxd__p 0 0 {{PACKAGE_PIN AR24} {IOSTANDARD DIFF_HSTL_I_18}}}
 lappend pin_desc     {sgmii__rxd__n 0 0 {{PACKAGE_PIN AT24} {IOSTANDARD DIFF_HSTL_I_18}}}
-lappend pin_desc     {sgmii__txd__p 0 0 {{PACKAGE_PIN AR23} {IOSTANDARD DIFF_HSTL_I_18}}}
-lappend pin_desc     {sgmii__txd__n 0 0 {{PACKAGE_PIN AR22} {IOSTANDARD DIFF_HSTL_I_18}}}
+#lappend pin_desc     {sgmii__txd__p 0 0 {{PACKAGE_PIN AR23} {IOSTANDARD DIFF_HSTL_I_18} {SLEW SLOW}}}
+#lappend pin_desc     {sgmii__txd__n 0 0 {{PACKAGE_PIN AR22} {IOSTANDARD DIFF_HSTL_I_18} {SLEW SLOW}}}
+lappend pin_desc     {sgmii__txd__p 0 0 {{PACKAGE_PIN AR23} {IOSTANDARD LVDS}}}
+lappend pin_desc     {sgmii__txd__n 0 0 {{PACKAGE_PIN AR22} {IOSTANDARD LVDS}}}
 
 #a HDMI
 lappend pin_desc    {hdmi__clk   0 0 {{PACKAGE_PIN AK33} {IOSTANDARD LVCMOS18}}}
