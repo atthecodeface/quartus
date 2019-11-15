@@ -1,10 +1,13 @@
 module cascaded_delay_pair( input       clk,
-                            input       reset,
-                            input       delay__load,
-                            input [8:0] delay__value,
+                            input       clk__enable,
+                            input       reset_n,
+                            input [1:0] delay_config__op,
+                            input       delay_config__select,
+                            input [8:0] delay_config__value,
                             input       data_in,
                             output      data_out);
 
+    wire reset = !reset_n;
     IDELAYE3  #(
         .DELAY_TYPE("VAR_LOAD"), // Delay to use - if variable then CE, LOAD and INC are used
         .DELAY_VALUE(0), // Delay if fixed (in psec if DELAY_FORMAT is TIME else taps). Up to 512 if taps.
@@ -18,8 +21,8 @@ module cascaded_delay_pair( input       clk,
         .DATAOUT (data_out),
         .CE (0),
         .INC (0),
-        .LOAD (delay__load),
-        .CNTVALUEIN (delay__value),
+        .LOAD (delay_config__op!=0),
+        .CNTVALUEIN (delay_config__value),
         .EN_VTC (0),
         .CASC_IN (0),
         .CASC_OUT (casc_to_odelay),
@@ -39,8 +42,8 @@ module cascaded_delay_pair( input       clk,
         .DATAOUT (casc_to_idelay),
         .CE (0),
         .INC (0),
-        .LOAD (delay__load),
-        .CNTVALUEIN (delay__value),
+        .LOAD (delay_config__op!=0),
+        .CNTVALUEIN (delay_config__value),
         .EN_VTC (0),
         .CASC_IN (casc_to_odelay),
         .CASC_RETURN (0),

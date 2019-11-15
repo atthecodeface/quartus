@@ -33,6 +33,7 @@ lappend project_rtl_files ${VERILOG_DIR}/apb_target_i2c_master.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_sram_interface.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_timer.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_axi4s.v
+lappend project_rtl_files ${VERILOG_DIR}/apb_target_analyzer.v
 lappend project_rtl_files ${VERILOG_DIR}/axi4s32_fifo_4.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_logging.v
 lappend project_rtl_files ${VERILOG_DIR}/gbe_axi4s32.v
@@ -40,6 +41,7 @@ lappend project_rtl_files ${VERILOG_DIR}/encode_8b10b.v
 lappend project_rtl_files ${VERILOG_DIR}/decode_8b10b.v
 lappend project_rtl_files ${VERILOG_DIR}/gbe_axi4s32.v
 lappend project_rtl_files ${VERILOG_DIR}/sgmii_gmii_gasket.v
+lappend project_rtl_files ${VERILOG_DIR}/sgmii_transceiver.v
 lappend project_rtl_files ${VERILOG_DIR}/i2c_interface.v
 lappend project_rtl_files ${VERILOG_DIR}/i2c_master.v
 lappend project_rtl_files ${VERILOG_DIR}/uart_minimal.v

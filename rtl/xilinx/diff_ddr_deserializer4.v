@@ -1,15 +1,19 @@
 module diff_ddr_deserializer4( input       clk,
+                               input        clk__enable,
                                input        clk_div2,
+                               input        clk_div2__enable,
                                input        clk_delay,
-                               input        reset,
+                               input        clk_delay__enable,
+                               input        reset_n,
                                input        pin__p,
                                input        pin__n,
-                               input[1:0]   delay_config__op,
+                               input [1:0]  delay_config__op,
                                input        delay_config__select,
-                               input[8:0]   delay_config__value,
+                               input [8:0]  delay_config__value,
                                output [3:0] data,
                                output [3:0] tracker
                                );
+    wire reset = !reset_n;
    wire [7:0] data_out;
    wire [7:0] tracker_out;
    assign data    = data_out[3:0];

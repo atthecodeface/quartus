@@ -64,31 +64,18 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
    wire   reset_in = vcu108_inputs__buttons[1];
    assign reset_n = clk_locked;
 
-   wire   measure_response__valid;
-   wire   measure_response__initial_value;
+   wire   measure_response__ack;
    wire   measure_response__abort;
+   wire   measure_response__valid;
    wire [8:0] measure_response__delay;
    wire [8:0] measure_response__initial_delay;
-   wire       cpm_clk;
-   assign cpm_clk = rx_clk_312_5;
-   wire [1:0] delay_config__op;
-   wire [8:0] delay_config__value;
-
-   wire       eye_track_request__enable;
-   wire       eye_track_request__measure;
-   wire       eye_track_request__seek_enable;
-   wire       eye_track_request__track_enable;
-   wire [8:0] eye_track_request__phase_width;
-   wire [8:0] eye_track_request__min_eye_width;
+   wire   measure_response__initial_value;
    wire       eye_track_response__measure_ack;
    wire       eye_track_response__locked;
    wire       eye_track_response__eye_data_valid;
    wire [8:0] eye_track_response__data_delay;
    wire [8:0] eye_track_response__eye_width;
    wire [8:0] eye_track_response__eye_center;
-   wire       cet_delay_config__select;
-   wire [1:0] cet_delay_config__op;
-   wire [8:0] cet_delay_config__value;
 
    wire [3:0] sgmii_txd;
    wire [3:0] sgmii_rxd;
@@ -183,100 +170,43 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
    
    assign hdmi__clk = video_clk;
 
-   diff_ddr_serializer4 txd(.clk(tx_clk_625),
-                            .clk_div2(tx_clk_312_5),
-                             .reset(!reest_n),
-                             .data(sgmii_txd),
-                             .pin__p(sgmii__txd__p),
-                             .pin__n(sgmii__txd__n) );
+   sgmii_transceiver sgmii_xcvr (
+                      .rx_clk_serial(rx_clk_625),
+                      .rx_clk_serial__enable(1),
+                      .rx_clk_312_5(rx_clk_312_5),
+                      .rx_clk_312_5__enable(1),
+                      .tx_clk_serial(tx_clk_625),
+                      .tx_clk_serial__enable(1),
+                      .tx_clk_312_5(tx_clk_312_5),
+                      .tx_clk_312_5__enable(1),
 
-   // cascaded_delay_pair used for measuring the delay taps of a single phase of sgmii_rxclk
-   cascaded_delay_pair cdp(.clk(cpm_clk),
-                           .reset(!reset_n),
-                           .delay__load(delay_config__op!=0),
-                           .delay__value(delay_config__value),
-                           .data_in(sgmii_rxclk),
-                           .data_out(cdp_delay_out)
-                           );
-   // synchronizer for cdp_delay_out in to cpm_clk domain
-   (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
-   FDPE s_0 (.PRE (0),.C (cpm_clk), .CE (1), .D (cdp_delay_out), .Q (d0) );
-   (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
-   FDPE s_1 (.PRE (0),.C (cpm_clk), .CE (1), .D (d0), .Q (d1) );
-   (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
-   FDPE s_2 (.PRE (0),.C (cpm_clk), .CE (1), .D (d1), .Q (d2) );
+    //.transceiver_control__valid(),
+    .sgmii_rxclk(sgmii_rxclk),
+    .sgmii__rxd__p(sgmii__rxd__p),
+    .sgmii__rxd__n(sgmii__rxd__n),
+    .sgmii_txd(sgmii_txd),
+    .reset_n(reset_n),
 
-   // clocking_phase_measure module that runs on cpm_clk and uses cascaded_delay_pair to measure single phase of sgmii_rxclk
-   clocking_phase_measure cpm( .clk(cpm_clk),
-                               .clk__enable(1),
-                               .reset_n(reset_n),
+    .sgmii_rxd(sgmii_rxd),
+    .sgmii__txd__p(sgmii__txd__p),
+    .sgmii__txd__n(sgmii__txd__n),
 
-                               .delay_response__op_ack(1),
-                               .delay_response__sync_value(d2),
-                               .delay_response__delay_value(0),
-                               .delay_config__op(delay_config__op),
-                               //.delay_config__select(),
-                               .delay_config__value(delay_config__value),
+    .transceiver_status__measure_response__ack(measure_response__ack),
+    .transceiver_status__measure_response__abort(measure_response__abort),
+    .transceiver_status__measure_response__valid(measure_response__valid),
+    .transceiver_status__measure_response__delay(measure_response__delay),
+    .transceiver_status__measure_response__initial_delay(measure_response__initial_delay),
+    .transceiver_status__measure_response__initial_value(measure_response__initial_value),
+    .transceiver_status__eye_track_response__measure_ack(eye_track_response__measure_ack),
+    .transceiver_status__eye_track_response__locked(eye_track_response__locked),
+    .transceiver_status__eye_track_response__eye_data_valid(eye_track_response__eye_data_valid),
+    .transceiver_status__eye_track_response__data_delay(eye_track_response__data_delay),
+    .transceiver_status__eye_track_response__eye_width(eye_track_response__eye_width),
+    .transceiver_status__eye_track_response__eye_center(eye_track_response__eye_center)
+);
 
-                               .measure_request__valid(1),
-                               //.measure_response__ack(1),
-                               .measure_response__valid(measure_response__valid),
-                               .measure_response__initial_value(measure_response__initial_value),
-                               .measure_response__abort(measure_response__abort),
-                               .measure_response__delay(measure_response__delay),
-                               .measure_response__initial_delay(measure_response__initial_delay)
-                               );
-
-   // deserializer for SGMII receive data, using delay set by rxd_eye tracker
-   diff_ddr_deserializer4 rxd( .clk(rx_clk_625),
-                               .clk_div2(rx_clk_312_5),
-                               .reset(!reset_n),
-                               .pin__p(sgmii__rxd__p),
-                               .pin__n(sgmii__rxd__n),
-                               .delay_config__select(cet_delay_config__select),
-                               .delay_config__op(cet_delay_config__op),
-                               .delay_config__value(cet_delay_config__value),
-                               .data(sgmii_rxd),
-                               .tracker(sgmii_rxd_tracker)
-                               );
-
-   // clocking_eye_tracking for the SGMII receive data
-   clocking_eye_tracking rxd_eye( .clk(cpm_clk),
-                                  .clk__enable(1),
-                                  .data_clk(rx_clk_312_5),
-                                  .data_clk__enable(1),
-                                  .reset_n(reset_n),
-                                  .data_n_in(sgmii_rxd_tracker),
-                                  .data_p_in(sgmii_rxd),
-                                  .eye_track_request__enable(eye_track_request__enable),
-                                  .eye_track_request__measure(eye_track_request__measure),
-                                  .eye_track_request__seek_enable(eye_track_request__seek_enable),
-                                  .eye_track_request__track_enable(eye_track_request__track_enable),
-                                  .eye_track_request__phase_width(eye_track_request__phase_width),
-                                  .eye_track_request__min_eye_width(eye_track_request__min_eye_width),
-                                  .delay_response__op_ack(1),
-                                  .delay_response__delay_value(0),
-                                  .delay_response__sync_value(0),
-
-                                  .eye_track_response__measure_ack(eye_track_response__measure_ack),
-                                  .eye_track_response__locked(eye_track_response__locked),
-                                  .eye_track_response__eye_data_valid(eye_track_response__eye_data_valid),
-                                  .eye_track_response__data_delay(eye_track_response__data_delay),
-                                  .eye_track_response__eye_width(eye_track_response__eye_width),
-                                  .eye_track_response__eye_center(eye_track_response__eye_center),
-                                  .delay_config__select(cet_delay_config__select),
-                                  .delay_config__op(cet_delay_config__op),
-                                  .delay_config__value(cet_delay_config__value)
-                                  );
-   wire       mr_okay = measure_response__valid && (measure_response__delay>16);
-   assign eye_track_request__enable = 1;
-   assign eye_track_request__measure = mr_okay;
-   assign eye_track_request__seek_enable = 1;
-   assign eye_track_request__track_enable = 1;
-   assign eye_track_request__phase_width = measure_response__delay;
-   assign eye_track_request__min_eye_width = 16;
-
-   wire       dprintf_req_valid = mr_okay | eye_track_response__eye_data_valid;
+   wire        mr_okay = measure_response__valid && (measure_response__delay>16);
+   wire        dprintf_req_valid = mr_okay | eye_track_response__eye_data_valid;
    wire [15:0] dprintf_req_addr  = mr_okay ? 80 : 100;
    wire [63:0] dprintf_req_data = mr_okay ? {32'h20202087,
                                              7'h0,
@@ -294,7 +224,7 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                  4'b0, // 4
                  8'hff, 8'h00 // 16
                  }; // 1
-   dprintf_4_async d4a( .clk_in(cpm_clk),
+   dprintf_4_async d4a( .clk_in(rx_clk_312_5),
                         .clk_in__enable(1),
                         .clk_out( `dut_clk),
                         .clk_out__enable(1),
