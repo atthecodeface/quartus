@@ -58,6 +58,10 @@ lappend project_rtl_files ${VERILOG_DIR}/dprintf_4_mux.v
 lappend project_rtl_files ${VERILOG_DIR}/dprintf_4_fifo_4.v
 lappend project_rtl_files ${VERILOG_DIR}/dprintf_4_async.v
 lappend project_rtl_files ${VERILOG_DIR}/dprintf.v
+lappend project_rtl_files ${VERILOG_DIR}/async_reduce_4_28_l.v
+lappend project_rtl_files ${VERILOG_DIR}/async_reduce_4_28_r.v
+lappend project_rtl_files ${VERILOG_DIR}/async_reduce2_4_28_l.v
+lappend project_rtl_files ${VERILOG_DIR}/async_reduce2_4_28_r.v
 lappend project_rtl_files ${VERILOG_DIR}/framebuffer_timing.v
 lappend project_rtl_files ${VERILOG_DIR}/framebuffer_teletext.v
 lappend project_rtl_files ${VERILOG_DIR}/teletext.v
