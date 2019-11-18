@@ -23,10 +23,11 @@ lappend clock_list clk125mhz
 create_clock -name sgmii_rxclk -period 1.6 [get_ports sgmii__rxc__p]
 lappend clock_list sgmii_rxclk
 
-clock_from_pll_if_required $project_clks clk_225 video_clk_gen/pll_i/CLKOUT0
-clock_from_pll_if_required $project_clks clk_150 video_clk_gen/pll_i/CLKOUT1
-clock_from_pll_if_required $project_clks clk_100 video_clk_gen/pll_i/CLKOUT2
-clock_from_pll_if_required $project_clks clk_50  video_clk_gen/pll_i/CLKOUT3
+clock_from_pll_if_required $project_clks clk_225     video_clk_gen/pll_i/CLKOUT0
+clock_from_pll_if_required $project_clks clk_150     video_clk_gen/pll_i/CLKOUT1
+clock_from_pll_if_required $project_clks clk_128_57  video_clk_gen/pll_i/CLKOUT2
+clock_from_pll_if_required $project_clks clk_100     video_clk_gen/pll_i/CLKOUT3
+clock_from_pll_if_required $project_clks clk_50      video_clk_gen/pll_i/CLKOUT4
 
 clock_from_pll_if_required $project_clks tx_clk_625    sgmii_pll_tx/pll_i/CLKOUT0
 clock_from_pll_if_required $project_clks tx_clk_312_5  sgmii_pll_tx/pll_i/CLKOUT1

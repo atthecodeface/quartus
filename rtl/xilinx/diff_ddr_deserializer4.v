@@ -1,15 +1,21 @@
 module diff_ddr_deserializer4( input       clk,
+                               input        clk__enable,
                                input        clk_div2,
-                               input        reset,
+                               input        clk_div2__enable,
+                               input        clk_delay,
+                               input        clk_delay__enable,
+                               input        reset_n,
                                input        pin__p,
                                input        pin__n,
-                               input        data_delay__load,
-                               input[8:0]   data_delay__value,
-                               input        tracker_delay__load,
-                               input[8:0]   tracker_delay__value,
+                               input [1:0]  delay_config__op,
+                               input        delay_config__select,
+                               input [8:0]  delay_config__value,
                                output [3:0] data,
                                output [3:0] tracker
                                );
+    wire reset = !reset_n;
+   wire [7:0] data_out;
+   wire [7:0] tracker_out;
    assign data    = data_out[3:0];
    assign tracker = tracker_out[3:0];
    
@@ -53,6 +59,48 @@ module diff_ddr_deserializer4( input       clk,
         .D (reset__2),
         .Q (reset__sync_clk_div2)
     );
+
+
+    (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
+    FDPE  #(
+        .INIT(1) // Reset value of serial output
+    ) reset_sync_0b (
+        .PRE (reset),
+        .C (clk_delay),
+        .CE (1),
+        .D (reset),
+        .Q (reset__0b)
+    );
+    (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
+    FDPE  #(
+        .INIT(1) // Reset value of serial output
+    ) reset_sync_1b (
+        .PRE (reset),
+        .C (clk_delay),
+        .CE (1),
+        .D (reset__0b),
+        .Q (reset__1b)
+    );
+    (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
+    FDPE  #(
+        .INIT(1) // Reset value of serial output
+    ) reset_sync_2b (
+        .PRE (reset),
+        .C (clk_delay),
+        .CE (1),
+        .D (reset__1b),
+        .Q (reset__2b)
+    );
+    (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
+    FDPE  #(
+        .INIT(1) // Reset value of serial output
+    ) reset_sync_3b (
+        .PRE (0),
+        .C (clk_delay),
+        .CE (1),
+        .D (reset__2b),
+        .Q (reset__sync_clk_delay)
+    );
     IBUFDS_DIFF_OUT  diff_io (
         .I (pin__p),
         .IB (pin__n),
@@ -67,13 +115,13 @@ module diff_ddr_deserializer4( input       clk,
         .CASCADE("NONE"), // Cascading - and where in the chain it is
         .DELAY_SRC("IDATAIN") // Source of data - IOB or internal signal
     ) data_delay (
-        .RST (reset__sync_clk_div2),
-        .CLK (clk_div2),
+        .RST (reset__sync_clk_delay),
+        .CLK (clk_delay),
         .DATAOUT (data_delayed),
-        .CE (0),
-        .INC (0),
-        .LOAD (data_delay__load),
-        .CNTVALUEIN (data_delay__value),
+        .CE ((delay_config__op[1]) && (delay_config__select==0)),
+        .INC ((!delay_config__op[0]) && (delay_config__select==0)),
+        .LOAD ((delay_config__op==1) && (delay_config__select==0)),
+        .CNTVALUEIN (delay_config__value),
         .EN_VTC (0),
         .CASC_IN (0),
         .CASC_RETURN (0),
@@ -101,13 +149,13 @@ module diff_ddr_deserializer4( input       clk,
         .CASCADE("NONE"), // Cascading - and where in the chain it is
         .DELAY_SRC("IDATAIN") // Source of data - IOB or internal signal
     ) tracker_delay (
-        .RST (reset__sync_clk_div2),
-        .CLK (clk_div2),
+        .RST (reset__sync_clk_delay),
+        .CLK (clk_delay),
         .DATAOUT (tracker_delayed),
-        .CE (0),
-        .INC (0),
-        .LOAD (tracker_delay__load),
-        .CNTVALUEIN (tracker_delay__value),
+        .CE ((delay_config__op[1]) && (delay_config__select==1)),
+        .INC ((!delay_config__op[0]) && (delay_config__select==1)),
+        .LOAD ((delay_config__op==1) && (delay_config__select==1)),
+        .CNTVALUEIN (delay_config__value),
         .EN_VTC (0),
         .CASC_IN (0),
         .CASC_RETURN (0),

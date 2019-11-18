@@ -47,12 +47,24 @@ lappend pin_desc {i2c_reset_mux_n  0 0 {{PACKAGE_PIN AM23} {IOSTANDARD LVCMOS18}
 # lappend pin_desc {eth__mdio     0 0 {{PACKAGE_PIN M1} {IOSTANDARD LVCMOS18}}}
 
 #a SGMII is RX (AR24, AT24) RXCLK (AT22 AU22) TX (AR23 AR22)
+# SGMII to the 88E1111 requires LVDS - the VCU108 has 1.8V to the I/O for bank 84, which is HR not HP
+# HR does not support LVDS, it supports LVDS_25 *if* you have 2.5V I/O. Which we don't.
+# So it seems the board is not correctly wired. However, we can try LVDS_25 for transmitters, but then
+# the tool *will* barf as the other pins (LVCMOS18) indicate the true VCC I/O
+# 
+# It seems DIFF_HSTL_I_18 works fine for the inputs
+# Alex Forenich seems to use DIFF_HSTL_I_18 for both, but this seems to lead to bit errors
+# https://github.com/alexforencich/verilog-ethernet/blob/master/example/VCU108/fpga_1g/fpga.xdc
+# Xilinx VCU108 xdc also does the same
+# They do not specify the slew, and the default is slow
 lappend pin_desc     {sgmii__rxc__p 0 0 {{PACKAGE_PIN AT22} {IOSTANDARD LVDS_25}}}
 lappend pin_desc     {sgmii__rxc__n 0 0 {{PACKAGE_PIN AU22} {IOSTANDARD LVDS_25}}}
 lappend pin_desc     {sgmii__rxd__p 0 0 {{PACKAGE_PIN AR24} {IOSTANDARD DIFF_HSTL_I_18}}}
 lappend pin_desc     {sgmii__rxd__n 0 0 {{PACKAGE_PIN AT24} {IOSTANDARD DIFF_HSTL_I_18}}}
 lappend pin_desc     {sgmii__txd__p 0 0 {{PACKAGE_PIN AR23} {IOSTANDARD DIFF_HSTL_I_18}}}
 lappend pin_desc     {sgmii__txd__n 0 0 {{PACKAGE_PIN AR22} {IOSTANDARD DIFF_HSTL_I_18}}}
+#lappend pin_desc     {sgmii__txd__p 0 0 {{PACKAGE_PIN AR23} {IOSTANDARD LVDS_25}}}
+#lappend pin_desc     {sgmii__txd__n 0 0 {{PACKAGE_PIN AR22} {IOSTANDARD LVDS_25}}}
 
 #a HDMI
 lappend pin_desc    {hdmi__clk   0 0 {{PACKAGE_PIN AK33} {IOSTANDARD LVCMOS18}}}

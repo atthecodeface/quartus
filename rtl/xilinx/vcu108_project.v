@@ -58,18 +58,33 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
    
    wire         sgmii_rxclk;
    IBUFDS sgmii_rxclk_buf( .I(sgmii__rxc__p), .IB(sgmii__rxc__n), .O(sgmii_rxclk) );
-   OBUFTDS sgmii_txd_buf( .I(0), .T(1), .O(sgmii__txd__p), .OB(sgmii__txd__n) );
-   //                     input         sgmii__rxd__p, input sgmii__rxd__n,
-   //                     output        , output sgmii__txd__n,
 
    assign video_clk = clk_150;
    assign flash_clk = clk_50;
    wire   reset_in = vcu108_inputs__buttons[1];
    assign reset_n = clk_locked;
 
+   wire   measure_response__ack;
+   wire   measure_response__abort;
+   wire   measure_response__valid;
+   wire [8:0] measure_response__delay;
+   wire [8:0] measure_response__initial_delay;
+   wire   measure_response__initial_value;
+   wire       eye_track_response__measure_ack;
+   wire       eye_track_response__locked;
+   wire       eye_track_response__eye_data_valid;
+   wire [8:0] eye_track_response__data_delay;
+   wire [8:0] eye_track_response__eye_width;
+   wire [8:0] eye_track_response__eye_center;
+
+   wire [3:0] sgmii_txd;
+   wire [3:0] sgmii_rxd;
+   wire [3:0] sgmii_rxd_tracker;
+
    pll_base video_clk_gen( .refclk(sysclk1), .rst(reset_in),
                            .outclk_225(clk_225),
                            .outclk_150(clk_150),
+                           .outclk_128_57(clk_128_57),
                            .outclk_100(clk_100),
                            .outclk_50(clk_50),
                            .locked(clk_locked) );
@@ -89,7 +104,7 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                          .locked(sgmii_rx_clk_locked) );
    
                                       
-   `debug_module dut( .clk(`dut_clk),
+   `debug_module dut( .clk(`dut_clk), 
                       .clk__enable(1),
                       .clk_50(clk_50),
                       .clk_50__enable(1),
@@ -98,6 +113,11 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                       .video_clk__enable(1),
                       .reset_n(reset_n),
                       .video_reset_n(reset_n),
+
+                      .sgmii_rx_clk(rx_clk_312_5), // frequency locked to rx data stream
+                      .sgmii_rx_clk__enable(1),
+                      .sgmii_tx_clk(tx_clk_312_5), // not locked to rx data stream
+                      .sgmii_tx_clk__enable(1),
 
                       .flash_clk(flash_clk),
                       .flash_clk__enable(1),
@@ -136,6 +156,11 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                       .vcu108_video__data(hdmi__d),
                       .vcu108_video__spdif(hdmi__spdif),
 
+                      .sgmii_txd(sgmii_txd),
+                      .sgmii_rxd(sgmii_rxd),
+                      .sgmii_rx_reset_n(reset_n),
+                      .sgmii_tx_reset_n(reset_n),
+
                       .flash_in__data(0)
                       );
    assign eth__mdio     = eth__mdio__en ? eth__mdio__out : 1'bz;
@@ -145,62 +170,68 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
    
    assign hdmi__clk = video_clk;
 
-   wire measure_response__valid;
-   wire measure_response__initial_value;
-   wire measure_response__abort;
-   wire [8:0] measure_response__delay;
-   wire [8:0] measure_response__initial_delay;
-   wire       cpm_clk;
-   assign cpm_clk = rx_clk_125;
-   wire [8:0] delay_config__value;
-   cascaded_delay_pair cdp(.clk(cpm_clk),
-                           .reset(!reset_n),
-                           .delay__load(delay_config__load),
-                           .delay__value(delay_config__value),
-                           .data_in(sgmii_rxclk),
-                           .data_out(cdp_delay_out)
-                           );
-   (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
-   FDPE s_0 (.PRE (0),.C (cpm_clk), .CE (1), .D (cdp_delay_out), .Q (d0) );
-   (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
-   FDPE s_1 (.PRE (0),.C (cpm_clk), .CE (1), .D (d0), .Q (d1) );
-   (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
-   FDPE s_2 (.PRE (0),.C (cpm_clk), .CE (1), .D (d1), .Q (d2) );
-   clocking_phase_measure cpm( .clk(cpm_clk),
-                               .clk__enable(1),
-                               .reset_n(reset_n),
+   sgmii_transceiver sgmii_xcvr (
+                      .rx_clk_serial(rx_clk_625),
+                      .rx_clk_serial__enable(1),
+                      .rx_clk_312_5(rx_clk_312_5),
+                      .rx_clk_312_5__enable(1),
+                      .tx_clk_serial(tx_clk_625),
+                      .tx_clk_serial__enable(1),
+                      .tx_clk_312_5(tx_clk_312_5),
+                      .tx_clk_312_5__enable(1),
 
-                               .delay_response__load_ack(1),
-                               .delay_response__value(0),
-                               .delay_response__sync_value(d2),
-                               .delay_config__load(delay_config__load),
-                               .delay_config__value(delay_config__value),
+    //.transceiver_control__valid(),
+    .sgmii_rxclk(sgmii_rxclk),
+    .sgmii__rxd__p(sgmii__rxd__p),
+    .sgmii__rxd__n(sgmii__rxd__n),
+    .sgmii_txd(sgmii_txd),
+    .reset_n(reset_n),
 
-                               .measure_request__valid(1),
-                               //.measure_response__ack(1),
-                               .measure_response__valid(measure_response__valid),
-                               .measure_response__initial_value(measure_response__initial_value),
-                               .measure_response__abort(measure_response__abort),
-                               .measure_response__delay(measure_response__delay),
-                               .measure_response__initial_delay(measure_response__initial_delay)
-                               );
+    .sgmii_rxd(sgmii_rxd),
+    .sgmii__txd__p(sgmii__txd__p),
+    .sgmii__txd__n(sgmii__txd__n),
 
-   dprintf_4_async d4a( .clk_in(cpm_clk),
+    .transceiver_status__measure_response__ack(measure_response__ack),
+    .transceiver_status__measure_response__abort(measure_response__abort),
+    .transceiver_status__measure_response__valid(measure_response__valid),
+    .transceiver_status__measure_response__delay(measure_response__delay),
+    .transceiver_status__measure_response__initial_delay(measure_response__initial_delay),
+    .transceiver_status__measure_response__initial_value(measure_response__initial_value),
+    .transceiver_status__eye_track_response__measure_ack(eye_track_response__measure_ack),
+    .transceiver_status__eye_track_response__locked(eye_track_response__locked),
+    .transceiver_status__eye_track_response__eye_data_valid(eye_track_response__eye_data_valid),
+    .transceiver_status__eye_track_response__data_delay(eye_track_response__data_delay),
+    .transceiver_status__eye_track_response__eye_width(eye_track_response__eye_width),
+    .transceiver_status__eye_track_response__eye_center(eye_track_response__eye_center)
+);
+
+   wire        mr_okay = measure_response__valid && (measure_response__delay>16);
+   wire        dprintf_req_valid = mr_okay | eye_track_response__eye_data_valid;
+   wire [15:0] dprintf_req_addr  = mr_okay ? 80 : 100;
+   wire [63:0] dprintf_req_data = mr_okay ? {32'h20202087,
+                                             7'h0,
+                                             measure_response__initial_delay, // 9
+                                             3'h0,
+                                             measure_response__delay, // 9
+                                             1'h0,
+                                             measure_response__initial_value, // 1
+                                             measure_response__abort, // 1
+                                             measure_response__valid} : // 1
+               { 8'h89, // 8
+                 3'b0, eye_track_response__eye_width, // 12
+                 3'b0, eye_track_response__eye_center, // 12
+                 3'b0, eye_track_response__data_delay, // 12
+                 4'b0, // 4
+                 8'hff, 8'h00 // 16
+                 }; // 1
+   dprintf_4_async d4a( .clk_in(rx_clk_312_5),
                         .clk_in__enable(1),
                         .clk_out( `dut_clk),
                         .clk_out__enable(1),
                         .reset_n(reset_n),
-                        .req_in__valid(measure_response__valid && (measure_response__delay>4'h10)),
-                        .req_in__address(80),
-                        .req_in__data_0({32'h20202087,
-                                         7'h0,
-                                         measure_response__initial_delay, // 9
-                                         3'h0,
-                                         measure_response__delay, // 9
-                                         1'h0,
-                                         measure_response__initial_value, // 1
-                                         measure_response__abort, // 1
-                                         measure_response__valid}), // 1
+                        .req_in__valid(dprintf_req_valid),
+                        .req_in__address(dprintf_req_addr),
+                        .req_in__data_0(dprintf_req_data),
                         .req_in__data_1({32'hffffffff,32'hffffffff}),
                         .req_in__data_2({32'hffffffff,32'hffffffff}),
                         .req_in__data_3({32'hffffffff,32'hffffffff}),

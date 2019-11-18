@@ -1,10 +1,13 @@
 module diff_ddr_serializer4( input       clk,
+                             input       clk__enable,
                              input       clk_div2,
-                             input       reset,
+                             input       clk_div2__enable,
+                             input       reset_n,
                              input [3:0] data,
                              output      pin__p,
                              output      pin__n);
 
+    wire reset = !reset_n;
     (*  ASYNC_REG = "TRUE",  shreg_extract = "no"   *)
     FDPE  #(
         .INIT(1) // Reset value of serial output
