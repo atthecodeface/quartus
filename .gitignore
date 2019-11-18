@@ -2,6 +2,7 @@
 *.pyc
 *.vcd
 *.log
+*.jou
 make
 modelsim_lib
 quartus/modules/altclkctrl

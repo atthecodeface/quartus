@@ -55,6 +55,14 @@ ${MAKE_PREFIX}.vivado_bitstream: ${MAKE_PREFIX}.vivado_route
 	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/bitstream.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bitstream.log  && date > ${MAKE_PREFIX}.vivado_bitstream
 	cp $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bit golden_bit/$(PROJECT_LEAF).`date +%y%m%d-%H%M%S`.bit
 
+LATEST_MMI_FILE = `ls -t /vm_shared/vm_read_only/golden_bit/*mmi | head -1`
+LATEST_BIT_FILE = `ls -t /vm_shared/vm_read_only/golden_bit/*bit | head -1`
+vivado_update_bit:
+	${MAKE} MMI_FILE=${LATEST_MMI_FILE} BIT_FILE=${LATEST_BIT_FILE} update_bootrom
+
+vivado_program:
+	BIT_FILE=vivado_output/reprogrammed.bit  vivado -mode batch -source vivado/scripts/program.tcl
+
 .PHONY:vivado_tcl
 vivado_tcl:
 	(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode tcl -tclargs $(PROJECT_LEAF) )
