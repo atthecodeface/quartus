@@ -294,3 +294,825 @@ set_instance_assignment -name GLOBAL_SIGNAL OFF -to hps_i|hps_0|hps_io|border|hp
 set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to hps_i|hps_0|hps_io|border|hps_sdram_inst -tag __hps_sdram_p0
 set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to hps_i|hps_0|hps_io|border|hps_sdram_inst|pll0|fbout -tag __hps_sdram_p0
 set_global_assignment -name USE_DLL_FREQUENCY_FOR_DQS_DELAY_CHAIN ON
+set_global_assignment -name MESSAGE_DISABLE 10041
+set_global_assignment -name MESSAGE_DISABLE 12128
+set_global_assignment -name MESSAGE_DISABLE 12134
+set_global_assignment -name MESSAGE_DISABLE 12021
+set_global_assignment -name MESSAGE_DISABLE 12023
+set_global_assignment -name MESSAGE_DISABLE 286033
+set_global_assignment -name MESSAGE_DISABLE 10036
+set_global_assignment -name MESSAGE_DISABLE 15610
+set_global_assignment -name MESSAGE_DISABLE 13410
+set_global_assignment -name MESSAGE_DISABLE 13040
+set_global_assignment -name MESSAGE_DISABLE 14320
+set_global_assignment -name MESSAGE_DISABLE 10270
+set_global_assignment -name MESSAGE_DISABLE 10034
+set_global_assignment -name MESSAGE_DISABLE 10037
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY /git/atcf_fpga/quartus_output
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name SDC_FILE de1_hps_debug.sdc
+set_global_assignment -name VERILOG_MACRO "de1_hps_dut_module=de1_hps_debug"
+set_global_assignment -name VERILOG_MACRO "dut_clk=clk_100"
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/rtl/altera/de1_hps_project.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/rtl/srams.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/de1_hps_debug.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_master_axi.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_master_mux.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_processor.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_dprintf.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_gpio.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_timer.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_rv_timer.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_ps2_host.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_led_ws2812.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_sram_interface.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/apb_target_de1_cl_inputs.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/ps2_host.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/hysteresis_switch.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/de1_cl_controls.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/csr_target_apb.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/csr_target_timeout.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/csr_master_apb.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/csr_target_csr.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/dprintf.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/dprintf_4_mux.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/framebuffer_timing.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/framebuffer_teletext.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/led_seven_segment.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/led_ws2812_chain.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/teletext.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/clock_timer.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/clock_divider.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/rtl/chk_riscv_ifetch.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/rtl/chk_riscv_trace.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_debug.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_minimal_apb.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_minimal.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32c_pipeline.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32c_decode.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_decode.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_alu.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_dmem_request.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_dmem_read_data.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_trace.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_csrs_decode.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_csrs_machine_only.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_csrs_machine_debug.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_pipeline_control.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_pipeline_control_flow.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_pipeline_control_fetch_data.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_pipeline_control_fetch_req.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/verilog/riscv_i32_pipeline_trap_interposer.v
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CSEMA5F31C6
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|ureset|phy_reset_mem_stable_n -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|ureset|phy_reset_n -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[0].read_capture_clk_buffer -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_write_side[0] -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[0] -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[1].read_capture_clk_buffer -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_write_side[1] -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[1] -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[2].read_capture_clk_buffer -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_write_side[2] -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[2] -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uio_pads|dq_ddio[3].read_capture_clk_buffer -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_write_side[3] -tag __hps_sdram_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|hps_0|hps_io|border|hps_sdram_inst|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[3] -tag __hps_sdram_p0
+set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to u0|hps_0|hps_io|border|hps_sdram_inst -tag __hps_sdram_p0
+set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to u0|hps_0|hps_io|border|hps_sdram_inst|pll0|fbout -tag __hps_sdram_p0
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_conv_usb_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__gtx_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__int_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__mdc
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__mdio
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__rx_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__rx_data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__rx_data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__rx_data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__rx_data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__rx_dv
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__tx_data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__tx_data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__tx_data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__tx_data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_enet__tx_en
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_flash__data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_flash__data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_flash__data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_flash__data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_flash__dclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_flash__ncso
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_i2c1_sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_i2c1_sdat
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_i2c2_sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_i2c2_sdat
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_i2c_control
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_sd__clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_sd__cmd
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_sd__data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_sd__data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_sd__data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_sd__data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_spim__clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_spim__miso
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_spim__mosi
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_spim__ss
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_uart__rx
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_uart__tx
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__clkout
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__data[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__dir
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__nxt
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to hps_usb__stp
+set_location_assignment PIN_AF14 -to clk_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk_50
+set_instance_assignment -name SLEW_RATE 1 -to clk_50
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to clk_50
+set_location_assignment PIN_AA16 -to clk2_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk2_50
+set_instance_assignment -name SLEW_RATE 1 -to clk2_50
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to clk2_50
+set_location_assignment PIN_Y26 -to clk3_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk3_50
+set_instance_assignment -name SLEW_RATE 1 -to clk3_50
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to clk3_50
+set_location_assignment PIN_K14 -to clk4_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk4_50
+set_instance_assignment -name SLEW_RATE 1 -to clk4_50
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to clk4_50
+set_location_assignment PIN_AJ4 -to de1_adc__cs_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_adc__cs_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_adc__cs_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_adc__cs_n
+set_location_assignment PIN_AK4 -to de1_adc__din
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_adc__din
+set_instance_assignment -name SLEW_RATE 1 -to de1_adc__din
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_adc__din
+set_location_assignment PIN_AK3 -to de1_adc__dout
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_adc__dout
+set_instance_assignment -name SLEW_RATE 1 -to de1_adc__dout
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_adc__dout
+set_location_assignment PIN_AK2 -to de1_adc__sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_adc__sclk
+set_instance_assignment -name SLEW_RATE 1 -to de1_adc__sclk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_adc__sclk
+set_location_assignment PIN_K7 -to de1_aud__adcdat
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_aud__adcdat
+set_instance_assignment -name SLEW_RATE 1 -to de1_aud__adcdat
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_aud__adcdat
+set_location_assignment PIN_K8 -to de1_aud__adclrck
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_aud__adclrck
+set_instance_assignment -name SLEW_RATE 1 -to de1_aud__adclrck
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_aud__adclrck
+set_location_assignment PIN_H7 -to de1_aud__bclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_aud__bclk
+set_instance_assignment -name SLEW_RATE 1 -to de1_aud__bclk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_aud__bclk
+set_location_assignment PIN_J7 -to de1_aud__dacdat
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_aud__dacdat
+set_instance_assignment -name SLEW_RATE 1 -to de1_aud__dacdat
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_aud__dacdat
+set_location_assignment PIN_H8 -to de1_aud__daclrck
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_aud__daclrck
+set_instance_assignment -name SLEW_RATE 1 -to de1_aud__daclrck
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_aud__daclrck
+set_location_assignment PIN_G7 -to de1_aud__xck
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_aud__xck
+set_instance_assignment -name SLEW_RATE 1 -to de1_aud__xck
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_aud__xck
+set_location_assignment PIN_AH12 -to de1_ddr__clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__clk
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__clk
+set_location_assignment PIN_AK13 -to de1_ddr__cke
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__cke
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__cke
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__cke
+set_location_assignment PIN_AG11 -to de1_ddr__cs_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__cs_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__cs_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__cs_n
+set_location_assignment PIN_AK14 -to de1_ddr__addr[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[0]
+set_location_assignment PIN_AH14 -to de1_ddr__addr[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[1]
+set_location_assignment PIN_AG15 -to de1_ddr__addr[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[2]
+set_location_assignment PIN_AE14 -to de1_ddr__addr[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[3]
+set_location_assignment PIN_AB15 -to de1_ddr__addr[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[4]
+set_location_assignment PIN_AC14 -to de1_ddr__addr[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[5]
+set_location_assignment PIN_AD14 -to de1_ddr__addr[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[6]
+set_location_assignment PIN_AF15 -to de1_ddr__addr[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[7]
+set_location_assignment PIN_AH15 -to de1_ddr__addr[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[8]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[8]
+set_location_assignment PIN_AG13 -to de1_ddr__addr[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[9]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[9]
+set_location_assignment PIN_AG12 -to de1_ddr__addr[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[10]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[10]
+set_location_assignment PIN_AH13 -to de1_ddr__addr[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[11]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[11]
+set_location_assignment PIN_AJ14 -to de1_ddr__addr[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__addr[12]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__addr[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__addr[12]
+set_location_assignment PIN_AF13 -to de1_ddr__ba[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__ba[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__ba[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__ba[0]
+set_location_assignment PIN_AJ12 -to de1_ddr__ba[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__ba[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__ba[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__ba[1]
+set_location_assignment PIN_AE13 -to de1_ddr__ras_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__ras_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__ras_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__ras_n
+set_location_assignment PIN_AF11 -to de1_ddr__cas_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__cas_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__cas_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__cas_n
+set_location_assignment PIN_AA13 -to de1_ddr__we_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__we_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__we_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__we_n
+set_location_assignment PIN_AK6 -to de1_ddr__dq[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[0]
+set_location_assignment PIN_AJ7 -to de1_ddr__dq[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[1]
+set_location_assignment PIN_AK7 -to de1_ddr__dq[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[2]
+set_location_assignment PIN_AK8 -to de1_ddr__dq[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[3]
+set_location_assignment PIN_AK9 -to de1_ddr__dq[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[4]
+set_location_assignment PIN_AG10 -to de1_ddr__dq[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[5]
+set_location_assignment PIN_AK11 -to de1_ddr__dq[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[6]
+set_location_assignment PIN_AJ11 -to de1_ddr__dq[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[7]
+set_location_assignment PIN_AH10 -to de1_ddr__dq[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[8]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[8]
+set_location_assignment PIN_AJ10 -to de1_ddr__dq[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[9]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[9]
+set_location_assignment PIN_AJ9 -to de1_ddr__dq[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[10]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[10]
+set_location_assignment PIN_AH9 -to de1_ddr__dq[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[11]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[11]
+set_location_assignment PIN_AH8 -to de1_ddr__dq[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[12]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[12]
+set_location_assignment PIN_AH7 -to de1_ddr__dq[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[13]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[13]
+set_location_assignment PIN_AJ6 -to de1_ddr__dq[14]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[14]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[14]
+set_location_assignment PIN_AJ5 -to de1_ddr__dq[15]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__dq[15]
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__dq[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__dq[15]
+set_location_assignment PIN_AB13 -to de1_ddr__ldqm
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__ldqm
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__ldqm
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__ldqm
+set_location_assignment PIN_AK12 -to de1_ddr__udqm
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ddr__udqm
+set_instance_assignment -name SLEW_RATE 1 -to de1_ddr__udqm
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ddr__udqm
+set_location_assignment PIN_AA12 -to de1_fan_ctrl
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_fan_ctrl
+set_instance_assignment -name SLEW_RATE 1 -to de1_fan_ctrl
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_fan_ctrl
+set_location_assignment PIN_J12 -to de1_fpga_i2c__sclk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_fpga_i2c__sclk
+set_instance_assignment -name SLEW_RATE 1 -to de1_fpga_i2c__sclk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_fpga_i2c__sclk
+set_location_assignment PIN_K12 -to de1_fpga_i2c__sdat
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_fpga_i2c__sdat
+set_instance_assignment -name SLEW_RATE 1 -to de1_fpga_i2c__sdat
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_fpga_i2c__sdat
+set_location_assignment PIN_AE26 -to de1_hex0[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex0[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex0[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex0[0]
+set_location_assignment PIN_AE27 -to de1_hex0[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex0[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex0[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex0[1]
+set_location_assignment PIN_AE28 -to de1_hex0[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex0[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex0[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex0[2]
+set_location_assignment PIN_AG27 -to de1_hex0[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex0[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex0[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex0[3]
+set_location_assignment PIN_AF28 -to de1_hex0[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex0[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex0[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex0[4]
+set_location_assignment PIN_AG28 -to de1_hex0[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex0[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex0[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex0[5]
+set_location_assignment PIN_AH28 -to de1_hex0[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex0[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex0[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex0[6]
+set_location_assignment PIN_AJ29 -to de1_hex1[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex1[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex1[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex1[0]
+set_location_assignment PIN_AH29 -to de1_hex1[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex1[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex1[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex1[1]
+set_location_assignment PIN_AH30 -to de1_hex1[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex1[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex1[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex1[2]
+set_location_assignment PIN_AG30 -to de1_hex1[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex1[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex1[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex1[3]
+set_location_assignment PIN_AF29 -to de1_hex1[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex1[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex1[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex1[4]
+set_location_assignment PIN_AF30 -to de1_hex1[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex1[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex1[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex1[5]
+set_location_assignment PIN_AD27 -to de1_hex1[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex1[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex1[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex1[6]
+set_location_assignment PIN_AB23 -to de1_hex2[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex2[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex2[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex2[0]
+set_location_assignment PIN_AE29 -to de1_hex2[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex2[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex2[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex2[1]
+set_location_assignment PIN_AD29 -to de1_hex2[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex2[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex2[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex2[2]
+set_location_assignment PIN_AC28 -to de1_hex2[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex2[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex2[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex2[3]
+set_location_assignment PIN_AD30 -to de1_hex2[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex2[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex2[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex2[4]
+set_location_assignment PIN_AC29 -to de1_hex2[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex2[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex2[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex2[5]
+set_location_assignment PIN_AC30 -to de1_hex2[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex2[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex2[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex2[6]
+set_location_assignment PIN_AD26 -to de1_hex3[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex3[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex3[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex3[0]
+set_location_assignment PIN_AC27 -to de1_hex3[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex3[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex3[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex3[1]
+set_location_assignment PIN_AD25 -to de1_hex3[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex3[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex3[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex3[2]
+set_location_assignment PIN_AC25 -to de1_hex3[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex3[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex3[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex3[3]
+set_location_assignment PIN_AB28 -to de1_hex3[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex3[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex3[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex3[4]
+set_location_assignment PIN_AB25 -to de1_hex3[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex3[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex3[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex3[5]
+set_location_assignment PIN_AB22 -to de1_hex3[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex3[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex3[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex3[6]
+set_location_assignment PIN_AA24 -to de1_hex4[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex4[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex4[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex4[0]
+set_location_assignment PIN_Y23 -to de1_hex4[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex4[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex4[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex4[1]
+set_location_assignment PIN_Y24 -to de1_hex4[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex4[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex4[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex4[2]
+set_location_assignment PIN_W22 -to de1_hex4[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex4[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex4[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex4[3]
+set_location_assignment PIN_W24 -to de1_hex4[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex4[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex4[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex4[4]
+set_location_assignment PIN_V23 -to de1_hex4[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex4[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex4[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex4[5]
+set_location_assignment PIN_W25 -to de1_hex4[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex4[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex4[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex4[6]
+set_location_assignment PIN_V25 -to de1_hex5[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex5[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex5[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex5[0]
+set_location_assignment PIN_AA28 -to de1_hex5[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex5[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex5[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex5[1]
+set_location_assignment PIN_Y27 -to de1_hex5[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex5[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex5[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex5[2]
+set_location_assignment PIN_AB27 -to de1_hex5[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex5[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex5[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex5[3]
+set_location_assignment PIN_AB26 -to de1_hex5[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex5[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex5[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex5[4]
+set_location_assignment PIN_AA26 -to de1_hex5[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex5[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex5[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex5[5]
+set_location_assignment PIN_AA25 -to de1_hex5[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_hex5[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_hex5[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_hex5[6]
+set_location_assignment PIN_H15 -to de1_td__clk27
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__clk27
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__clk27
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__clk27
+set_location_assignment PIN_D2 -to de1_td__data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[0]
+set_location_assignment PIN_B1 -to de1_td__data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[1]
+set_location_assignment PIN_E2 -to de1_td__data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[2]
+set_location_assignment PIN_B2 -to de1_td__data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[3]
+set_location_assignment PIN_D1 -to de1_td__data[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[4]
+set_location_assignment PIN_E1 -to de1_td__data[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[5]
+set_location_assignment PIN_C2 -to de1_td__data[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[6]
+set_location_assignment PIN_B3 -to de1_td__data[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__data[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__data[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__data[7]
+set_location_assignment PIN_A5 -to de1_td__hs
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__hs
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__hs
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__hs
+set_location_assignment PIN_F6 -to de1_td__reset_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__reset_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__reset_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__reset_n
+set_location_assignment PIN_A3 -to de1_td__vs
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_td__vs
+set_instance_assignment -name SLEW_RATE 1 -to de1_td__vs
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_td__vs
+set_location_assignment PIN_D11 -to de1_vga__vs
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__vs
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__vs
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__vs
+set_location_assignment PIN_F10 -to de1_vga__blank_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__blank_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__blank_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__blank_n
+set_location_assignment PIN_B11 -to de1_vga__hs
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__hs
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__hs
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__hs
+set_location_assignment PIN_A11 -to de1_vga__clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__clk
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__clk
+set_location_assignment PIN_B13 -to de1_vga__b[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[0]
+set_location_assignment PIN_G13 -to de1_vga__b[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[1]
+set_location_assignment PIN_H13 -to de1_vga__b[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[2]
+set_location_assignment PIN_F14 -to de1_vga__b[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[3]
+set_location_assignment PIN_H14 -to de1_vga__b[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[4]
+set_location_assignment PIN_F15 -to de1_vga__b[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[5]
+set_location_assignment PIN_G15 -to de1_vga__b[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[6]
+set_location_assignment PIN_J14 -to de1_vga__b[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__b[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__b[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__b[7]
+set_location_assignment PIN_J9 -to de1_vga__g[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[0]
+set_location_assignment PIN_J10 -to de1_vga__g[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[1]
+set_location_assignment PIN_H12 -to de1_vga__g[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[2]
+set_location_assignment PIN_G10 -to de1_vga__g[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[3]
+set_location_assignment PIN_G11 -to de1_vga__g[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[4]
+set_location_assignment PIN_G12 -to de1_vga__g[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[5]
+set_location_assignment PIN_F11 -to de1_vga__g[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[6]
+set_location_assignment PIN_E11 -to de1_vga__g[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__g[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__g[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__g[7]
+set_location_assignment PIN_A13 -to de1_vga__r[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[0]
+set_location_assignment PIN_C13 -to de1_vga__r[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[1]
+set_location_assignment PIN_E13 -to de1_vga__r[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[2]
+set_location_assignment PIN_B12 -to de1_vga__r[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[3]
+set_location_assignment PIN_C12 -to de1_vga__r[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[4]
+set_location_assignment PIN_D12 -to de1_vga__r[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[5]
+set_location_assignment PIN_E12 -to de1_vga__r[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[6]
+set_location_assignment PIN_F13 -to de1_vga__r[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__r[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__r[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__r[7]
+set_location_assignment PIN_C10 -to de1_vga__sync_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_vga__sync_n
+set_instance_assignment -name SLEW_RATE 1 -to de1_vga__sync_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_vga__sync_n
+set_location_assignment PIN_AE7 -to de1_ps2_dat
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ps2_dat
+set_instance_assignment -name SLEW_RATE 1 -to de1_ps2_dat
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ps2_dat
+set_location_assignment PIN_AD7 -to de1_ps2_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ps2_clk
+set_instance_assignment -name SLEW_RATE 1 -to de1_ps2_clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ps2_clk
+set_location_assignment PIN_AE9 -to de1_ps2_b_dat
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ps2_b_dat
+set_instance_assignment -name SLEW_RATE 1 -to de1_ps2_b_dat
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ps2_b_dat
+set_location_assignment PIN_AD9 -to de1_ps2_b_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_ps2_b_clk
+set_instance_assignment -name SLEW_RATE 1 -to de1_ps2_b_clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_ps2_b_clk
+set_location_assignment PIN_V16 -to de1_leds[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[0]
+set_location_assignment PIN_W16 -to de1_leds[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[1]
+set_location_assignment PIN_V17 -to de1_leds[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[2]
+set_location_assignment PIN_V18 -to de1_leds[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[3]
+set_location_assignment PIN_W17 -to de1_leds[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[4]
+set_location_assignment PIN_W19 -to de1_leds[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[5]
+set_location_assignment PIN_Y19 -to de1_leds[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[6]
+set_location_assignment PIN_W20 -to de1_leds[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[7]
+set_location_assignment PIN_W21 -to de1_leds[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[8]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[8]
+set_location_assignment PIN_Y21 -to de1_leds[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_leds[9]
+set_instance_assignment -name SLEW_RATE 1 -to de1_leds[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_leds[9]
+set_location_assignment PIN_AB12 -to de1_switches[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[0]
+set_location_assignment PIN_AC12 -to de1_switches[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[1]
+set_location_assignment PIN_AF9 -to de1_switches[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[2]
+set_location_assignment PIN_AF10 -to de1_switches[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[3]
+set_location_assignment PIN_AD11 -to de1_switches[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[4]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[4]
+set_location_assignment PIN_AD12 -to de1_switches[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[5]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[5]
+set_location_assignment PIN_AE11 -to de1_switches[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[6]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[6]
+set_location_assignment PIN_AC9 -to de1_switches[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[7]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[7]
+set_location_assignment PIN_AD10 -to de1_switches[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[8]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[8]
+set_location_assignment PIN_AE12 -to de1_switches[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_switches[9]
+set_instance_assignment -name SLEW_RATE 1 -to de1_switches[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_switches[9]
+set_location_assignment PIN_AA14 -to de1_keys[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_keys[0]
+set_instance_assignment -name SLEW_RATE 1 -to de1_keys[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_keys[0]
+set_location_assignment PIN_AA15 -to de1_keys[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_keys[1]
+set_instance_assignment -name SLEW_RATE 1 -to de1_keys[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_keys[1]
+set_location_assignment PIN_W15 -to de1_keys[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_keys[2]
+set_instance_assignment -name SLEW_RATE 1 -to de1_keys[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_keys[2]
+set_location_assignment PIN_Y16 -to de1_keys[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_keys[3]
+set_instance_assignment -name SLEW_RATE 1 -to de1_keys[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_keys[3]
+set_location_assignment PIN_AA30 -to de1_irda__rxd
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_irda__rxd
+set_instance_assignment -name SLEW_RATE 1 -to de1_irda__rxd
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_irda__rxd
+set_location_assignment PIN_AB30 -to de1_irda__txd
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_irda__txd
+set_instance_assignment -name SLEW_RATE 1 -to de1_irda__txd
+set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_irda__txd
