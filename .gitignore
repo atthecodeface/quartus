@@ -9,6 +9,7 @@ quartus/modules/hps
 quartus/modules/regenerate_date
 *.sopcinfo
 quartus_output
+verilog
 sram_contents
 quartus/projects/*/db
 quartus/projects/*/incremental_db
