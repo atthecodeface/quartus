@@ -14,11 +14,13 @@ lappend project_global_assignments "-name SDC_FILE      de1_hps_debug.sdc"
 lappend project_global_assignments "-name VERILOG_MACRO de1_hps_dut_module=de1_hps_debug"
 lappend project_global_assignments "-name VERILOG_MACRO dut_clk=clk_100"
 
-#lappend project_rtl_files $RTL_DIR/altera/srams.v
-#lappend project_rtl_files $RTL_DIR/srw_srams.v
 
 lappend project_rtl_files $RTL_DIR/altera/de1_hps_project.v
-lappend project_rtl_files $RTL_DIR/srams.v
+lappend project_rtl_files $RTL_DIR/altera/srams.v
+lappend project_rtl_files $RTL_DIR/srw_srams.v
+lappend project_rtl_files $RTL_DIR/mrw_srams.v
+lappend project_rtl_files $RTL_DIR/chk_riscv_ifetch.v
+lappend project_rtl_files $RTL_DIR/chk_riscv_trace.v
 lappend project_rtl_files $VERILOG_DIR/de1_hps_debug.v
 lappend project_rtl_files $VERILOG_DIR/apb_master_axi.v
 lappend project_rtl_files $VERILOG_DIR/apb_master_mux.v
@@ -45,27 +47,25 @@ lappend project_rtl_files $VERILOG_DIR/framebuffer_teletext.v
 lappend project_rtl_files $VERILOG_DIR/led_seven_segment.v
 lappend project_rtl_files $VERILOG_DIR/led_ws2812_chain.v
 lappend project_rtl_files $VERILOG_DIR/teletext.v
-lappend project_rtl_files ${VERILOG_DIR}/clock_timer.v
-lappend project_rtl_files ${VERILOG_DIR}/clock_divider.v
-lappend project_rtl_files ${RTL_DIR}/chk_riscv_ifetch.v
-lappend project_rtl_files ${RTL_DIR}/chk_riscv_trace.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_debug.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_minimal_apb.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_minimal.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32c_pipeline.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32c_decode.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_decode.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_alu.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_dmem_request.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_dmem_read_data.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_trace.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_csrs_decode.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_csrs_machine_only.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_csrs_machine_debug.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_control.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_control_flow.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_control_fetch_data.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_control_fetch_req.v
-lappend project_rtl_files ${VERILOG_DIR}/riscv_i32_pipeline_trap_interposer.v
+lappend project_rtl_files $VERILOG_DIR/clock_timer.v
+lappend project_rtl_files $VERILOG_DIR/clock_divider.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_debug.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_minimal_apb.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_minimal.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32c_pipeline.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32c_decode.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_decode.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_alu.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_dmem_request.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_dmem_read_data.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_trace.v
+lappend project_rtl_files $VERILOG_DIR/riscv_csrs_decode.v
+lappend project_rtl_files $VERILOG_DIR/riscv_csrs_machine_only.v
+lappend project_rtl_files $VERILOG_DIR/riscv_csrs_machine_debug.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_pipeline_control.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_pipeline_control_flow.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_pipeline_control_fetch_data.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_pipeline_control_fetch_req.v
+lappend project_rtl_files $VERILOG_DIR/riscv_i32_pipeline_trap_interposer.v
 
 

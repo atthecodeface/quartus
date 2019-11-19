@@ -1116,3 +1116,6 @@ set_location_assignment PIN_AB30 -to de1_irda__txd
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to de1_irda__txd
 set_instance_assignment -name SLEW_RATE 1 -to de1_irda__txd
 set_instance_assignment -name CURRENT_STRENGTH_NEW 16MA -to de1_irda__txd
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/rtl/altera/srams.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/rtl/srw_srams.v
+set_global_assignment -name VERILOG_FILE /git/atcf_fpga/rtl/mrw_srams.v

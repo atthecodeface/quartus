@@ -19,6 +19,7 @@ lappend project_rtl_files ${RTL_DIR}/xilinx/sram_brams.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/diff_ddr_deserializer4.v
 lappend project_rtl_files ${RTL_DIR}/xilinx/diff_ddr_serializer4.v
 lappend project_rtl_files ${RTL_DIR}/srw_srams.v
+lappend project_rtl_files ${RTL_DIR}/mrw_srams.v
 lappend project_rtl_files ${RTL_DIR}/chk_riscv_ifetch.v
 lappend project_rtl_files ${RTL_DIR}/chk_riscv_trace.v
 lappend project_rtl_files ${VERILOG_DIR}/vcu108_riscv.v
