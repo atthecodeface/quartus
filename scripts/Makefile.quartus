@@ -2,6 +2,7 @@ ALTERA=/altera
 
 QUARTUS_DIR    ?= $(ROOT)/quartus
 QUARTUS_OUTPUT ?= $(ROOT)/quartus_output
+QUARTUS_SCRIPTS_DIR  ?= $(QUARTUS_DIR)/scripts
 
 QUARTUS=$(ALTERA)/quartus
 QUARTUS_BIN=$(QUARTUS)/bin
@@ -91,6 +92,8 @@ clean_synth: clean_make
 .PHONY:asm
 .PHONY:fit
 .PHONY:timing
+.PHONY:quartus_parametrize
+quartus_parametrize:  ${MAKE_PREFIX}.quartus_parametrize
 synth:  ${MAKE_PREFIX}.synth
 fit:    ${MAKE_PREFIX}.fit
 timing: ${MAKE_PREFIX}.timing
@@ -141,17 +144,20 @@ $(QUARTUS_DIR)/modules/regenerate_date: $(QUARTUS_DIR)/modules/hps.qsys $(QUARTU
 	(cd $(QUARTUS_DIR)/modules; $(QUARTUS_GENERATE) altclkctrl.qsys --synthesis=VERILOG $(QUARTUS_GENERATE_ARGS) )
 	date >> $(QUARTUS_DIR)/modules/regenerate_date
 
-${MAKE_PREFIX}.synth: $(SCRIPTS_DIR)/synth.tcl
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).synth.log  && date > ${MAKE_PREFIX}.synth
+${MAKE_PREFIX}.quartus_parametrize:
+	date > ${MAKE_PREFIX}.quartus_parametrize
+
+${MAKE_PREFIX}.synth: $(QUARTUS_SCRIPTS_DIR)/synth.tcl ${MAKE_PREFIX}.quartus_parametrize
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(QUARTUS_SCRIPTS_DIR)/synth.tcl $(PROJECT_LEAF) $(PROJECT_LEAF) )' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).synth.log  && date > ${MAKE_PREFIX}.synth
 
 ${MAKE_PREFIX}.fit: ${MAKE_PREFIX}.synth
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).fit.log       && date > ${MAKE_PREFIX}.fit
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(QUARTUS_SCRIPTS_DIR)/fit.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).fit.log       && date > ${MAKE_PREFIX}.fit
 
 ${MAKE_PREFIX}.asm: ${MAKE_PREFIX}.fit
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).asm.log       && date > ${MAKE_PREFIX}.asm
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(QUARTUS_SCRIPTS_DIR)/asm.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).asm.log       && date > ${MAKE_PREFIX}.asm
 
 ${MAKE_PREFIX}.timing: ${MAKE_PREFIX}.fit
-	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).timing.log && date > ${MAKE_PREFIX}.timing
+	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_SH) -t $(QUARTUS_SCRIPTS_DIR)/timing.tcl $(PROJECT_LEAF) $(PROJECT_LEAF))' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).timing.log && date > ${MAKE_PREFIX}.timing
 
 fpga_update_srams:
 	${SCRIPT} -c '(cd $(QUARTUS_PROJECT_DIR); $(QUARTUS_CDB) --update_mif $(PROJECT_LEAF)) ' $(QUARTUS_OUTPUT)/$(PROJECT_LEAF).fpga_update_srams.log       && date > ${MAKE_PREFIX}.fpga_update_srams
@@ -172,16 +178,16 @@ rbf_of_sof:
 	${QUARTUS_BIN}/quartus_cpf -c -o bitstream_compression=on $(SOF) $(RBF)
 
 find_cables:
-	ALTERA_BIN=/altera/quartus/bin bash -c "source $(SCRIPTS_DIR)/find_altera_cable.sh"
+	ALTERA_BIN=/altera/quartus/bin bash -c "source $(QUARTUS_SCRIPTS_DIR)/find_altera_cable.sh"
 
 jtag_program_cable:
 	@echo "Programming using cable name supplied in ALTERA_CABLE_FPGA ('$(ALTERA_CABLE_FPGA)')"
 	@$(QUARTUS_PGM) -m jtag --cable="$(ALTERA_CABLE_FPGA)" -o "P;$(SOF)@2"
 
 jtag_program:
-	( cable_name=`ALTERA_BIN=/altera/quartus/bin $(SCRIPTS_DIR)/find_altera_cable.sh` ; \
+	( cable_name=`ALTERA_BIN=/altera/quartus/bin $(QUARTUS_SCRIPTS_DIR)/find_altera_cable.sh` ; \
 	  echo "Using cable '$$cable_name'" ; \
 	 $(QUARTUS_PGM) -m jtag --cable="$$cable_name" -o "P;$(SOF)@2" )
 
 jtag_usb_init:
-	ALTERA_BIN=/altera/quartus/bin bash -c "source $(SCRIPTS_DIR)/find_altera_cable.sh"
+	ALTERA_BIN=/altera/quartus/bin bash -c "source $(QUARTUS_SCRIPTS_DIR)/find_altera_cable.sh"

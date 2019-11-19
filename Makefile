@@ -35,8 +35,8 @@ help_toplevel:
 	$H "   Create verilog files from CDL and SRAMs for FPGAs from descriptions"
 	$H " Makefile.sim"
 	$H "   Simulation makefile, with its own help (below)"
-	$H " Makefile.synth"
-	$H "   Synthesis, fit, timing makefile, with its own help (below)"
+	$H " Makefile.quartus"
+	$H "   Quartus synthesis, fit, timing makefile, with its own help (below)"
 	$H " Makefile.vivado"
 	$H "   Vivado synthesis, place, route, reports makefile, with its own help (below)"
 	$H " Makefile.sram"
@@ -44,9 +44,11 @@ help_toplevel:
 	$H
 	$H "Projects available:"
 	$H "  de1_cl/bbc_project        - working (if you have the ROMs)        (synth fit)"
+	$H "  de1_hps/hps_debug         - working (needs HPS modules generated) (synth pins fit)"
 	$H "  de1_cl_hps/hps_fpga_debug - working (needs HPS modules generated) (synth pins fit)"
 	$H "  vcu108/basic              - working"
 	$H "  vcu108/basic_pll          - working"
+	$H "  vcu108/riscv/vcu108_riscv - working"
 
 .PHONY: clean
 
@@ -58,7 +60,7 @@ include $(SCRIPTS_DIR)/Makefile.project
 include $(SCRIPTS_DIR)/Makefile.sram
 include $(SCRIPTS_DIR)/Makefile.sim
 include $(SCRIPTS_DIR)/Makefile.verilog
-include $(SCRIPTS_DIR)/Makefile.synth
+include $(SCRIPTS_DIR)/Makefile.quartus
 include $(SCRIPTS_DIR)/Makefile.vivado
 
 ifneq ($(PROJECT_INCLUDE),)
