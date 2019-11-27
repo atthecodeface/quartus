@@ -53,10 +53,12 @@ ${MAKE_PREFIX}.vivado_report: ${MAKE_PREFIX}.vivado_route
 
 ${MAKE_PREFIX}.vivado_bitstream: ${MAKE_PREFIX}.vivado_route
 	${SCRIPT} -c '(cd $(PROJECT_DIR); $(VIVADO_EXE) -mode batch -source $(VIVADO_SCRIPTS_DIR)/bitstream.tcl -tclargs $(PROJECT_LEAF) )' $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bitstream.log  && date > ${MAKE_PREFIX}.vivado_bitstream
-	cp $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bit golden_bit/$(PROJECT_LEAF).`date +%y%m%d-%H%M%S`.bit
+	cp $(VIVADO_OUTPUT)/$(PROJECT_LEAF).bit ${GOLDEN_BIT}/$(PROJECT_LEAF).`date +%y%m%d-%H%M%S`.bit
 
-LATEST_MMI_FILE = `ls -t /vm_shared/vm_read_only/golden_bit/*mmi | head -1`
-LATEST_BIT_FILE = `ls -t /vm_shared/vm_read_only/golden_bit/*bit | head -1`
+GOLDEN_BIT ?= golden_bit
+# GOLDEN_BIT ?= /vm_shared/vm_read_only
+LATEST_MMI_FILE = `ls -t ${GOLDEN_BIT}/*mmi | head -1`
+LATEST_BIT_FILE = `ls -t ${GOLDEN_BIT}/*bit | head -1`
 vivado_update_bit:
 	${MAKE} MMI_FILE=${LATEST_MMI_FILE} BIT_FILE=${LATEST_BIT_FILE} update_bootrom
 
