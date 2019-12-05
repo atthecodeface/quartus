@@ -70,14 +70,24 @@ def comma_if_not_last(i,n):
     if i>=n-1: return ""
     return ","
 class module:
+    clocks = []
+    input_ports = {}
+    output_ports = {}
+    wires = {}
+    submodules = []
+    assignments = {}
+    parameter_ports = {}
     default_parameters = {}
     default_attributes = {}
     default_signals    = {}
+    signals = {} # mapping for an instance
+    parameters = {} # mappings for an instance
     #f __init__
     def __init__(self, instance_name, parameters={}, signals={}, attributes={}):
         self.signal_names = [x for (x,_) in self.signals]
         self.instance_name = instance_name
         self.parameter_values = []
+        self.submodules = self.submodules[:]
         for p in self.parameters:
             pv = p.instance(parameters)
             if pv is None:
@@ -107,7 +117,65 @@ class module:
             pass
         pass
     #f output_verilog
-    def output_verilog(self, f, indent="    "):
+    def output_verilog(self, f, include_clk_enables=True):
+        module_start = "module %s ( "%(self.name)
+        indent = " "*len(module_start)
+        i = module_start
+        for c in self.clocks:
+            print >>f, "%sinput          %s,"%(i,c)
+            i = indent
+            if include_clk_enables:
+                print >>f, "%sinput          %s__enable,"%(i,c)
+                pass
+            pass
+        for (s,w) in self.input_ports.iteritems():
+            bw = "[%2d:0] "%(w-1)
+            if w==0: bw = " "*7
+            print >>f, "%sinput  %s %s,"%(i,bw,s)
+            i = indent
+            pass
+        for (s,w) in self.output_ports.iteritems():
+            bw = "[%2d:0] "%(w-1)
+            if w==0: bw = " "*7
+            print >>f, "%soutput %s %s,"%(i,bw,s)
+            i = indent
+            pass
+        print >>f, ");"
+        indent = "    "
+        for (p,v) in self.parameter_ports.iteritems():
+            if type(v)==str:
+                print >>f, "%sparamter %s=\"%s\";"%(indent,p,v)
+                pass
+            else:
+                print >>f, "%sparamter %s=%s;"%(indent,p,v)
+                pass
+            pass
+        for (s,(w,e)) in self.wires.iteritems():
+            if type(w) == tuple:
+                bw = "[%2d:0] "%(w[1]-1)
+                print >>f, "%swire %s %s[%d:0];"%(indent,bw,s,w[0]-1)
+                pass
+            else:
+                bw = "[%2d:0] "%(w-1)
+                if w==0: bw = " "*7
+                if e is None:
+                    print >>f, "%swire %s %s;"%(indent,bw,s)
+                    pass
+                else:
+                    print >>f, "%swire %s %s = %s;"%(indent,bw,s,e)
+                    pass
+                pass
+            pass
+        for (a,e) in self.assignments.iteritems():
+            print >>f, "%sassign %s = %s;"%(indent,a,e)
+            pass
+        for i in self.submodules:
+            i.output_instance_verilog(f, indent)
+            pass
+        print >>f, "endmodule"
+        pass
+    #f output_instance_verilog
+    def output_instance_verilog(self, f, indent="    "):
         n = len(self.attributes)
         if n>0:
             print >>f, "%s(* "%(indent),
@@ -378,8 +446,8 @@ class ramb36e2(module):
     """
     name ="RAMB36E2"
     parameters = [
-        parameter("CASCASE_ORDER_A",           ["NONE", "FIRST", "MIDDLE", "LAST"], "Order of cascade - first is bottom"),
-        parameter("CASCASE_ORDER_B",           ["NONE", "FIRST", "MIDDLE", "LAST"], "Order of cascade - first is bottom"),
+        parameter("CASCADE_ORDER_A",           ["NONE", "FIRST", "MIDDLE", "LAST"], "Order of cascade - first is bottom"),
+        parameter("CASCADE_ORDER_B",           ["NONE", "FIRST", "MIDDLE", "LAST"], "Order of cascade - first is bottom"),
         parameter("CLOCK_DOMAINS",        ["INDEPENDENT", "COMMON"], "Whether A and B are the same clock"),
 
         parameter("DOA_REG",             [1,0],   "Output register for port A"),
@@ -456,10 +524,10 @@ class ramb36e2(module):
                ("CASDOUTA", None),         # Cascade port A data 32
                ("CASDOUTPA", None),        # Cascade port A parity 4
 
-               ("CASDIMUXB", None),        # Cascade port B (use CASDINA when high)
+               ("CASDIMUXB", None),        # Cascade port B (use CASDINB when high)
                ("CASDINB", None),          # Cascade port B data 32
                ("CASDINPB", None),         # Cascade port B parity 4
-               ("CASDOMUXB", None),        # Cascade port B (use CASDINA when high)
+               ("CASDOMUXB", None),        # Cascade port B (use CASDINB when high)
                ("CASDOMUXEN_B", None),     # Cascade port B unregistered output data register enable
                ("CASDOREGIMUXB", None),    # Cascade port B
                ("CASDOREGIMUXEN_B", None), # Cascade port B
@@ -527,7 +595,7 @@ p = mmcme3_base("pll_i",
                            "CLKFBIN":"clk_fb",
                            }
                 )
-p.output_verilog(sys.stdout)
+p.output_instance_verilog(sys.stdout)
 
 #f PLL 125 in to 625 / 312.5 / 125 / 25
 p = mmcme3_base("pll_i",
@@ -551,37 +619,134 @@ p = mmcme3_base("pll_i",
                            "CLKFBIN":"clk_fb",
                            }
                 )
-p.output_verilog(sys.stdout)
+p.output_instance_verilog(sys.stdout)
 
-#f Four BSRAMs as 4kx32 with byte write enables - by using one RAM per byte
-for i in range(4):
-    p = ramb36e2("ram%d"%i,
-                parameters={"DOA_REG":0,
-                            "DOB_REG":0,
-                            "READ_WIDTH_A":9,
-                            "WRITE_WIDTH_A":9,
-                            "ENADDRENA":"FALSE",
-                },
+#f Four BSRAMs as 4kx32 (16kB) with byte write enables - by using one RAM per byte
+class bram__se_sram_srw_4096x32_we8(module):
+    name = "bram__se_sram_srw_4096x32_we8"
+    clocks = ["sram_clock",]
+    input_ports = {"select":0,
+                   "read_not_write":0,
+                   "write_enable":4, # byte enables
+                   "address":12,
+                   "write_data":32,
+    }
+    output_ports = {"data_out":32,
+    }
+    parameter_ports = {"initfile":"", "address_width":12, "data_width":32}
+    assignments = {"data_out[ 7: 0]":"read_data_mem[0][7:0]",
+                   "data_out[15: 8]":"read_data_mem[1][7:0]",
+                   "data_out[23:16]":"read_data_mem[2][7:0]",
+                   "data_out[31:24]":"read_data_mem[3][7:0]",
+    }
+    wires = {"read_data_mem":((4,32),None)}
+    submodules = [
+        ramb36e2("ram_%d"%byte,
+                 parameters={"DOA_REG":0,
+                             "DOB_REG":0,
+                             "READ_WIDTH_A":9,
+                             "WRITE_WIDTH_A":9,
+                             "ENADDRENA":"FALSE",
+                         },
                 signals = {"CLKARDCLK":"sram_clock",
                            "ENARDEN":"sram_clock__enable && select",
                            "ADDRARDADDR":"{address[11:0],3'b0}",
-                           "WEA":"{3'b0,write_enable[%d] && !read_not_write}"%i,
-                           "DINADIN":"{24'b0,write_data[%d:%d]}"%((i*8+7),(i*8)),
-                           "DOUTADOUT":"read_data_mem[%d]"%i,
+                           "WEA":"{3'b0,write_enable[%d] && !read_not_write}"%byte,
+                           "DINADIN":"{24'b0,write_data[%d:%d]}"%((byte*8+7),(byte*8)),
+                           "DOUTADOUT":"read_data_mem[%d]"%byte,
                            "CLKBWRCLK":"0",                           
                            "WEBWE":"0",
-                           },
+                       },
                  attributes = {"ram_addr_begin":0,
                                "ram_addr_end":4095,
-                               "ram_slice_begin":i*8,
-                               "ram_slice_end":7+i*8,
-                 },
-    )
-    p.output_verilog(sys.stdout)
+                               "ram_slice_begin":byte*8,
+                               "ram_slice_end":7+byte*8,
+                           },
+             ) for byte in range(4)]
+    pass
+print "*"*80
+bram__se_sram_srw_4096x32_we8("").output_verilog(sys.stdout)
 
+#f Sixteen BSRAMs as 16kx32 (64kB) with byte write enables - by using one RAM per byte
+class bram__se_sram_srw_16384x32_we8(module):
+    name = "bram__se_sram_srw_16384x32_we8"
+    clocks = ["sram_clock",]
+    input_ports = {"select":0,
+                   "read_not_write":0,
+                   "write_enable":4, # byte enables
+                   "address":14,
+                   "write_data":32,
+    }
+    output_ports = {"data_out":32,
+    }
+    parameter_ports = {"initfile":"", "address_width":14, "data_width":32}
+    wires = {"read_data_mem":((16,32),None),
+             "casc_data_out":((20,32),None),
+             "word_sel":(4,None),
+    }
+    assignments = {"data_out[ 7: 0]":"read_data_mem[0][7:0]",
+                   "data_out[15: 8]":"read_data_mem[1][7:0]",
+                   "data_out[23:16]":"read_data_mem[2][7:0]",
+                   "data_out[31:24]":"read_data_mem[3][7:0]",
+                   "word_sel[0]":"(address[13:12]==0)",
+                   "word_sel[1]":"(address[13:12]==1)",
+                   "word_sel[2]":"(address[13:12]==2)",
+                   "word_sel[3]":"(address[13:12]==3)",
+                   "casc_data_out[16]":"0",
+                   "casc_data_out[17]":"0",
+                   "casc_data_out[18]":"0",
+                   "casc_data_out[19]":"0",
+    }
+    submodules = []
+    for word in range(4):
+        for byte in range(4):
+            ram_id = "_%d_%d"%(word,byte)
+            ram_n = byte + word*4
+            next_ram_n = byte + (word+1)*4
+            p = ramb36e2("ram%s"%ram_id,
+                        parameters={"DOA_REG":0,
+                                    "DOB_REG":0,
+                                    "READ_WIDTH_A":9,
+                                    "WRITE_WIDTH_A":9,
+                                    "ENADDRENA":"FALSE",
+                                    "CASCADE_ORDER_A":["LAST", "MIDDLE", "MIDDLE", "FIRST"][word],
+                        },
+                        signals = {"CLKARDCLK":"sram_clock",
+                                   "ENARDEN":"sram_clock__enable && word_sel[%d]"%(word),
+                                   "ADDRARDADDR":"{address[11:0],3'b0}",
+                                   "WEA":"{3'b0,write_enable[%d] && !read_not_write}"%byte,
+                                   "DINADIN":"{24'b0,write_data[%d:%d]}"%((byte*8+7),(byte*8)),
+                                   "DOUTADOUT":"read_data_mem[%d]"%ram_n,
+                                   "CLKBWRCLK":"0",                           
+                                   "WEBWE":"0",
+                                   "CASDINA"    :"casc_data_out[%d]"%next_ram_n,
+                                   "CASDIMUXA"  :"0", # Always use DIN
+                                   "CASDOUTA"   :"casc_data_out[%d]"%ram_n,
+                                   "CASDOMUXA"  :"!word_sel[%d]"%word,
+                                   "CASDOMUXEN_A":"sram_clock__enable",
+                                   },
+                         attributes = {"ram_addr_begin" :word*4096 + 0,
+                                       "ram_addr_end"   :word*4096 + 4095,
+                                       "ram_slice_begin":byte*8,
+                                       "ram_slice_end"  :byte*8+7,
+                         },
+            )
+            submodules.append(p)
+            pass
+        pass
+    pass
+
+print "*"*80
+bram__se_sram_srw_16384x32_we8("").output_verilog(sys.stdout)
 
 #f Output differential DDR serializer of 4 bits (CLK runs at 2x CLK_DIV2)
-diff_ddr_serializer4  = [
+class diff_ddr_serializer4(module):
+    name = "diff_ddr_serializer4"
+    clocks = ["clk", "clk_div2"]
+    input_ports = {"reset_n":0, "data":4}
+    output_ports = {"pin__p":0, "pin__n":0}
+    wires = {"reset":(0,"!reset_n")}
+    submodules = [
     sync_reset_reg("reset_sync_0", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset",    "Q":"reset__0"} ),
     sync_reset_reg("reset_sync_1", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset__0", "Q":"reset__1"} ),
     sync_reset_reg("reset_sync_2", signals={"PRE":"reset", "C":"clk_div2", "CE":"1", "D":"reset__1", "Q":"reset__2"} ),
@@ -602,10 +767,9 @@ diff_ddr_serializer4  = [
                           "OB":"pin__n",
                },
     ),
-]
-for m in diff_ddr_serializer4:
-    m.output_verilog(sys.stdout)
-    pass
+    ]
+print "*"*80
+diff_ddr_serializer4("").output_verilog(sys.stdout)
 
 #f Input differential DDR deserializer, with configurable delay, of 4 bits (CLK runs at 2x CLK_DIV2)
 # To enable phase tracking of data in with respect to CLK this has two delay modules
@@ -675,7 +839,7 @@ diff_ddr_deserializer4  = [
     ),
 ]
 for m in diff_ddr_deserializer4:
-    m.output_verilog(sys.stdout)
+    m.output_instance_verilog(sys.stdout)
     pass
 
 #f Cascaded delay pair
@@ -726,5 +890,5 @@ cascaded_delay_pair  = [
     ),
 ]
 for m in cascaded_delay_pair:
-    m.output_verilog(sys.stdout)
+    m.output_instance_verilog(sys.stdout)
     pass

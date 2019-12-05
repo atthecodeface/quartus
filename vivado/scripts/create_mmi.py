@@ -72,9 +72,11 @@ class sram:
         self.lsb = None
         self.bus_blocks = []
         pass
-    def add_bram(self, bram):
+    def add_bram(self, bram, verbose=False):
         if bram.parent != self.path:
-            print >>sys.stderr, "Skipping %s as it has the wrong parent (needs %s got %s)"%(bram.name, bram.parent, self.path)
+            if verbose:
+                print >>sys.stderr, "Skipping %s as it has the wrong parent (needs %s got %s)"%(bram.name, bram.parent, self.path)
+                pass
             return
         self.brams[bram.name] = bram
         if (self.address_min is None) or (bram.addr_begin < self.address_min):
@@ -89,6 +91,7 @@ class sram:
         if (self.msb is None) or (bram.msb > self.msb):
             self.msb = bram.msb
             pass
+        print >>sys.stderr, "Added %s with bits [%d:%d] address 0x%x to 0x%x"%(bram.name, bram.lsb, bram.msb, bram.addr_begin, bram.addr_end)
         pass
     def create_bus_blocks(self):
         self.bus_blocks = []
@@ -108,13 +111,21 @@ class sram:
         pass
     def generate_mmi(self, output, inst_path, address_space, part):
         self.create_bus_blocks()
+        if len(self.bus_blocks)==0:
+            print >>sys.stderr, "No BRAM blocks extracted so MMI would be empty"
+            sys.exit(4)
+            return
         # inst_path = dut/riscv
         # address_space = riscv
         # part = xcvu095-ffva2104-2-e
+        bits_per_word = self.msb+1 - self.lsb
+        bytes_per_word = bits_per_word / 8
+        address_byte_min = self.address_min * bytes_per_word
+        address_byte_max = (self.address_max+1) * bytes_per_word
         output('<?xml version="1.0" encoding="UTF-8"?>')
         output('<MemInfo Version="1" Minor="0">')
         output('<Processor Endianness="Little" InstPath="%s">'%(inst_path))
-        output('<AddressSpace Name="%s" Begin="%d" End="%d">'%(address_space, self.address_min, self.address_max+1))
+        output('<AddressSpace Name="%s" Begin="%d" End="%d">'%(address_space, address_byte_min, address_byte_max))
         for bb in self.bus_blocks:
             bb.generate_mmi(output)
             pass
@@ -141,12 +152,12 @@ def generate_brams(bram_cells):
     return brams
 
 #f generate_mmi
-def generate_mmi(brams, out_file, instance_name, mem_subname, part):
+def generate_mmi(brams, out_file, instance_name, mem_subname, part, verbose=False):
     ram_name = instance_name
     if mem_subname!="": ram_name = instance_name+"/"+mem_subname
     rv_mem = sram(ram_name)
     for (name,bram) in brams.iteritems():
-        rv_mem.add_bram(bram)
+        rv_mem.add_bram(bram, verbose=verbose)
         pass
     def output(s): print >> out_file, s
     rv_mem.generate_mmi(output=output, inst_path=instance_name, address_space='address_space_name', part=part)
@@ -165,8 +176,10 @@ if __name__ == "__main__":
                     help='Xilinx part the design is targeted at')
     parser.add_argument('--out', type=str, default=None,
                     help='Output file')
-    parser.add_argument('--quiet', type=str, default=False,
+    parser.add_argument('--quiet', type=bool, default=False,
                     help='Quiet - suppres informational output')
+    parser.add_argument('--verbose', type=bool, default=False,
+                    help='Make verbose')
     args = parser.parse_args()
     p=os.path.abspath(args.py)
     d=os.path.dirname(p)
@@ -183,7 +196,7 @@ if __name__ == "__main__":
         out_name = args.out
         out_file = open(args.out,"w")
         pass
-    generate_mmi(brams, out_file, args.ram, args.subpath, args.part)
+    generate_mmi(brams, out_file, args.ram, args.subpath, args.part, verbose=args.verbose)
     if args.out is not None: out_file.close()
     if not args.quiet:
         print "To update memory, from a shell use:"
