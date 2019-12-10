@@ -144,10 +144,10 @@ class module:
         indent = "    "
         for (p,v) in self.parameter_ports.iteritems():
             if type(v)==str:
-                print >>f, "%sparamter %s=\"%s\";"%(indent,p,v)
+                print >>f, "%sparameter %s=\"%s\";"%(indent,p,v)
                 pass
             else:
-                print >>f, "%sparamter %s=%s;"%(indent,p,v)
+                print >>f, "%sparameter %s=%s;"%(indent,p,v)
                 pass
             pass
         for (s,(w,e)) in self.wires.iteritems():
@@ -669,6 +669,20 @@ bram__se_sram_srw_4096x32_we8("").output_verilog(sys.stdout)
 
 #f Sixteen BSRAMs as 16kx32 (64kB) with byte write enables - by using one RAM per byte
 class bram__se_sram_srw_16384x32_we8(module):
+    """
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_1_0 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_1_1 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_1_2 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_1_3 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_2_0 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_2_1 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_2_2 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_2_3 has CASCADE_ORDER_A attribute set to MIDDLE with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_3_0 has CASCADE_ORDER_A attribute set to FIRST with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_3_1 has CASCADE_ORDER_A attribute set to FIRST with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_3_2 has CASCADE_ORDER_A attribute set to FIRST with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+WARNING: [DRC REQP-1902] RAMB36E2_AB_cascade_out_must_use_parity: The RAMB36E2 cell dut/riscv/mem/ram_3_3 has CASCADE_ORDER_A attribute set to FIRST with the CASDOUTA[31:0] bus used, but is missing appropriate connection(s) for the CASDOUTPA[3:0] bus.
+    """
     name = "bram__se_sram_srw_16384x32_we8"
     clocks = ["sram_clock",]
     input_ports = {"select":0,
