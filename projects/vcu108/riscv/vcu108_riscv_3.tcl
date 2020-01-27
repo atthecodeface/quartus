@@ -1,11 +1,11 @@
 set project_part "xcvu095-ffva2104-2-e"
-set project_file "vcu108_riscv"
+set project_file "vcu108_riscv_3"
 set project_top "vcu108_project"
 
 set project_synth_options ""
 append project_synth_options " -top ${project_top}"
 append project_synth_options " -part ${project_part}"
-append project_synth_options " -verilog_define debug_module=vcu108_riscv"
+append project_synth_options " -verilog_define debug_module=vcu108_riscv_3"
 append project_synth_options " -verilog_define dut_clk=clk_128_57"
 
 # Read RTL files

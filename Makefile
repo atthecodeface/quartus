@@ -20,7 +20,7 @@ all: sim_adc
 # all: compile_verilog compile_rtl sim_tb_6502
 
 .PHONY: help
-help: help_toplevel help_synth help_sim help_sram
+help: help_toplevel help_quartus help_vivado help_sim help_sram
 
 .PHONY: help_toplevel
 help_toplevel:
@@ -49,6 +49,7 @@ help_toplevel:
 	$H "  vcu108/basic              - working"
 	$H "  vcu108/basic_pll          - working"
 	$H "  vcu108/riscv/vcu108_riscv - working"
+	$H "  vcu108/riscv/vcu108_riscv_3 - in progress"
 
 .PHONY: clean
 

@@ -36,7 +36,7 @@ QUARTUS_PROJECT_IDB      := $(QUARTUS_PROJECT_DIR)/incremental_db
 # -include ${QUARTUS_PROJECT_INCLUDE}
 # endif
 
-help_synth:
+help_quartus:
 	$H "****************************************************************"
 	$H "To regenerate the modules from qsys (on repo init or change of qsys)"
 	$H "****************************************************************"
@@ -44,19 +44,18 @@ help_synth:
 	$H
 	$H ""
 	$H "****************************************************************"
-	$H "Makefile.synth"
+	$H "Makefile.quartus"
 	$H "****************************************************************"
 	$H "To make quartus/modules contents when a qsys file changes or when"
 	$H "the repo is first checked out:"
 	$H "  make regenerate_modules"
 	$H ""
-	$H "Makefile.synth contains targets and recipes"
+	$H "Makefile.quartus contains targets and recipes"
 	$H "to enable synthesis, fitting and timing of"
 	$H "FPGA builds using Altera Quartus"
 	$H ""
 	$H "The makefile support different 'project's using the same tree"
 	$H "The project name is specified with 'PROJECT'"
-	$H "PROJECT defaults to 'de1_cl_hps/hps_fpga_debug'"
 	$H ""
 	$H "To make use the following steps:"
 	$H "  make PROJECT=<project> synth fit timing"
@@ -78,13 +77,10 @@ help_synth:
 	$H ""
 	$H "Cyclone II projects (de2) require Altera13.0sp1, not Altera15.0"
 	$H ""
-	$H "Available projects are:"
-	$H " de1_cl/bbc_project de1_cl_hps/hps_fpga_debug de2/picorisc"
-	$H ""
 
-clean: clean_synth
-.PHONY: clean_synth
-clean_synth: clean_make
+clean: quartus_clean
+.PHONY: quartus_clean
+quartus_clean: clean_make
 	rm -rf $(QUARTUS_OUTPUT)/*$(PROJECT_LEAF)* $(QUARTUS_PROJECT_DB) $(QUARTUS_PROJECT_IDB)
 	mkdir -p $(QUARTUS_OUTPUT)
 

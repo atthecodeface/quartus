@@ -16,14 +16,37 @@ help_vivado:
 	$H "Makefile.vivado"
 	$H "****************************************************************"
 	$H ""
-	$H "Available projects are:"
-	$H " de1_cl/bbc_project de1_cl_hps/hps_fpga_debug de2/picorisc"
+	$H "Makefile.vivado contains targets and recipes"
+	$H "to enable synthesis, fitting and timing of"
+	$H "FPGA builds using Xilinx Vivado"
+	$H ""
+	$H "The makefile support different 'project's using the same tree"
+	$H "The project name is specified with 'PROJECT'"
+	$H ""
+	$H "To update the verilog as required by Vivado for a project:"
+	$H "  make vivado_parametrize"
+	$H ""
+	$H "The steps required for a complete Vivado build from correct verilog"
+	$H "are place, route, report and bitstream."
+	$H "The place step reads in all the verilog and constraints and performs a placement."
+	$H "The design is then saved of ready for routing."
+	$H "As Vivado does not support parameter setting from a script the verilog has to be"
+	$H "modified to contain the correct filenames for initial RAM/ROM filling. Modules may"
+	$H "also have to be uniqified for a design, and module instances replaced with either"
+	$H "unique versions or technology-specific versions. Hence the parametrizing step which"
+	$H "must be performed prior to placement."
+	$H "Routing use the constraints and placed design to produce a route that meets timing, and saves a new design."
+	$H "Report produces various reports from the routed design."
+	$H "Bitstream produces a bit file that can be downloaded to an FPGA."
+	$H ""
+	$H "The simplest approach is to use "
+	$H "  make PROJECT=<project> vivado_report vivado_bitstream"
 	$H ""
 
-clean: clean_vivado
+clean: vivado_clean
 
-.PHONY: clean_vivdo
-clean_vivado: clean_make
+.PHONY: vivdo_clean
+vivado_clean: clean_make
 	rm -f $(VIVADO_OUTPUT)/*$(PROJECT_LEAF)*
 	rm -f $(VIVADO_OUTPUT)/vivado*log $(VIVADO_OUTPUT)/vivado*journal
 	mkdir -p $(VIVADO_OUTPUT)
@@ -63,7 +86,7 @@ vivado_update_bit:
 	${MAKE} MMI_FILE=${LATEST_MMI_FILE} BIT_FILE=${LATEST_BIT_FILE} update_bootrom
 
 vivado_program:
-	BIT_FILE=vivado_output/reprogrammed.bit  vivado -mode batch -source vivado/scripts/program.tcl
+	BIT_FILE=vivado_output/reprogrammed.bit  ${VIVADO_EXE} -mode batch -source ${VIVADO_SCRIPTS_DIR}/program.tcl
 
 .PHONY:vivado_tcl
 vivado_tcl:
