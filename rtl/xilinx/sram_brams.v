@@ -97,7 +97,7 @@ module bram__se_sram_srw_4096x32_we8 ( input          sram_clock,
     );
 endmodule
 
-module bram__se_sram_srw_16384x32_we8 ( input          sram_clock,
+module bram__se_sram_srw_16384x32_we8_onlt_16kB ( input          sram_clock,
                                        input          sram_clock__enable,
                                        input  [ 3:0]  write_enable,
                                        input  [31:0]  write_data,
@@ -196,7 +196,7 @@ module bram__se_sram_srw_16384x32_we8 ( input          sram_clock,
     );
 endmodule
 
-module bram__se_sram_srw_16384x32_we8x ( input          sram_clock,
+module bram__se_sram_srw_16384x32_we8 ( input          sram_clock,
                                         input          sram_clock__enable,
                                         input  [ 3:0]  write_enable,
                                         input  [31:0]  write_data,
