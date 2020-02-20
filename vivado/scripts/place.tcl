@@ -43,11 +43,11 @@ set info_to_suppress {{[Synth 8-155]}
 # [Synth 8-7023] instance '...' of module '...' has ... connections declared, but only ... given [...]
 # [Synth 8-3936] Found unconnected internal register 'data_sram_access_req__address_reg' and it is trimmed from '32' to '16' bits. [/git/atcf_fpga/verilog/riscv_i32_minimal.v:1614]
 set warnings_to_suppress { {[Synth 8-6014]}
-    {[Synth 8-3331]}
+#    {[Synth 8-3331]}
     {[Synth 8-3332]}
     {[Synth 8-3936]}
     {[Synth 8-6014]}
-    {[Synth 8-7023]}
+#    {[Synth 8-7023]}
 }
 foreach msg $info_to_suppress {
     set_msg_config -id $msg -suppress

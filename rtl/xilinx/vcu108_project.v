@@ -161,6 +161,19 @@ module vcu108_project ( input SYS_CLK1__p, input SYS_CLK1__n,
                       .sgmii_rx_reset_n(reset_n),
                       .sgmii_tx_reset_n(reset_n),
 
+                      .sgmii_transceiver_status__measure_response__ack(measure_response__ack),
+                      .sgmii_transceiver_status__measure_response__abort(measure_response__abort),
+                      .sgmii_transceiver_status__measure_response__valid(measure_response__valid),
+                      .sgmii_transceiver_status__measure_response__delay(measure_response__delay),
+                      .sgmii_transceiver_status__measure_response__initial_delay(measure_response__initial_delay),
+                      .sgmii_transceiver_status__measure_response__initial_value(measure_response__initial_value),
+                      .sgmii_transceiver_status__eye_track_response__measure_ack(eye_track_response__measure_ack),
+                      .sgmii_transceiver_status__eye_track_response__locked(eye_track_response__locked),
+                      .sgmii_transceiver_status__eye_track_response__eye_data_valid(eye_track_response__eye_data_valid),
+                      .sgmii_transceiver_status__eye_track_response__data_delay(eye_track_response__data_delay),
+                      .sgmii_transceiver_status__eye_track_response__eye_width(eye_track_response__eye_width),
+                      .sgmii_transceiver_status__eye_track_response__eye_center(eye_track_response__eye_center),
+
                       .flash_in__data(0)
                       );
    assign eth__mdio     = eth__mdio__en ? eth__mdio__out : 1'bz;

@@ -24,9 +24,15 @@ lappend project_rtl_files ${VERILOG_DIR}/apb_target_sram_interface.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_timer.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_axi4s.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_target_analyzer.v
+lappend project_rtl_files ${VERILOG_DIR}/analyzer_mux_2.v
+lappend project_rtl_files ${VERILOG_DIR}/analyzer_mux_8.v
+lappend project_rtl_files ${VERILOG_DIR}/analyzer_mux_8_e2.v
+lappend project_rtl_files ${VERILOG_DIR}/analyzer_target.v
+lappend project_rtl_files ${VERILOG_DIR}/analyzer_target_stub.v
 lappend project_rtl_files ${VERILOG_DIR}/axi4s32_fifo_4.v
 lappend project_rtl_files ${VERILOG_DIR}/apb_logging.v
 lappend project_rtl_files ${VERILOG_DIR}/gbe_axi4s32.v
+lappend project_rtl_files ${VERILOG_DIR}/gbe_single.v
 lappend project_rtl_files ${VERILOG_DIR}/encode_8b10b.v
 lappend project_rtl_files ${VERILOG_DIR}/decode_8b10b.v
 lappend project_rtl_files ${VERILOG_DIR}/gbe_axi4s32.v
