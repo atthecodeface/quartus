@@ -1,13 +1,15 @@
 # make PROJECT=vcu108/riscv/vcu108_riscv ELF_FILE=/git/atcf_riscv_rust/target/riscv32imc-unknown-none-elf/release/microos clean vivado_report vivado_bitstream
 ROOT              ?= $(CURDIR)
+SRC_ROOT          ?= ${ROOT}
+BUILD_ROOT        ?= ${ROOT}
 ROOT_REL          ?= .
-RTL_DIR           ?= $(ROOT)/rtl
-VERILOG_DIR       ?= $(ROOT)/verilog
+RTL_DIR           ?= $(SRC_ROOT)/rtl
+VERILOG_DIR       ?= $(SRC_ROOT)/verilog
 SCRIPTS_DIR       ?= $(ROOT)/scripts
 PYTHON_DIR        ?= $(ROOT)/python
 MIF_DIR           ?= $(ROOT)/mif
-MAKE_TARGETS      ?= $(ROOT)/make
-SRAM_CONTENTS     ?= $(ROOT)/sram_contents
+MAKE_TARGETS      ?= $(BUILD_ROOT)/make
+SRAM_CONTENTS     ?= $(BUILD_ROOT)/sram_contents
 
 CDL_HARDWARE      ?= $(ROOT)/../cdl_hardware
 

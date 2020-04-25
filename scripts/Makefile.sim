@@ -22,7 +22,7 @@ help_sim:
 	$H "which run simple regression tests on the 6502"
 	$H ""
 
-clean: clean_sim
+# clean: clean_sim
 
 .PHONY: clean_sim
 clean_sim:
