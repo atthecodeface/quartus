@@ -21,6 +21,9 @@ foreach pga $project_instance_assignments {
 foreach rtl $project_rtl_files {
     set_global_assignment -name VERILOG_FILE $rtl
 }
+foreach pe $project_parameter_entities {
+    eval "set_parameter -entity $project_top $pe"
+}
 foreach f $project_constraints_tcl {
     source $f
 }

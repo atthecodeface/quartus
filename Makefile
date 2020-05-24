@@ -69,3 +69,16 @@ include $(SCRIPTS_DIR)/Makefile.vivado
 ifneq ($(PROJECT_INCLUDE),)
 -include ${PROJECT_INCLUDE}
 endif
+
+mount_xilinx:
+	sudo modprobe nbd max_part=8
+	sudo qemu-nbd --connect=/dev/nbd0 /vm/images/Vivado19.0.qcow
+	sudo qemu-nbd --connect=/dev/nbd1 /vm/images/Altera18_1.qcow2
+	sudo mount /dev/nbd0p1 /xilinx
+	sudo mount /dev/nbd1p1 /altera
+
+mount_altera:
+	sudo modprobe nbd max_part=8
+	sudo qemu-nbd --connect=/dev/nbd1 /vm/images/Altera18_1.qcow2
+	sleep 1
+	sudo mount /dev/nbd1p1 /altera

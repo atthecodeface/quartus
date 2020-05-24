@@ -8,5 +8,6 @@ post_message -type info "Static timing analysis for project '$project_file' revi
 project_open $project_file -revision $PROJECT_SYNTH_REVISION
 
 execute_module -tool sta
+execute_module -args --do_report_timing -tool sta
 
 project_close

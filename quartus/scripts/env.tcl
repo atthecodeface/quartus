@@ -1,10 +1,11 @@
 global env
-set SCRIPTS_DIR    $env(QUARTUS_SCRIPTS_DIR)
-set SRAMS_DIR      $env(SRAMS_DIR)
-set VERILOG_DIR    $env(VERILOG_DIR)
-set RTL_DIR        $env(RTL_DIR)
-set QUARTUS_OUTPUT  $env(QUARTUS_OUTPUT)
-set QUARTUS_DIR     $env(QUARTUS_DIR)
+set SCRIPTS_DIR      $env(QUARTUS_SCRIPTS_DIR)
+set SRAMS_DIR        $env(SRAMS_DIR)
+set VERILOG_DIR      $env(VERILOG_DIR)
+set RTL_DIR          $env(RTL_DIR)
+set ALTERA_RTL_DIR   $env(ALTERA_RTL_DIR)
+set QUARTUS_OUTPUT   $env(QUARTUS_OUTPUT)
+set QUARTUS_DIR      $env(QUARTUS_DIR)
 
 global argv
 set project    [ lindex $argv 0 ]
@@ -13,6 +14,7 @@ set project_global_assignments {}
 set project_instance_assignments {}
 set project_rtl_files {}
 set project_constraints_tcl {}
+set project_parameter_entities {}
 source ${project}_project.tcl
 
 lappend project_global_assignments "-name PROJECT_OUTPUT_DIRECTORY $QUARTUS_OUTPUT"
